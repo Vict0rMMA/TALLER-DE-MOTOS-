@@ -7,13 +7,15 @@ import { DomainError } from './domain/errors/DomainError';
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.PUBLIC_APP_URL ?? 'https://taller-mts.vercel.app',
+  ...(process.env.EXTRA_ORIGINS ? process.env.EXTRA_ORIGINS.split(',').map((o) => o.trim()) : []),
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? [
-        'http://localhost:3000',
-        process.env.PUBLIC_APP_URL ?? 'https://taller-mts.vercel.app',
-      ]
-    : true,
+  origin: process.env.NODE_ENV === 'production' ? allowedOrigins : true,
+  credentials: true,
 }));
 app.use(json());
 
