@@ -91,14 +91,12 @@ export function useNotifications(enabled = true) {
 
   const notifications: AppNotification[] = [];
 
-  if (whatsapp && whatsapp.enabled && !whatsapp.isReady) {
+  if (whatsapp && whatsapp.enabled && whatsapp.hasQr) {
     notifications.push({
-      id: 'whatsapp-disconnected',
+      id: 'whatsapp-qr',
       type: 'whatsapp',
-      title: 'WhatsApp desconectado',
-      body: whatsapp.hasQr
-        ? 'Hay un QR listo — ve a Configuración para escanearlo.'
-        : 'El cliente no está activo. Reinicia el backend.',
+      title: 'WhatsApp — escanea el QR',
+      body: 'Hay un QR listo en Configuración para conectar WhatsApp.',
       severity: 'warning',
     });
   }
