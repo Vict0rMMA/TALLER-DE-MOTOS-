@@ -17,6 +17,7 @@ interface WhatsAppStatus {
   hasQr: boolean;
   qr: string | null;
   error: string | null;
+  enabled: boolean;
 }
 
 interface UpcomingService {
@@ -90,7 +91,7 @@ export function useNotifications(enabled = true) {
 
   const notifications: AppNotification[] = [];
 
-  if (whatsapp && !whatsapp.isReady) {
+  if (whatsapp && whatsapp.enabled && !whatsapp.isReady) {
     notifications.push({
       id: 'whatsapp-disconnected',
       type: 'whatsapp',

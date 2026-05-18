@@ -352,6 +352,17 @@ function WhatsAppSection() {
 
       {isLoading ? (
         <div className="h-16 animate-pulse rounded-lg bg-bg-elevated" />
+      ) : data?.enabled === false ? (
+        <div className="flex items-start gap-3 rounded-lg border border-border bg-bg-elevated px-4 py-3">
+          <WifiOff className="h-5 w-5 text-text-tertiary flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-text-secondary">WhatsApp no disponible en este servidor</p>
+            <p className="text-xs text-text-tertiary mt-1">
+              El bot de WhatsApp requiere un servidor local con Chrome instalado.
+              En producción (Vercel) esta función está desactivada.
+            </p>
+          </div>
+        </div>
       ) : data?.isReady ? (
         <div className="space-y-3">
           <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3">

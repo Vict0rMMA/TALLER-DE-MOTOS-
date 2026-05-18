@@ -97,10 +97,14 @@ function getClient(): Client {
 }
 
 export function getWhatsAppStatus() {
-  return { isReady, hasQr: !!qrBase64, qr: qrBase64, error: lastError };
+  const enabled = process.env.ENABLE_WHATSAPP === 'true';
+  return { isReady, hasQr: !!qrBase64, qr: qrBase64, error: lastError, enabled };
 }
 
 export async function restartWhatsApp(deleteSession = false): Promise<void> {
+  if (process.env.ENABLE_WHATSAPP !== 'true') {
+    throw new Error('WhatsApp no está habilitado en este servidor');
+  }
   if (client) {
     try { await client.destroy(); } catch {}
     client = null;
