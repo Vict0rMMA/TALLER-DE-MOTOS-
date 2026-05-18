@@ -11,6 +11,10 @@ let lastError: string | null = null;
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
+  '/run/current-system/sw/bin/chromium',   // Railway / Nix
+  '/usr/bin/chromium-browser',             // Ubuntu/Debian
+  '/usr/bin/chromium',                     // Alpine
+  '/usr/bin/google-chrome',               // Google Chrome Linux
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Users\\' + (process.env.USERNAME ?? '') + '\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
