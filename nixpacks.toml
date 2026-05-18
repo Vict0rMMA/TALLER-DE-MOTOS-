@@ -1,11 +1,5 @@
 [phases.setup]
 nixPkgs = ["chromium"]
 
-[phases.install]
-cmds = ["npm ci", "npx prisma generate"]
-
-[phases.build]
-cmds = ["npx tsc"]
-
 [start]
 cmd = "npx prisma migrate deploy && node dist/index.js"
