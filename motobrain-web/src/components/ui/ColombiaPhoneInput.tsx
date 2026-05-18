@@ -30,8 +30,8 @@ export function ColombiaPhoneInput({
   const display = formatColombiaLocalDisplay(local);
 
   function handleChange(raw: string) {
-    const digits = raw.replace(/\D/g, '').slice(0, 10);
-    onChange(toColombiaE164(digits));
+    const local = extractColombiaLocalPhone(raw);
+    onChange(toColombiaE164(local));
   }
 
   return (
