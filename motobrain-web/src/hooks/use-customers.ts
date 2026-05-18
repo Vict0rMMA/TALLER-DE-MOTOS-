@@ -23,6 +23,8 @@ export function useCustomers(filters: CustomerFilters = {}) {
   return useQuery({
     queryKey: [...CUSTOMERS_KEY, filters],
     queryFn: () => api.get<ApiListResponse<Customer>>(`/customers?${params.toString()}`),
+    staleTime: 0,
+    placeholderData: (prev) => prev,
   });
 }
 

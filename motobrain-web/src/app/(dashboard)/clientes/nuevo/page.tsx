@@ -11,10 +11,13 @@ export default function NuevoClientePage() {
   const router = useRouter();
   const createCustomer = useCreateCustomer();
 
-  function handleSubmit(data: CustomerInput) {
-    createCustomer.mutate(data, {
-      onSuccess: () => router.push('/clientes'),
-    });
+  async function handleSubmit(data: CustomerInput) {
+    try {
+      await createCustomer.mutateAsync(data);
+      router.push('/clientes');
+    } catch {
+      // error shown via createCustomer.isError
+    }
   }
 
   return (

@@ -9,7 +9,7 @@ import type { ProductInput } from '@/validators/product.schema';
 
 export const PRODUCTS_KEY = ['products'] as const;
 
-const PRODUCTS_STALE = 60_000;
+const PRODUCTS_STALE = 0;
 const PRODUCTS_GC = 5 * 60_000;
 
 function useAuthReady() {
@@ -64,7 +64,7 @@ export function useProductStatsSummary(enabled = true) {
   return useQuery({
     queryKey: [...PRODUCTS_KEY, 'stats-summary'],
     queryFn: () => api.get<ApiListResponse<Product>>('/inventory?limit=100&page=1'),
-    staleTime: 5 * 60_000,
+    staleTime: 0,
     gcTime: 10 * 60_000,
     enabled: authReady && enabled,
   });
@@ -87,7 +87,7 @@ export function useLowStockProducts(limit = 50) {
   return useQuery({
     queryKey: [...PRODUCTS_KEY, 'low-stock', limit],
     queryFn: () => api.get<ApiListResponse<Product>>(`/inventory?lowStock=true&limit=${limit}`),
-    staleTime: 2 * 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
     enabled: authReady,
   });

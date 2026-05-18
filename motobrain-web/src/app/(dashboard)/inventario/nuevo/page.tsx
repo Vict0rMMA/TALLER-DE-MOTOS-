@@ -12,14 +12,14 @@ export default function NuevoProductoPage() {
   const router = useRouter();
   const createProduct = useCreateProduct();
 
-  function handleSubmit(data: ProductInput) {
-    createProduct.mutate(data, {
-      onSuccess: () => {
-        toast.success('Producto creado correctamente');
-        router.push('/inventario');
-      },
-      onError: (e) => toast.error('Error al crear producto', { description: (e as Error).message }),
-    });
+  async function handleSubmit(data: ProductInput) {
+    try {
+      await createProduct.mutateAsync(data);
+      toast.success('Producto creado correctamente');
+      router.push('/inventario');
+    } catch (e) {
+      toast.error('Error al crear producto', { description: (e as Error).message });
+    }
   }
 
   return (
