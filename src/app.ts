@@ -7,7 +7,14 @@ import { DomainError } from './domain/errors/DomainError';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? [
+        'http://localhost:3000',
+        process.env.PUBLIC_APP_URL ?? 'https://taller-mts.vercel.app',
+      ]
+    : true,
+}));
 app.use(json());
 
 app.get('/api/v1/health', (_req, res) => {
