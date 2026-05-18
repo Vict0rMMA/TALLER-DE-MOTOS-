@@ -2,13 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Receipt } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Receipt, MessageCircle, Send, CheckCheck, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ServiceStatusBadge } from '@/components/services/ServiceStatusBadge';
 import { ServicePhotos } from '@/components/services/ServicePhotos';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
 import { useService, useUpdateServiceStatus, useCloseService } from '@/hooks/use-services';
+import { useSendServiceNotification, useServiceNotifications } from '@/hooks/use-send-notification';
 import { SERVICE_TYPES, SERVICE_STATUSES } from '@/lib/constants';
 
 export default function ServicioDetailPage({ params }: { params: { id: string } }) {
@@ -17,6 +18,8 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
   const { data: service, isLoading } = useService(id);
   const updateStatus = useUpdateServiceStatus(id);
   const closeService = useCloseService(id);
+  const sendNotif = useSendServiceNotification(id);
+  const { data: notifHistory } = useServiceNotifications(id);
 
   if (isLoading) {
     return (
@@ -39,6 +42,19 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
   }
 
   const serviceLabel = SERVICE_TYPES.find((t) => t.id === service.type)?.label ?? service.type;
+
+  function handleNotify(templateId: string) {
+    sendNotif.mutate(
+      { templateId },
+      {
+        onSuccess: (res) => {
+          if (res.status === 'sent') toast.success('Mensaje enviado por WhatsApp');
+          else toast.warning('Notificación registrada pero WhatsApp no está conectado');
+        },
+        onError: (e) => toast.error('Error al enviar', { description: (e as Error).message }),
+      },
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -168,6 +184,64 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
               <CheckCircle className="h-4 w-4" /> Cerrar servicio
             </button>
           </div>
+        </div>
+      )}
+
+      {service.status !== 'cancelled' && (
+        <div className="glass-card p-5 space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+            <MessageCircle className="h-3.5 w-3.5" /> Notificar por WhatsApp
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {service.status === 'closed' && (
+              <button
+                onClick={() => handleNotify('service_completed')}
+                disabled={sendNotif.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent/10 border border-accent/30 px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent/20 disabled:opacity-40 transition-colors"
+              >
+                <Send className="h-3.5 w-3.5" /> Moto lista para recoger
+              </button>
+            )}
+            {service.status !== 'closed' && (
+              <button
+                onClick={() => handleNotify('service_update')}
+                disabled={sendNotif.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+              >
+                <Send className="h-3.5 w-3.5" /> Enviar actualización
+              </button>
+            )}
+            <button
+              onClick={() => handleNotify('payment_ready')}
+              disabled={sendNotif.isPending}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+            >
+              <Send className="h-3.5 w-3.5" /> Aviso de pago
+            </button>
+          </div>
+
+          {notifHistory && notifHistory.data.length > 0 && (
+            <div className="border-t border-border pt-3 space-y-2">
+              <p className="text-xs text-text-tertiary">Últimas notificaciones</p>
+              {notifHistory.data.slice(0, 4).map((n) => (
+                <div key={n.id} className="flex items-start justify-between text-xs gap-2">
+                  <div className="flex items-center gap-1.5 text-text-tertiary">
+                    {n.status === 'sent' ? (
+                      <CheckCheck className="h-3.5 w-3.5 text-success shrink-0" />
+                    ) : n.status === 'failed' ? (
+                      <XCircle className="h-3.5 w-3.5 text-error shrink-0" />
+                    ) : (
+                      <Clock className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    <span className="capitalize">{n.type.replace(/_/g, ' ')}</span>
+                  </div>
+                  <span className="text-text-tertiary shrink-0">
+                    {new Date(n.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -98,6 +98,7 @@ model Customer {
   reminders     Reminder[]
   consultations ClientConsultation[]
   appointments  WorkshopAppointment[]
+  notifications Notification[]
 
   @@index([workshopId])
   @@index([workshopId, cedula])
@@ -168,10 +169,11 @@ model Service {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  workshop   Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  motorcycle Motorcycle       @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
-  mechanic   User?            @relation("MechanicServices", fields: [mechanicId], references: [id])
-  products   ServiceProduct[]
+  workshop      Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  motorcycle    Motorcycle       @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+  mechanic      User?            @relation("MechanicServices", fields: [mechanicId], references: [id])
+  products      ServiceProduct[]
+  notifications Notification[]
 
   @@index([workshopId])
   @@index([motorcycleId])
@@ -305,4 +307,24 @@ model WorkshopAppointment {
 
   @@index([workshopId, status])
   @@index([customerId])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  workshopId String
+  customerId String
+  serviceId  String?
+  type       String
+  status     String   @default("pending")
+  phone      String
+  message    String   @db.Text
+  errorMsg   String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service  Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId])
+  @@index([customerId])
+  @@index([serviceId])
 }

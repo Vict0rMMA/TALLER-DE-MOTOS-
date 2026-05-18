@@ -12,6 +12,7 @@ import portalRoutes from './v1/portalRoutes';
 import catalogRoutes from './v1/catalogRoutes';
 import consultationRoutes from './v1/consultationRoutes';
 import appointmentRoutes from './v1/appointmentRoutes';
+import notificationRoutes from './v1/notificationRoutes';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/portal', portalRoutes);
 router.use('/catalog', catalogRoutes);
 router.use('/consultations', consultationRoutes);
 router.use('/appointments', appointmentRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;
