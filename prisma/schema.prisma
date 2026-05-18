@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  owner
+  mechanic
+  seller
+}
+
+enum ServiceStatus {
+  open
+  in_progress
+  closed
+  cancelled
+}
+
+enum ReminderStatus {
+  pending
+  sent
+  failed
+  cancelled
+}
+
+enum StockMovementType {
+  purchase
+  sale
+  adjustment
+  return
+  waste
+}
+
+enum ConsultationStatus {
+  pending
+  answered
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+model Workshop {
+  id        String   @id @default(cuid())
+  name      String
+  nit       String?  @unique
+  phone     String?
+  address   String?
+  plan      String   @default("free")
+  createdAt DateTime @default(now())
+
+  users          User[]
+  customers      Customer[]
+  products       Product[]
+  services       Service[]
+  repairCatalog  RepairCatalogItem[]
+  consultations  ClientConsultation[]
+  appointments   WorkshopAppointment[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  workshopId   String
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(mechanic)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  workshop              Workshop             @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  services              Service[]            @relation("MechanicServices")
+  stockMovements        StockMovement[]
+  consultationsAnswered ClientConsultation[] @relation("ConsultationResponder")
+  appointmentsConfirmed WorkshopAppointment[] @relation("AppointmentConfirmer")
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  workshopId    String
+  name          String
+  cedula        String?
+  phone         String
+  email         String?
+  optInWhatsapp Boolean  @default(false)
+  passwordHash  String?
+  portalActive  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  workshop      Workshop             @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  motorcycles   Motorcycle[]
+  reminders     Reminder[]
+  consultations ClientConsultation[]
+  appointments  WorkshopAppointment[]
+
+  @@index([workshopId])
+  @@index([workshopId, cedula])
+}
+
+model Motorcycle {
+  id         String   @id @default(cuid())
+  customerId String
+  placa      String
+  brand      String
+  model      String
+  cc         Int      @default(125)
+  year       Int?
+  kmCurrent  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  customer          Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  services          Service[]
+  diagnosisSessions DiagnosisSession[]
+  reminders         Reminder[]
+  consultations     ClientConsultation[]
+  appointments      WorkshopAppointment[]
+
+  @@unique([customerId, placa])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  workshopId    String
+  sku           String
+  name          String
+  brand         String?
+  category      String
+  compatibility String[] @default([])
+  stock         Int      @default(0)
+  stockMin      Int      @default(1)
+  cost          Decimal  @db.Decimal(14, 2)
+  price         Decimal  @db.Decimal(14, 2)
+  barcode       String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workshop       Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  serviceProducts ServiceProduct[]
+  stockMovements StockMovement[]
+
+  @@unique([workshopId, sku])
+  @@index([workshopId])
+}
+
+model Service {
+  id                  String        @id @default(cuid())
+  workshopId          String
+  motorcycleId        String
+  mechanicId          String?
+  type                String
+  description         String?
+  photos              String[]      @default([])
+  laborCost           Decimal       @default(0) @db.Decimal(14, 2)
+  totalCost           Decimal       @default(0) @db.Decimal(14, 2)
+  kmAtService         Int           @default(0)
+  nextMaintenanceKm   Int?
+  nextMaintenanceDate DateTime?
+  status              ServiceStatus @default(open)
+  serviceDate         DateTime      @default(now())
+  closedAt            DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  workshop   Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  motorcycle Motorcycle       @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+  mechanic   User?            @relation("MechanicServices", fields: [mechanicId], references: [id])
+  products   ServiceProduct[]
+
+  @@index([workshopId])
+  @@index([motorcycleId])
+}
+
+model ServiceProduct {
+  id        String  @id @default(cuid())
+  serviceId String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(14, 2)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([serviceId])
+}
+
+model DiagnosisSession {
+  id           String   @id @default(cuid())
+  workshopId   String
+  motorcycleId String?
+  symptoms     String[] @default([])
+  diagnosis    Json
+  urgency      String
+  confidence   Float
+  aiModel      String
+  createdAt    DateTime @default(now())
+
+  motorcycle Motorcycle? @relation(fields: [motorcycleId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId])
+  @@index([motorcycleId])
+}
+
+model Reminder {
+  id            String         @id @default(cuid())
+  customerId    String
+  motorcycleId  String
+  type          String
+  scheduledDate DateTime
+  status        ReminderStatus @default(pending)
+  channel       String         @default("whatsapp")
+  templateId    String?
+  attempts      Int            @default(0)
+  lastAttemptAt DateTime?
+  createdAt     DateTime       @default(now())
+
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  motorcycle Motorcycle @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledDate])
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  productId String
+  userId    String
+  type      StockMovementType
+  quantity  Int
+  reason    String?
+  createdAt DateTime          @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+}
+
+model RepairCatalogItem {
+  id          String   @id @default(cuid())
+  workshopId  String
+  name        String
+  category    String
+  description String?
+  minPrice    Decimal  @db.Decimal(14, 2)
+  maxPrice    Decimal  @db.Decimal(14, 2)
+  keywords    String[] @default([])
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([workshopId, category])
+}
+
+model ClientConsultation {
+  id               String             @id @default(cuid())
+  workshopId       String
+  customerId       String
+  motorcycleId     String?
+  symptom          String
+  aiResponse       String
+  aiMinPrice       Decimal?           @db.Decimal(14, 2)
+  aiMaxPrice       Decimal?           @db.Decimal(14, 2)
+  mechanicResponse String?
+  mechanicPrice    Decimal?           @db.Decimal(14, 2)
+  respondedAt      DateTime?
+  respondedBy      String?
+  status           ConsultationStatus @default(pending)
+  createdAt        DateTime           @default(now())
+
+  workshop   Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  motorcycle Motorcycle? @relation(fields: [motorcycleId], references: [id], onDelete: SetNull)
+  mechanic   User?       @relation("ConsultationResponder", fields: [respondedBy], references: [id])
+
+  @@index([workshopId, status])
+  @@index([customerId])
+}
+
+model WorkshopAppointment {
+  id            String            @id @default(cuid())
+  workshopId    String
+  customerId    String
+  motorcycleId  String?
+  notes         String?
+  preferredDate DateTime?
+  scheduledAt   DateTime?
+  status        AppointmentStatus @default(pending)
+  confirmedBy   String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  workshop   Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  motorcycle Motorcycle? @relation(fields: [motorcycleId], references: [id], onDelete: SetNull)
+  mechanic   User?       @relation("AppointmentConfirmer", fields: [confirmedBy], references: [id])
+
+  @@index([workshopId, status])
+  @@index([customerId])
+}

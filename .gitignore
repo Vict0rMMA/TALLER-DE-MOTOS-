@@ -1,7 +1,10 @@
 node_modules/
+dist/
+
 .env
 .env.*
 !.env.example
+motobrain-web/.env.local
 
 src/generated/prisma/
 
@@ -11,3 +14,13 @@ public/
 Thumbs.db
 *.log
 npm-debug.log*
+
+.vscode/
+.claude/
+.idea/
+
+.wwebjs_auth/
+.wwebjs_cache/
+motobrain-web/.next/
+motobrain-web/out/
+motobrain-web/node_modules/
