@@ -1,29 +1,5 @@
 [phases.setup]
-nixPkgs = [
-  "chromium",
-  "nss",
-  "freetype",
-  "harfbuzz",
-  "cacert",
-  "glib",
-  "dbus",
-  "atk",
-  "cups",
-  "libdrm",
-  "expat",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXdamage",
-  "xorg.libXext",
-  "xorg.libXfixes",
-  "xorg.libXrandr",
-  "xorg.libxcb",
-  "xorg.libXcursor",
-  "libxkbcommon",
-  "pango",
-  "cairo",
-  "alsa-lib",
-]
+nixPkgs = ["chromium"]
 
 [phases.install]
 cmds = ["npm ci", "npx prisma generate"]
