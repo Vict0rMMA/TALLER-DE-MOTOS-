@@ -152,7 +152,7 @@ export const closeService = async (req: Request, res: Response, next: NextFuncti
         if (customer?.optInWhatsapp && customer?.phone) {
           const wa = new WhatsAppWebService();
           const total = Number(result.totalCost ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
-          const receiptUrl = `${env.APP_URL}/recibo/${serviceId}`;
+          const receiptUrl = `${env.PUBLIC_APP_URL}/recibo/${serviceId}`;
           await wa.sendMessage(
             customer.phone,
             `✅ *${customer.name ?? 'Cliente'}*, tu moto *${row?.motorcycle?.placa ?? ''}* ya está lista en el taller.\n\n` +

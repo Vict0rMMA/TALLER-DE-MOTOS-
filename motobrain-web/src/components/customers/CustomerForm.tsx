@@ -1,8 +1,9 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { customerSchema, type CustomerInput } from '@/validators/customer.schema';
+import { ColombiaPhoneInput } from '@/components/ui/ColombiaPhoneInput';
 
 interface CustomerFormProps {
   defaultValues?: Partial<CustomerInput>;
@@ -40,6 +41,7 @@ export function CustomerForm({
 }: CustomerFormProps) {
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<CustomerInput>({
@@ -64,7 +66,19 @@ export function CustomerForm({
           <input {...register('cedula')} className={inputCls} placeholder="1234567890" />
         </Field>
         <Field label="Teléfono / WhatsApp *" error={errors.phone?.message}>
-          <input {...register('phone')} className={inputCls} placeholder="3001234567" />
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <ColombiaPhoneInput
+                id="customer-phone"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                aria-invalid={!!errors.phone}
+              />
+            )}
+          />
         </Field>
         <Field label="Email" error={errors.email?.message}>
           <input

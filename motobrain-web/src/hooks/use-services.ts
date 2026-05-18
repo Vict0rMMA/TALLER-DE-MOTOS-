@@ -25,7 +25,7 @@ export function useServices(filters: ServiceFilters = {}) {
   return useQuery({
     queryKey: [...SERVICES_KEY, filters],
     queryFn: () => api.get<ApiListResponse<Service>>(`/services?${params.toString()}`),
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
     placeholderData: (prev) => prev,
   });

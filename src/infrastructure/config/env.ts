@@ -18,5 +18,12 @@ export const env = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? '',
   SUPABASE_URL: process.env.SUPABASE_URL ?? '',
   SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ?? '',
-  APP_URL: process.env.APP_URL ?? 'http://localhost:3000',
+  /** Panel en local/LAN (opcional). */
+  APP_URL: (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/+$/, ''),
+  /** Front público para clientes (recibos por WhatsApp). No uses IP local. */
+  PUBLIC_APP_URL: (
+    process.env.PUBLIC_APP_URL ??
+    process.env.APP_URL ??
+    'https://taller-mts.vercel.app'
+  ).replace(/\/+$/, ''),
 };

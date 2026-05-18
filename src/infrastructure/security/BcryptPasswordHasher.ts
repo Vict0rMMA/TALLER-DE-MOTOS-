@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { PasswordHasher } from '../../domain/services/PasswordHasher';
 
 const SALT_ROUNDS = 10;

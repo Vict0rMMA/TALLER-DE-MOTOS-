@@ -11,10 +11,13 @@ export default function NuevoServicioPage() {
   const router = useRouter();
   const createService = useCreateService();
 
-  function handleSubmit(data: ServiceInput) {
-    createService.mutate(data, {
-      onSuccess: () => router.push('/servicios'),
-    });
+  async function handleSubmit(data: ServiceInput) {
+    try {
+      await createService.mutateAsync(data);
+      router.push('/servicios');
+    } catch {
+      // error shown via createService.isError
+    }
   }
 
   return (
