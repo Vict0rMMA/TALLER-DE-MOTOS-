@@ -176,7 +176,7 @@ export function Sidebar() {
         })}
 
         {!isCollapsed && <p className="sidebar-section-label">Herramientas</p>}
-        {TOOLS.map((item, i) => {
+        {TOOLS.map((item) => {
           const active = pathname.startsWith(item.href);
           const alertCount =
             'consultaBadge' in item && item.consultaBadge

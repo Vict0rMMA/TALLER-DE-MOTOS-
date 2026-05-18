@@ -91,6 +91,7 @@ export default function AnaliticaPage() {
   const { data: topProducts } = useTopProducts(8);
   const { data: revenueData } = useRevenueByMonth(6);
   const { token, user } = useAuthStore();
+  const [exporting, setExporting] = useState(false);
 
   if (user && user.role !== 'owner') {
     return (
@@ -103,7 +104,6 @@ export default function AnaliticaPage() {
       </div>
     );
   }
-  const [exporting, setExporting] = useState(false);
 
   async function handleExportXlsx() {
     setExporting(true);

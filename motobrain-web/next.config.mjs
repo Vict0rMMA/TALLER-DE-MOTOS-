@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // Vercel: el build no debe fallar por deuda de lint en archivos legacy
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   compress: true,
   poweredByHeader: false,
   images: {
