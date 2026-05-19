@@ -374,7 +374,7 @@ Evita depender solo de `db.*.supabase.co` si falla por IPv6.
 
 ## Producción
 
-1. **API** → Railway / Render / VPS · `npm run build` · `npm start` · `prisma migrate deploy`
+1. **API** → Vercel (serverless) / VPS · `npm run build` · `npm start` · `prisma migrate deploy`
 2. **Web** → Vercel · `NEXT_PUBLIC_API_URL=https://tu-api.com/api/v1`
 3. No commitees `.env` ni `.env.local`
 
