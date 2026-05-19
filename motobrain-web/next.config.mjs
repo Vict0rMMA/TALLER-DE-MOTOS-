@@ -4,7 +4,7 @@ const nextConfig = {
     const backendUrl = process.env.BACKEND_URL || 'http://185.166.212.43';
     return [
       {
-        source: '/api/vps/:path*',
+        source: '/backend/:path*',
         destination: `${backendUrl}/api/v1/:path*`,
       },
     ];
