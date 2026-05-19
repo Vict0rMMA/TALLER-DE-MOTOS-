@@ -11,7 +11,7 @@ let lastError: string | null = null;
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
-  '/run/current-system/sw/bin/chromium',   // Railway / Nix
+  '/run/current-system/sw/bin/chromium',   // Nix / Linux
   '/usr/bin/chromium-browser',             // Ubuntu/Debian
   '/usr/bin/chromium',                     // Alpine
   '/usr/bin/google-chrome',               // Google Chrome Linux
@@ -37,6 +37,7 @@ function buildClient(): Client {
     authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
     puppeteer: {
       headless: true,
+      protocolTimeout: 120000,
       ...(executablePath ? { executablePath } : {}),
       args: [
         '--no-sandbox',
@@ -46,11 +47,14 @@ function buildClient(): Client {
         '--disable-gpu',
         '--no-first-run',
         '--no-zygote',
+        '--single-process',
         '--disable-extensions',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
-        '--window-size=1280,800',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--window-size=800,600',
       ],
     },
   });
