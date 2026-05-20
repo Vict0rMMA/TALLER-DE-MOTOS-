@@ -8,12 +8,48 @@ let qrBase64: string | null = null;
 let isReady = false;
 let client: Client | null = null;
 let lastError: string | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+const RECONNECT_MS = 15_000;
+
+function clearReconnectTimer(): void {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function scheduleReconnect(): void {
+  if (process.env.ENABLE_WHATSAPP !== 'true' || !isWhatsAppRuntimeSupported()) return;
+  clearReconnectTimer();
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (client) return;
+    console.log('[WhatsApp] Reconectando automáticamente…');
+    client = buildClient();
+  }, RECONNECT_MS);
+}
+
+/** whatsapp-web.js + Puppeteer requieren proceso largo, disco y Chrome — no serverless (Vercel). */
+export function isWhatsAppRuntimeSupported(): boolean {
+  return process.env.VERCEL !== '1';
+}
+
+function assertWhatsAppRuntime(): void {
+  if (!isWhatsAppRuntimeSupported()) {
+    throw new Error(
+      'WhatsApp no puede ejecutarse en Vercel. Despliega la API en un VPS (Railway, Render, Fly.io) o en local con npm run dev.',
+    );
+  }
+}
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
   '/run/current-system/sw/bin/chromium',   // Nix / Linux
   '/usr/bin/chromium-browser',             // Ubuntu/Debian
-  '/usr/bin/chromium',                     // Alpine
+  '/usr/bin/chromium',                     // Alpine / Ubuntu snap
+  '/snap/bin/chromium',                    // Ubuntu 22.04 (snap)
+  '/usr/bin/google-chrome-stable',         // Google Chrome Linux
   '/usr/bin/google-chrome',               // Google Chrome Linux
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
@@ -47,7 +83,6 @@ function buildClient(): Client {
         '--disable-gpu',
         '--no-first-run',
         '--no-zygote',
-        '--single-process',
         '--disable-extensions',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
@@ -81,23 +116,28 @@ function buildClient(): Client {
     qrBase64 = null;
     lastError = 'auth_failure';
     client = null;
+    scheduleReconnect();
   });
 
   c.on('disconnected', (reason) => {
     console.warn('[WhatsApp] Desconectado:', reason);
     isReady = false;
     client = null;
+    scheduleReconnect();
   });
 
   c.initialize().catch((err) => {
     console.error('[WhatsApp] Error al inicializar:', err.message);
     lastError = err.message;
+    client = null;
+    scheduleReconnect();
   });
 
   return c;
 }
 
 function getClient(): Client {
+  assertWhatsAppRuntime();
   if (!client) {
     client = buildClient();
   }
@@ -105,14 +145,27 @@ function getClient(): Client {
 }
 
 export function getWhatsAppStatus() {
-  const enabled = process.env.ENABLE_WHATSAPP === 'true';
-  return { isReady, hasQr: !!qrBase64, qr: qrBase64, error: lastError, enabled };
+  const wantsEnabled = process.env.ENABLE_WHATSAPP === 'true';
+  const supported = isWhatsAppRuntimeSupported();
+  const enabled = wantsEnabled && supported;
+  return {
+    isReady: enabled ? isReady : false,
+    hasQr: enabled ? !!qrBase64 : false,
+    qr: enabled ? qrBase64 : null,
+    error: enabled ? lastError : null,
+    enabled,
+    wantsEnabled,
+    supported,
+    unsupportedReason: wantsEnabled && !supported ? 'vercel_serverless' : null,
+  };
 }
 
 export async function restartWhatsApp(deleteSession = false): Promise<void> {
   if (process.env.ENABLE_WHATSAPP !== 'true') {
     throw new Error('WhatsApp no está habilitado en este servidor');
   }
+  assertWhatsAppRuntime();
+  clearReconnectTimer();
   if (client) {
     try { await client.destroy(); } catch {}
     client = null;
