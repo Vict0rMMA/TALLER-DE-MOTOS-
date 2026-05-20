@@ -82,7 +82,6 @@ function buildClient(): Client {
         '--disable-accelerated-2d-canvas',
         '--disable-gpu',
         '--no-first-run',
-        '--no-zygote',
         '--disable-extensions',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
