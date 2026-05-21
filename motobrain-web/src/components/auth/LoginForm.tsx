@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useLogin } from '@/hooks/use-auth';
 import { portalApi } from '@/lib/portal-api-client';
+import { getApiMisconfigMessage, isApiMisconfigured } from '@/lib/api-base';
+import { buildPortalLoginPayload, formatPortalLoginError } from '@/lib/portal-login';
 import { usePortalAuthStore, type PortalCustomer } from '@/stores/portal-auth-store';
 import { AuthMarketingPanel } from '@/components/auth/AuthMarketingPanel';
 import { cn } from '@/lib/utils';
@@ -30,18 +32,23 @@ function LoginFormInner() {
   async function handleClientLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!phone.trim() || !clientCedula) return;
+    if (isApiMisconfigured()) {
+      setClientError(getApiMisconfigMessage());
+      return;
+    }
     setClientLoading(true);
     setClientError('');
     try {
-      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/login', {
-        phone: phone.trim(),
-        password: clientCedula.trim(),
-      });
+      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>(
+        '/login',
+        buildPortalLoginPayload(phone, clientCedula),
+      );
       setAuth(res.customer, res.token);
       const from = searchParams.get('from') ?? '/portal';
       router.replace(from.startsWith('/portal') ? from : '/portal');
     } catch (err) {
-      setClientError(err instanceof Error ? err.message : 'Celular o cédula incorrectos');
+      const raw = err instanceof Error ? err.message : 'Celular o cédula incorrectos';
+      setClientError(formatPortalLoginError(raw));
     } finally {
       setClientLoading(false);
     }

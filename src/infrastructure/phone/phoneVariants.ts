@@ -12,6 +12,7 @@ export function phoneLookupVariants(raw: string): string[] {
   if (digits.length === 10) {
     variants.add(`57${digits}`);
     variants.add(`+57${digits}`);
+    variants.add(`+57 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`);
   }
   if (digits.startsWith('57') && digits.length === 12) {
     variants.add(digits.slice(2));

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Wrench, Brain } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api-client';
+import { getApiMisconfigMessage, isApiMisconfigured } from '@/lib/api-base';
+import { buildPortalLoginPayload, formatPortalLoginError } from '@/lib/portal-login';
 import { usePortalAuthStore, type PortalCustomer } from '@/stores/portal-auth-store';
 
 export default function PortalLoginPage() {
@@ -12,26 +14,31 @@ export default function PortalLoginPage() {
   const { setAuth } = usePortalAuthStore();
 
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [cedula, setCedula] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!phone.trim() || !password) return;
+    if (!phone.trim() || !cedula) return;
+    if (isApiMisconfigured()) {
+      setError(getApiMisconfigMessage());
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/login', {
-        phone: phone.trim(),
-        password,
-      });
+      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>(
+        '/login',
+        buildPortalLoginPayload(phone, cedula),
+      );
       setAuth(res.customer, res.token);
       const from = searchParams.get('from') ?? '/portal';
       router.replace(from);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      const raw = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      setError(formatPortalLoginError(raw));
     } finally {
       setLoading(false);
     }
@@ -74,14 +81,15 @@ export default function PortalLoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-text-secondary">Contraseña</label>
+              <label className="block text-xs font-medium text-text-secondary">Cédula</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Tu contraseña"
-                  autoComplete="current-password"
+                  value={cedula}
+                  onChange={(e) => setCedula(e.target.value)}
+                  placeholder="Tu número de cédula"
+                  autoComplete="off"
+                  inputMode="numeric"
                   className="w-full rounded-lg border border-border bg-bg-elevated px-3.5 py-2.5 pr-10 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
                 />
                 <button

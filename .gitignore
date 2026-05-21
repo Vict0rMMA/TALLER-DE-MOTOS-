@@ -8,7 +8,8 @@ motobrain-web/.env.local
 
 src/generated/prisma/
 
-public/
+# Solo /public en la raíz del repo (no ignora motobrain-web/public)
+/public/
 
 .DS_Store
 Thumbs.db

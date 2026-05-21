@@ -212,6 +212,9 @@ pm2 restart motobrain-api
 | `Killed` / reinicios | Poca RAM → confirma swap (`free -h`) |
 | Front no conecta | API debe ser **https**; revisa CORS y `PUBLIC_APP_URL` |
 | QR en Vercel pero no en VPS | `NEXT_PUBLIC_API_URL` sigue apuntando a Vercel API |
+| Logo Colombia roto en Vercel | Redeploy del front (bandera en SVG, ya no usa `/public`) |
+| Cliente: "contraseña incorrectos" | API vieja en VPS → `git pull`, `npm run build`, `pm2 restart` |
+| Cliente no entra | En el taller: **Activar portal** en el cliente; login = celular + **cédula** |
 
 ---
 
