@@ -1,24 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
 import prisma from '../../infrastructure/prisma/client';
 import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { DomainError } from '../../domain/errors/DomainError';
+import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
+import { normalizeCedula } from '../../infrastructure/phone/cedula';
 
 export const portalLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { phone, password } = req.body as { phone?: string; password?: string };
-    if (!phone || !password) return next(new DomainError('Teléfono y contraseña requeridos', 400));
+    if (!phone || !password) return next(new DomainError('Teléfono y cédula requeridos', 400));
+
+    const variants = phoneLookupVariants(phone);
+    if (!variants.length) return next(new DomainError('Ingresa un número de celular válido', 400));
 
     const customer = await prisma.customer.findFirst({
-      where: { phone: phone.trim(), portalActive: true },
+      where: { portalActive: true, phone: { in: variants } },
     });
 
-    if (!customer || !customer.passwordHash) {
-      return next(new DomainError('Teléfono o contraseña incorrectos', 401));
+    if (!customer?.cedula) {
+      return next(new DomainError('Teléfono o cédula incorrectos', 401));
     }
 
-    const valid = await bcrypt.compare(password, customer.passwordHash);
-    if (!valid) return next(new DomainError('Teléfono o contraseña incorrectos', 401));
+    const inputCedula = normalizeCedula(password);
+    const storedCedula = normalizeCedula(customer.cedula);
+    if (!inputCedula || inputCedula !== storedCedula) {
+      return next(new DomainError('Teléfono o cédula incorrectos', 401));
+    }
 
     const token = signCustomerToken({
       customerId: customer.id,
@@ -277,23 +284,21 @@ export const portalScheduleRevision = async (req: Request, res: Response, next: 
 export const enablePortal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const customerId = String(req.params.customerId);
-    const { password } = req.body as { password?: string };
-    if (!password || password.length < 6) {
-      return next(new DomainError('La contraseña debe tener al menos 6 caracteres', 400));
-    }
 
     const customer = await prisma.customer.findFirst({
       where: { id: customerId, workshopId: req.workshopId },
     });
     if (!customer) return next(new DomainError('Cliente no encontrado', 404));
+    if (!customer.cedula?.trim()) {
+      return next(new DomainError('Registra la cédula del cliente antes de activar el portal', 400));
+    }
 
-    const passwordHash = await bcrypt.hash(password, 10);
     await prisma.customer.update({
       where: { id: customerId },
-      data: { passwordHash, portalActive: true },
+      data: { portalActive: true, passwordHash: null },
     });
 
-    res.json({ ok: true, message: 'Portal activado. El cliente ya puede iniciar sesión.' });
+    res.json({ ok: true, message: 'Portal activado. El cliente entra con su celular y cédula.' });
   } catch (err) {
     next(err);
   }

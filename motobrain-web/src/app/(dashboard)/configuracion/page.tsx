@@ -296,6 +296,66 @@ function AddUserForm({ workshopId, onSuccess }: { workshopId: string; onSuccess:
   );
 }
 
+type WhatsAppDisabledReason = 'env_disabled' | 'vercel_serverless';
+
+function WhatsAppDisabledPanel({ reason }: { reason: WhatsAppDisabledReason }) {
+  if (reason === 'vercel_serverless') {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+          <WifiOff className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-warning">No compatible con Vercel</p>
+            <p className="text-xs text-text-tertiary mt-1 leading-relaxed">
+              El bot necesita un proceso persistente con Chrome. Despliega la API en Railway, Render, Fly.io o un VPS con{' '}
+              <code className="rounded bg-bg-elevated px-1 py-0.5 text-[11px]">ENABLE_WHATSAPP=true</code>.
+              El panel puede seguir en Vercel usando <code className="rounded bg-bg-elevated px-1 py-0.5 text-[11px]">NEXT_PUBLIC_API_URL</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-bg-elevated px-4 py-3">
+        <WifiOff className="h-5 w-5 text-text-tertiary flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-text-secondary">WhatsApp desactivado en la API</p>
+          <p className="text-xs text-text-tertiary mt-1">
+            El panel está bien; falta activar el bot en el servidor donde corre <strong>npm run dev</strong> (puerto 4000).
+          </p>
+        </div>
+      </div>
+
+      <ol className="space-y-2.5 rounded-lg border border-border/80 bg-bg-elevated/50 px-4 py-3 text-sm text-text-secondary list-none">
+        <li className="flex gap-2.5">
+          <span className="font-bold text-accent min-w-[18px]">1.</span>
+          <span>
+            En la raíz del proyecto, archivo <code className="rounded bg-bg-primary px-1 text-[11px]">.env</code>:{' '}
+            <code className="rounded bg-bg-primary px-1 text-[11px]">ENABLE_WHATSAPP=true</code>
+          </span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="font-bold text-accent min-w-[18px]">2.</span>
+          <span>
+            Reinicia la API (terminal raíz): detén con Ctrl+C y ejecuta <code className="rounded bg-bg-primary px-1 text-[11px]">npm run dev</code>
+          </span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="font-bold text-accent min-w-[18px]">3.</span>
+          <span>Instala Google Chrome en Windows (o define <code className="rounded bg-bg-primary px-1 text-[11px]">CHROME_PATH</code> en <code className="rounded bg-bg-primary px-1 text-[11px]">.env</code>)</span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="font-bold text-accent min-w-[18px]">4.</span>
+          <span>Pulsa <strong>Actualizar</strong> aquí — en unos segundos aparecerá el código QR</span>
+        </li>
+      </ol>
+    </div>
+  );
+}
+
 function WhatsAppSection() {
   const { data, isLoading, refetch, isFetching } = useWhatsAppStatus({ poll: true, pollMs: 5_000 });
   const [restarting, setRestarting] = useState(false);
@@ -329,7 +389,7 @@ function WhatsAppSection() {
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
-          {!data?.isReady && (
+          {data?.enabled && !data?.isReady && (
             <button
               onClick={() => handleRestart(false)}
               disabled={restarting}
@@ -353,16 +413,9 @@ function WhatsAppSection() {
       {isLoading ? (
         <div className="h-16 animate-pulse rounded-lg bg-bg-elevated" />
       ) : data?.enabled === false ? (
-        <div className="flex items-start gap-3 rounded-lg border border-border bg-bg-elevated px-4 py-3">
-          <WifiOff className="h-5 w-5 text-text-tertiary flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-text-secondary">WhatsApp no disponible en este servidor</p>
-            <p className="text-xs text-text-tertiary mt-1">
-              El bot de WhatsApp requiere un servidor local con Chrome instalado.
-              En producción (Vercel) esta función está desactivada.
-            </p>
-          </div>
-        </div>
+        <WhatsAppDisabledPanel
+          reason={data?.disabledReason ?? data?.unsupportedReason ?? 'env_disabled'}
+        />
       ) : data?.isReady ? (
         <div className="space-y-3">
           <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3">

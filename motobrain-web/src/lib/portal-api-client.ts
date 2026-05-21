@@ -39,14 +39,20 @@ class PortalApiClient {
       clearTimeout(timeout);
     }
 
-    if (res.status === 401) {
-      usePortalAuthStore.getState().logout();
-      throw new PortalApiError('Sesión expirada', 401);
-    }
-
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
-      throw new PortalApiError(body.error ?? body.message ?? `HTTP ${res.status}`, res.status);
+      const msg = body.error ?? body.message ?? `HTTP ${res.status}`;
+      const isPublicPortalAuth =
+        endpoint === '/login' ||
+        endpoint.startsWith('/auth/otp/');
+      if (res.status === 401) {
+        if (token && !isPublicPortalAuth) {
+          usePortalAuthStore.getState().logout();
+          throw new PortalApiError('Sesión expirada', 401);
+        }
+        throw new PortalApiError(msg, 401);
+      }
+      throw new PortalApiError(msg, res.status);
     }
 
     if (res.status === 204) return undefined as T;

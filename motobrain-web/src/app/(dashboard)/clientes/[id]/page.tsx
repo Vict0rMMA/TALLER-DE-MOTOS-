@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Smartphone, Eye, EyeOff, Check, X, ShieldCheck, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Smartphone, ShieldCheck, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -13,18 +13,21 @@ import { useMotorcyclesByCustomer } from '@/hooks/use-motorcycles';
 import { api } from '@/lib/api-client';
 import type { CustomerInput } from '@/validators/customer.schema';
 
-function PortalAccessSection({ customerId, portalActive }: { customerId: string; portalActive: boolean }) {
+function PortalAccessSection({
+  customerId,
+  portalActive,
+  hasCedula,
+}: {
+  customerId: string;
+  portalActive: boolean;
+  hasCedula: boolean;
+}) {
   const qc = useQueryClient();
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showForm, setShowForm] = useState(false);
 
   const enable = useMutation({
-    mutationFn: () => api.put(`/portal/enable/${customerId}`, { password }),
+    mutationFn: () => api.put(`/portal/enable/${customerId}`, {}),
     onSuccess: () => {
-      toast.success('Portal activado', { description: `El cliente puede ingresar con su teléfono y esta contraseña.` });
-      setShowForm(false);
-      setPassword('');
+      toast.success('Portal activado', { description: 'El cliente entra con su celular y cédula.' });
       qc.invalidateQueries({ queryKey: ['customer', customerId] });
     },
     onError: (e) => toast.error('Error', { description: (e as Error).message }),
@@ -48,7 +51,11 @@ function PortalAccessSection({ customerId, portalActive }: { customerId: string;
         <div>
           <h2 className="font-semibold text-text-primary">Portal del cliente</h2>
           <p className="text-xs text-text-tertiary mt-0.5">
-            {portalActive ? 'El cliente puede ver sus servicios en /portal' : 'Sin acceso al portal aún'}
+            {portalActive
+              ? 'Acceso con celular + cédula en /portal'
+              : hasCedula
+                ? 'Activa el portal para que el cliente entre con su cédula'
+                : 'Registra la cédula del cliente para activar el portal'}
           </p>
         </div>
         <span className={`ml-auto rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${portalActive ? 'border-success/30 bg-success/10 text-success' : 'border-border text-text-tertiary'}`}>
@@ -57,69 +64,26 @@ function PortalAccessSection({ customerId, portalActive }: { customerId: string;
       </div>
 
       {portalActive ? (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary hover:border-accent hover:text-accent transition-colors"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" /> Cambiar contraseña
-          </button>
-          <button
-            onClick={() => { if (confirm('¿Desactivar el acceso al portal?')) disable.mutate(); }}
-            disabled={disable.isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/5 transition-colors disabled:opacity-50"
-          >
-            <ShieldOff className="h-3.5 w-3.5" /> Desactivar acceso
-          </button>
-        </div>
+        <button
+          onClick={() => { if (confirm('¿Desactivar el acceso al portal?')) disable.mutate(); }}
+          disabled={disable.isPending}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/5 transition-colors disabled:opacity-50"
+        >
+          <ShieldOff className="h-3.5 w-3.5" /> Desactivar acceso
+        </button>
       ) : (
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-bg-primary hover:opacity-90 transition-opacity"
+          onClick={() => enable.mutate()}
+          disabled={enable.isPending || !hasCedula}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-bg-primary hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          <ShieldCheck className="h-3.5 w-3.5" /> Activar portal
+          {enable.isPending ? (
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-bg-primary border-t-transparent" />
+          ) : (
+            <ShieldCheck className="h-3.5 w-3.5" />
+          )}
+          Activar portal
         </button>
-      )}
-
-      {showForm && (
-        <div className="space-y-3 border-t border-border pt-4">
-          <p className="text-xs text-text-tertiary">
-            El cliente usará su <strong className="text-text-secondary">teléfono</strong> + esta contraseña para entrar a{' '}
-            <code className="text-accent bg-accent/10 px-1 rounded text-[11px]">/portal</code>
-          </p>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 pr-9 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-              >
-                {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-            <button
-              onClick={() => enable.mutate()}
-              disabled={enable.isPending || password.length < 6}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-bg-primary disabled:opacity-50 hover:opacity-90 transition-opacity"
-            >
-              {enable.isPending ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-bg-primary border-t-transparent" /> : <Check className="h-3.5 w-3.5" />}
-              Guardar
-            </button>
-            <button
-              onClick={() => { setShowForm(false); setPassword(''); }}
-              className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-text-secondary hover:bg-bg-elevated transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
       )}
     </div>
   );
@@ -201,7 +165,11 @@ export default function ClienteDetailPage({ params }: { params: { id: string } }
         />
       </div>
 
-      <PortalAccessSection customerId={id} portalActive={customer.portalActive ?? false} />
+      <PortalAccessSection
+        customerId={id}
+        portalActive={customer.portalActive ?? false}
+        hasCedula={!!customer.cedula?.trim()}
+      />
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-tertiary">

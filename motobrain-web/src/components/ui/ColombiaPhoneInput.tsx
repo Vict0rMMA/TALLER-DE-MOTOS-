@@ -6,6 +6,7 @@ import {
   toColombiaE164,
 } from '@/lib/phone';
 import { cn } from '@/lib/utils';
+import { ColombiaFlag } from '@/components/ui/ColombiaFlag';
 
 export interface ColombiaPhoneInputProps {
   id?: string;
@@ -48,9 +49,7 @@ export function ColombiaPhoneInput({
           className="flex shrink-0 items-center gap-2 border-r border-border bg-bg-tertiary px-3 py-2"
           aria-hidden
         >
-          <span className="text-base leading-none" title="Colombia">
-            🇨🇴
-          </span>
+          <ColombiaFlag size={22} className="shrink-0 rounded-sm ring-1 ring-white/10" />
           <span className="text-sm font-semibold text-text-primary tabular-nums">+57</span>
         </div>
         <input

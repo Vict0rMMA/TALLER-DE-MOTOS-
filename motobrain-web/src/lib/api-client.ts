@@ -52,9 +52,21 @@ class ApiClient {
     }
 
     if (res.status === 401) {
-      clearAuthCookie();
-      useAuthStore.getState().logout();
-      throw new ApiError('Sesión expirada', 401);
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+      const msg = body.error ?? body.message ?? 'Credenciales inválidas';
+      const isPublicAuth =
+        endpoint.startsWith('/auth/login') ||
+        endpoint.startsWith('/auth/signup') ||
+        endpoint.startsWith('/auth/register');
+      if (token && !isPublicAuth) {
+        clearAuthCookie();
+        useAuthStore.getState().logout();
+        throw new ApiError('Sesión expirada', 401);
+      }
+      throw new ApiError(msg, 401);
     }
 
     if (!res.ok) {

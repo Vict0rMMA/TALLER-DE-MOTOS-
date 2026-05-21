@@ -44,7 +44,7 @@ export function KPICard({ title, value, icon: Icon, variant = 'default', sub }: 
   const isPrimitive = typeof value === 'string' || typeof value === 'number';
 
   return (
-    <div className="relative min-h-[92px] overflow-hidden rounded-xl border border-[--border] bg-[--bg-card] p-3 pr-10 transition-colors hover:border-[--border-hover] sm:min-h-[100px] sm:p-4 sm:pr-4">
+    <div className="relative min-h-[92px] overflow-hidden rounded-xl border border-[--border] bg-[--bg-card] p-3 pr-10 shadow-sm transition-colors hover:border-[--border-hover] sm:min-h-[100px] sm:p-4 sm:pr-4">
       <span className={cn('absolute inset-x-0 top-0 h-[2px]', v.bar)} />
 
       <div

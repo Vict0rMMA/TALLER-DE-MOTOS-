@@ -1,0 +1,24 @@
+# Alternativa a PM2: servicio systemd (copiar a /etc/systemd/system/)
+#
+#   sudo cp deploy/motobrain-api.service /etc/systemd/system/
+#   sudo nano /etc/systemd/system/motobrain-api.service  # ajusta User y WorkingDirectory
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable motobrain-api
+#   sudo systemctl start motobrain-api
+
+[Unit]
+Description=MotoBrain API + WhatsApp
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/motobrain
+EnvironmentFile=/opt/motobrain/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/motobrain/dist/index.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

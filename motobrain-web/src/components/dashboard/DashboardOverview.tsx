@@ -33,11 +33,12 @@ function greeting() {
 }
 
 function todayFull() {
-  return new Date().toLocaleDateString('es-CO', {
+  const raw = new Date().toLocaleDateString('es-CO', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; cls: string }> = {
@@ -124,19 +125,19 @@ export function DashboardOverview() {
   const lowStock = lowStockData?.data ?? [];
   const recentServices = recentData?.data ?? [];
 
+  const firstName = user?.name?.split(' ')[0] ?? 'bienvenido';
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+    <div className="dashboard-shell space-y-6">
+      <div className="dashboard-welcome flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-[--text-primary] sm:text-[22px]">
-            {greeting()}, {user?.name?.split(' ')[0] ?? 'bienvenido'} 👋
+          <p className="text-xs font-medium uppercase tracking-wider text-text-tertiary">Panel del taller</p>
+          <h1 className="dashboard-welcome-title mt-1">
+            {greeting()}, {firstName}
           </h1>
-          <p className="mt-0.5 text-xs capitalize text-[--text-tertiary] sm:text-[13px]">{todayFull()}</p>
+          <p className="dashboard-welcome-date">{todayFull()}</p>
         </div>
-        <Link
-          href="/servicios/nuevo"
-          className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[--accent] px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto"
-        >
+        <Link href="/servicios/nuevo" className="btn-primary w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Nuevo servicio
         </Link>
@@ -181,28 +182,24 @@ export function DashboardOverview() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3 min-[400px]:gap-3">
+      <div className="dashboard-quick-grid">
         {[
-          { href: '/clientes/nuevo', icon: Users, label: 'Nuevo cliente', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { href: '/diagnostico', icon: Brain, label: 'Diagnóstico IA', color: 'text-violet-400', bg: 'bg-violet-500/10' },
-          { href: '/analitica', icon: BarChart3, label: 'Ver analítica', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-        ].map(({ href, icon: Icon, label, color, bg }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center gap-2.5 rounded-xl border border-[--border] bg-[--bg-card] px-3 py-3 transition-all hover:border-[--border-hover] hover:bg-[--bg-elevated] min-[400px]:gap-3 min-[400px]:px-4 min-[400px]:py-3.5"
-          >
-            <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', bg)}>
-              <Icon className={cn('h-4 w-4', color)} strokeWidth={1.75} />
-            </div>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-[--text-secondary]">{label}</span>
-            <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-[--text-tertiary] min-[400px]:block" />
+          { href: '/clientes/nuevo', icon: Users, label: 'Nuevo cliente' },
+          { href: '/diagnostico', icon: Brain, label: 'Diagnóstico' },
+          { href: '/analitica', icon: BarChart3, label: 'Analítica' },
+        ].map(({ href, icon: Icon, label }) => (
+          <Link key={href} href={href} className="dashboard-quick-link group">
+            <span className="dashboard-quick-link-icon">
+              <Icon className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0 flex-1 truncate">{label}</span>
+            <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-text-tertiary opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
           </Link>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-[--border] bg-[--bg-card]">
+        <div className="glass-card overflow-hidden">
           <PanelHeader icon={Clock} title="Servicios recientes" href="/servicios" linkLabel="Ver todos" />
 
           <div className="dashboard-list">
@@ -220,7 +217,7 @@ export function DashboardOverview() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[--border] bg-[--bg-card]">
+        <div className="glass-card overflow-hidden">
           <PanelHeader
             icon={AlertTriangle}
             iconClassName={lowStock.length > 0 ? 'text-yellow-400' : 'text-[--text-tertiary]'}

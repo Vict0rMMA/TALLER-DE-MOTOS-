@@ -3,6 +3,7 @@ import prisma from '../../infrastructure/prisma/client';
 import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
 import { DomainError } from '../../domain/errors/DomainError';
+import { normalizePhoneDigits, phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 
 interface OtpEntry { code: string; customerId: string; expiresAt: number }
 const otpStore = new Map<string, OtpEntry>();
@@ -11,26 +12,16 @@ function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function normalizePhone(raw: string) {
-  return raw.replace(/\D/g, '');
-}
-
 export const requestOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { phone } = req.body as { phone?: string };
     if (!phone?.trim()) return next(new DomainError('Ingresa tu número de celular', 400));
 
-    const digits = normalizePhone(phone.trim());
+    const variants = phoneLookupVariants(phone);
+    if (!variants.length) return next(new DomainError('Ingresa tu número de celular', 400));
 
     const customer = await prisma.customer.findFirst({
-      where: {
-        portalActive: true,
-        OR: [
-          { phone: digits },
-          { phone: `+57${digits}` },
-          { phone: digits.startsWith('57') ? digits.slice(2) : `57${digits}` },
-        ],
-      },
+      where: { portalActive: true, phone: { in: variants } },
     });
 
     if (!customer) {
@@ -45,6 +36,7 @@ export const requestOtp = async (req: Request, res: Response, next: NextFunction
 
     try {
       const wa = new WhatsAppWebService();
+      const digits = normalizePhoneDigits(phone);
       const to = digits.startsWith('57') ? digits : `57${digits}`;
       await wa.sendMessage(to, `🔐 Tu código de acceso a MotoBrain es: *${code}*\n\nVálido por 5 minutos. No lo compartas con nadie.`);
     } catch (waErr) {

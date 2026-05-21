@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ColombiaFlag } from '@/components/ui/ColombiaFlag';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bike,
@@ -421,7 +422,8 @@ export default function PortalDashboard() {
         </div>
         <p className="text-xs text-zinc-600">© 2026 MotoBrain AI</p>
         <p className="flex items-center gap-1.5 text-xs text-zinc-500">
-          Hecho con <Heart className="h-3 w-3 fill-red-500/80 text-red-500/80" /> en Colombia 🇨🇴
+          Hecho con <Heart className="h-3 w-3 fill-red-500/80 text-red-500/80" /> en Colombia
+          <ColombiaFlag size={18} className="inline-block" />
         </p>
       </footer>
     </div>

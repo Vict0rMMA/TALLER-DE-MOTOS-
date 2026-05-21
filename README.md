@@ -370,12 +370,33 @@ Evita depender solo de `db.*.supabase.co` si falla por IPv6.
 
 > La carpeta `.wwebjs_auth/` es sesión local — **no la subas a git**.
 
+### No usar Vercel para el bot
+
+`whatsapp-web.js` abre Chrome con Puppeteer y mantiene la sesión en disco. **En Vercel el QR puede verse pero no vincula**: cada petición es una función efímera, sin Chrome estable ni carpeta persistente.
+
+| Componente | Dónde desplegar |
+|------------|-----------------|
+| **motobrain-web** (panel) | Vercel ✅ |
+| **API + WhatsApp** | Local, Railway, Render, Fly.io, VPS ✅ |
+| **API + WhatsApp** | Vercel ❌ |
+
+En Vercel deja `ENABLE_WHATSAPP` sin definir o en `false`. En Railway/Render: `ENABLE_WHATSAPP=true`, `npm run build && npm start`, y en el front `NEXT_PUBLIC_API_URL=https://tu-api.railway.app/api/v1`.
+
+### VPS (recomendado si ya tienes servidor)
+
+Guía paso a paso: **[docs/DEPLOY-VPS.md](docs/DEPLOY-VPS.md)** · script inicial: `bash scripts/vps-setup.sh`
+
+| Dónde | Qué |
+|-------|-----|
+| VPS Ubuntu | API + `ENABLE_WHATSAPP=true` + PM2 |
+| Vercel | Solo `motobrain-web` → `NEXT_PUBLIC_API_URL=https://api.tudominio.com/api/v1` |
+
 ---
 
 ## Producción
 
-1. **API** → Vercel (serverless) / VPS · `npm run build` · `npm start` · `prisma migrate deploy`
-2. **Web** → Vercel · `NEXT_PUBLIC_API_URL=https://tu-api.com/api/v1`
+1. **API + WhatsApp** → VPS (o Railway) · `npm run build` · `pm2 start ecosystem.config.cjs` · `prisma migrate deploy`
+2. **Web** → Vercel · `NEXT_PUBLIC_API_URL=https://api.tudominio.com/api/v1` (**HTTPS**)
 3. No commitees `.env` ni `.env.local`
 
 ---

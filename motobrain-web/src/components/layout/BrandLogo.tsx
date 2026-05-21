@@ -51,8 +51,8 @@ function LogoWordmark({ compact }: { compact?: boolean }) {
       <span className="font-semibold tracking-tight text-[--text-primary]">
         Moto<span className="text-[--accent]">Brain</span>
       </span>
-      <span className="inline-flex items-center rounded-md bg-[--accent]/10 border border-[--accent]/20 px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide text-[--accent]">
-        AI
+      <span className="hidden sm:inline-flex items-center rounded-md border border-border bg-bg-elevated px-1.5 py-0.5 text-[10px] font-medium leading-none text-text-tertiary">
+        Taller
       </span>
     </span>
   );

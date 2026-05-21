@@ -18,6 +18,11 @@ interface WhatsAppStatus {
   qr: string | null;
   error: string | null;
   enabled: boolean;
+  wantsEnabled?: boolean;
+  supported?: boolean;
+  disabledReason?: 'env_disabled' | 'vercel_serverless' | null;
+  /** @deprecated use disabledReason */
+  unsupportedReason?: 'vercel_serverless' | null;
 }
 
 interface UpcomingService {

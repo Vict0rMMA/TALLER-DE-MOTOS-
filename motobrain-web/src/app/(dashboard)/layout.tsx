@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <MobileSidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <TopBar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6 md:pb-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-5 md:p-7 md:pb-7">
           {children}
         </main>
         <MobileNav />

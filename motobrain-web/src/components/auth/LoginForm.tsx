@@ -22,44 +22,26 @@ function LoginFormInner() {
   const login = useLogin();
 
   const [phone, setPhone] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpStep, setOtpStep] = useState<'phone' | 'code'>('phone');
-  const [pendingCustomerId, setPendingCustomerId] = useState('');
+  const [clientCedula, setClientCedula] = useState('');
   const [clientLoading, setClientLoading] = useState(false);
   const [clientError, setClientError] = useState('');
   const { setAuth } = usePortalAuthStore();
 
-  async function handleRequestOtp(e: React.FormEvent) {
+  async function handleClientLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!phone.trim()) return;
+    if (!phone.trim() || !clientCedula) return;
     setClientLoading(true);
     setClientError('');
     try {
-      const res = await portalApi.post<{ customerId: string }>('/auth/otp/request', { phone: phone.trim() });
-      setPendingCustomerId(res.customerId);
-      setOtpStep('code');
-    } catch (err) {
-      setClientError(err instanceof Error ? err.message : 'No se pudo enviar el código');
-    } finally {
-      setClientLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (!otpCode.trim()) return;
-    setClientLoading(true);
-    setClientError('');
-    try {
-      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/auth/otp/verify', {
-        customerId: pendingCustomerId,
-        code: otpCode.trim(),
+      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/login', {
+        phone: phone.trim(),
+        password: clientCedula.trim(),
       });
       setAuth(res.customer, res.token);
       const from = searchParams.get('from') ?? '/portal';
       router.replace(from.startsWith('/portal') ? from : '/portal');
     } catch (err) {
-      setClientError(err instanceof Error ? err.message : 'Código incorrecto');
+      setClientError(err instanceof Error ? err.message : 'Celular o cédula incorrectos');
     } finally {
       setClientLoading(false);
     }
@@ -68,11 +50,9 @@ function LoginFormInner() {
   const sharedProps = {
     tab, setTab, login,
     phone, setPhone,
-    otpCode,
-    otpStep, setOtpStep,
-    clientLoading, clientError,
-    handleRequestOtp, handleVerifyOtp,
-    setOtpCode: (v: string) => { setOtpCode(v); setClientError(''); },
+    clientCedula, setClientCedula,
+    clientLoading, clientError, setClientError,
+    handleClientLogin,
   };
 
   return (
@@ -110,7 +90,7 @@ function LoginFormInner() {
           {tab === 'taller' && (
             <div className="mt-6 flex gap-4">
               {[
-                { icon: Brain, label: 'Diagnóstico IA' },
+                { icon: Brain, label: 'Diagnóstico' },
                 { icon: BarChart3, label: 'Analítica' },
                 { icon: MessageSquare, label: 'Consultas' },
               ].map(({ icon: Icon, label }) => (
@@ -145,23 +125,20 @@ interface LoginCardProps {
   login: ReturnType<typeof useLogin>;
   phone: string;
   setPhone: (v: string) => void;
-  otpCode: string;
-  otpStep: 'phone' | 'code';
-  setOtpStep: (s: 'phone' | 'code') => void;
+  clientCedula: string;
+  setClientCedula: (v: string) => void;
   clientLoading: boolean;
   clientError: string;
-  handleRequestOtp: (e: React.FormEvent) => void;
-  handleVerifyOtp: (e: React.FormEvent) => void;
-  setOtpCode: (v: string) => void;
+  setClientError: (v: string) => void;
+  handleClientLogin: (e: React.FormEvent) => void;
 }
 
 function LoginCard({
   tab, setTab, login,
   phone, setPhone,
-  otpCode, otpStep, setOtpStep,
-  clientLoading, clientError,
-  handleRequestOtp, handleVerifyOtp,
-  setOtpCode,
+  clientCedula, setClientCedula,
+  clientLoading, clientError, setClientError,
+  handleClientLogin,
 }: LoginCardProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -191,9 +168,9 @@ function LoginCard({
         <h2 className="text-[1.35rem] font-bold tracking-tight text-white">
           {tab === 'taller' ? 'Iniciar sesión' : 'Accede a tu portal'}
         </h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          {tab === 'taller' ? 'Ingresa con tu cuenta del taller' : 'Te enviamos un código por WhatsApp'}
-        </p>
+        {tab === 'taller' && (
+          <p className="mt-1 text-sm text-zinc-500">Ingresa con tu cuenta del taller</p>
+        )}
       </div>
 
       <div className="auth-tabs mb-6" role="tablist">
@@ -284,7 +261,7 @@ function LoginCard({
           </p>
 
           <div className="flex flex-wrap justify-center gap-2 pt-2">
-            {['Diagnóstico IA', 'Analítica', 'WhatsApp', 'Portal cliente'].map((f) => (
+            {['Diagnóstico', 'Analítica', 'WhatsApp', 'Portal cliente'].map((f) => (
               <span key={f} className="flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-900/60 px-2.5 py-0.5 text-[10px] text-zinc-500">
                 <Sparkles className="h-2.5 w-2.5 text-emerald-500/70" />
                 {f}
@@ -294,67 +271,44 @@ function LoginCard({
         </form>
       )}
 
-      {tab === 'cliente' && otpStep === 'phone' && (
-        <form onSubmit={handleRequestOtp} className="space-y-4">
+      {tab === 'cliente' && (
+        <form onSubmit={handleClientLogin} className="space-y-4">
           <div className="auth-field">
-            <label htmlFor="phone" className="auth-label">Número de celular</label>
+            <label htmlFor="client-phone" className="auth-label">Celular</label>
             <input
-              id="phone"
+              id="client-phone"
               type="tel"
               placeholder="3001234567"
               autoComplete="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => { setPhone(e.target.value); setClientError(''); }}
               className="auth-input"
               inputMode="numeric"
             />
-            <p className="text-xs text-zinc-500">Te enviamos un código de 6 dígitos por WhatsApp</p>
-          </div>
-
-          {clientError && (
-            <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-              {clientError}
-            </div>
-          )}
-
-          <button type="submit" disabled={clientLoading || !phone.trim()} className="auth-submit">
-            {clientLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                <span>Enviar código por WhatsApp</span>
-                <ArrowRight className="h-[18px] w-[18px]" />
-              </>
-            )}
-          </button>
-
-          <p className="text-center text-sm text-zinc-500">
-            ¿No tienes acceso?{' '}
-            <span className="text-zinc-400">Solicítalo en el taller.</span>
-          </p>
-        </form>
-      )}
-
-      {tab === 'cliente' && otpStep === 'code' && (
-        <form onSubmit={handleVerifyOtp} className="space-y-4">
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-300">
-            Código enviado al <span className="font-semibold">{phone}</span>. Válido 5 min.
           </div>
 
           <div className="auth-field">
-            <label htmlFor="otp-code" className="auth-label">Código de 6 dígitos</label>
-            <input
-              id="otp-code"
-              type="text"
-              placeholder="123456"
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              maxLength={6}
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-              className="auth-input text-center text-2xl tracking-[0.5em] font-mono"
-              autoFocus
-            />
+            <label htmlFor="client-cedula" className="auth-label">Cédula</label>
+            <div className="relative">
+              <input
+                id="client-cedula"
+                type={showPw ? 'text' : 'password'}
+                placeholder="••••••••"
+                autoComplete="off"
+                value={clientCedula}
+                onChange={(e) => { setClientCedula(e.target.value); setClientError(''); }}
+                className="auth-input pr-12"
+                inputMode="numeric"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="auth-input-toggle"
+                aria-label={showPw ? 'Ocultar' : 'Mostrar'}
+              >
+                {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+              </button>
+            </div>
           </div>
 
           {clientError && (
@@ -363,24 +317,17 @@ function LoginCard({
             </div>
           )}
 
-          <button type="submit" disabled={clientLoading || otpCode.length !== 6} className="auth-submit">
+          <button type="submit" disabled={clientLoading || !phone.trim() || !clientCedula} className="auth-submit">
             {clientLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>
-                <span>Verificar y entrar</span>
+                <span>Entrar al portal</span>
                 <ArrowRight className="h-[18px] w-[18px]" />
               </>
             )}
           </button>
 
-          <button
-            type="button"
-            onClick={() => { setOtpStep('phone'); setOtpCode(''); }}
-            className="w-full text-center text-sm text-zinc-500 hover:text-zinc-400"
-          >
-            ← Cambiar número
-          </button>
         </form>
       )}
     </>

@@ -13,7 +13,6 @@ import catalogRoutes from './v1/catalogRoutes';
 import consultationRoutes from './v1/consultationRoutes';
 import appointmentRoutes from './v1/appointmentRoutes';
 import notificationRoutes from './v1/notificationRoutes';
-
 const router = Router();
 
 router.use('/auth', authRoutes);

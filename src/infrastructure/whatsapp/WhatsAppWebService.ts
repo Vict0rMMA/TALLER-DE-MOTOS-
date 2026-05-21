@@ -147,6 +147,11 @@ export function getWhatsAppStatus() {
   const wantsEnabled = process.env.ENABLE_WHATSAPP === 'true';
   const supported = isWhatsAppRuntimeSupported();
   const enabled = wantsEnabled && supported;
+  let disabledReason: 'env_disabled' | 'vercel_serverless' | null = null;
+  if (!enabled) {
+    if (!supported) disabledReason = 'vercel_serverless';
+    else if (!wantsEnabled) disabledReason = 'env_disabled';
+  }
   return {
     isReady: enabled ? isReady : false,
     hasQr: enabled ? !!qrBase64 : false,
@@ -155,7 +160,9 @@ export function getWhatsAppStatus() {
     enabled,
     wantsEnabled,
     supported,
-    unsupportedReason: wantsEnabled && !supported ? 'vercel_serverless' : null,
+    disabledReason,
+    /** @deprecated use disabledReason */
+    unsupportedReason: disabledReason === 'vercel_serverless' ? 'vercel_serverless' as const : null,
   };
 }
 
