@@ -22,6 +22,8 @@ export interface DashboardKPIs {
   openServices: number;
   closedThisMonth: number;
   revenueThisMonth: number;
+  pendingConsultations?: number;
+  pendingAppointments?: number;
   month: string;
 }
 

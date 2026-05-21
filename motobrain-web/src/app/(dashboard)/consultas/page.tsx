@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api-client';
+import { useDashboardKPIs } from '@/hooks/use-analytics';
 import { cn } from '@/lib/utils';
 
 interface Consultation {
@@ -298,16 +299,15 @@ export default function ConsultasPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<'pending' | 'answered' | 'all'>('pending');
 
-  const { data: pendingTotal = 0 } = useQuery({
-    queryKey: ['consultations-count'],
-    queryFn: () =>
-      api.get<{ count: number }>('/consultations/pending-count').then((r) => r.count),
+  const { data: pendingTotal = 0 } = useDashboardKPIs({
+    select: (d) => d.pendingConsultations ?? 0,
   });
 
   const { data: consultations = [], isLoading } = useQuery<Consultation[]>({
     queryKey: ['consultations', tab],
     queryFn: () => api.get<Consultation[]>(`/consultations?status=${tab}`),
-    refetchInterval: tab === 'pending' ? 90_000 : false,
+    staleTime: 2 * 60_000,
+    refetchInterval: tab === 'pending' ? 3 * 60_000 : false,
     refetchIntervalInBackground: false,
   });
 
@@ -323,7 +323,7 @@ export default function ConsultasPage() {
     }) => api.put(`/consultations/${id}/respond`, { mechanicResponse, mechanicPrice }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['consultations'] });
-      qc.invalidateQueries({ queryKey: ['consultations-count'] });
+      qc.invalidateQueries({ queryKey: ['analytics', 'kpis'] });
       toast.success('Respuesta enviada al cliente');
     },
     onError: (e) => toast.error('Error', { description: (e as Error).message }),

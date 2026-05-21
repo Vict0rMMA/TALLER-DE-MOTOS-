@@ -6,6 +6,7 @@ import { Calendar, CheckCircle2, ChevronDown, ChevronUp, Send } from 'lucide-rea
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api-client';
+import { useDashboardKPIs } from '@/hooks/use-analytics';
 import { cn } from '@/lib/utils';
 
 interface Appointment {
@@ -137,15 +138,15 @@ export default function CitasPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<'pending' | 'confirmed' | 'all'>('pending');
 
-  const { data: pendingTotal = 0 } = useQuery({
-    queryKey: ['appointments-count'],
-    queryFn: () => api.get<{ count: number }>('/appointments/pending-count').then((r) => r.count),
+  const { data: pendingTotal = 0 } = useDashboardKPIs({
+    select: (d) => d.pendingAppointments ?? 0,
   });
 
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ['appointments', tab],
     queryFn: () => api.get<Appointment[]>(`/appointments?status=${tab}`),
-    refetchInterval: tab === 'pending' ? 90_000 : false,
+    staleTime: 2 * 60_000,
+    refetchInterval: tab === 'pending' ? 3 * 60_000 : false,
     refetchIntervalInBackground: false,
   });
 
@@ -154,7 +155,7 @@ export default function CitasPage() {
       api.put(`/appointments/${id}/confirm`, { scheduledAt, notes }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['appointments'] });
-      qc.invalidateQueries({ queryKey: ['appointments-count'] });
+      qc.invalidateQueries({ queryKey: ['analytics', 'kpis'] });
       toast.success('Cita confirmada — el cliente fue notificado');
     },
     onError: (e) => toast.error('Error', { description: (e as Error).message }),

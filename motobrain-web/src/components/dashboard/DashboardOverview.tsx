@@ -119,7 +119,8 @@ function ServiceRow({ s }: { s: Service }) {
 export function DashboardOverview() {
   const user = useAuthStore((s) => s.user);
   const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs();
-  const { data: lowStockData } = useLowStockProducts(6);
+  const hasLowStock = (kpis?.lowStockCount ?? 0) > 0;
+  const { data: lowStockData } = useLowStockProducts(6, hasLowStock);
   const { data: recentData } = useServices({ limit: 5 });
 
   const lowStock = lowStockData?.data ?? [];

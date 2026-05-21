@@ -261,8 +261,14 @@
 }
 
 .sidebar-premium {
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-secondary) 92%, #0f1412) 0%,
+    var(--bg-secondary) 38%,
+    #0a0a0c 100%
+  );
+  border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: inset -1px 0 0 rgba(16, 185, 129, 0.04);
 }
 
 .sidebar-dock {
@@ -282,13 +288,42 @@
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
+.sidebar-brand-pill {
+  align-items: center;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  background: rgba(16, 185, 129, 0.08);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--accent);
+}
+
+.sidebar-collapse-btn {
+  height: 32px;
+  width: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-tertiary);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-collapse-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 .sidebar-logo-block {
-  padding: 18px 14px;
+  padding: 20px 14px 14px;
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid var(--border);
-  min-height: 64px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  min-height: 68px;
   flex-shrink: 0;
 }
 
@@ -318,27 +353,48 @@
 .sidebar-nav-block {
   flex: 1;
   min-height: 0;
-  padding: 12px 8px;
+  padding: 8px 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
 .sidebar-nav-block-collapsed {
   padding-bottom: 8px;
 }
 
+.sidebar-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--text-tertiary);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sidebar-icon-wrap-active {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.18);
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   color: var(--text-secondary);
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   cursor: pointer;
   text-decoration: none;
   position: relative;
@@ -347,33 +403,31 @@
 
 .sidebar-item-collapsed {
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   margin: 0 auto;
+  gap: 0;
 }
 
 .sidebar-item:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
+}
+
+.sidebar-item:hover .sidebar-icon-wrap:not(.sidebar-icon-wrap-active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
 }
 
 .sidebar-item.active {
-  background: var(--bg-hover);
+  background: rgba(16, 185, 129, 0.09);
   color: var(--text-primary);
-  font-weight: 500;
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.14);
 }
 
 .sidebar-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 16px;
-  background: var(--accent);
-  border-radius: 0 2px 2px 0;
+  display: none;
 }
 
 .sidebar-badge {
@@ -401,19 +455,31 @@
 }
 
 .sidebar-section-label {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
   color: var(--text-tertiary);
-  padding: 12px 12px 4px;
+  opacity: 0.75;
+  padding: 14px 10px 6px;
+}
+
+.sidebar-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
 }
 
 .sidebar-footer-block {
-  padding: 10px 8px 12px;
-  border-top: 1px solid var(--border);
+  padding: 12px 10px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   margin-top: auto;
   flex-shrink: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, transparent 100%);
 }
 
 .sidebar-footer-collapsed {
@@ -464,31 +530,38 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
+  margin-top: 6px;
+  padding: 10px 10px 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, rgba(16, 185, 129, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .sidebar-user-card:hover {
-  border-color: var(--border-hover);
+  border-color: color-mix(in srgb, var(--border-hover) 70%, rgba(16, 185, 129, 0.25));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: var(--bg-elevated);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #10b981 0%, #047857 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  border: none;
   flex-shrink: 0;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
 }
 
 .sidebar-avatar-sm {
@@ -500,8 +573,7 @@
 .topbar-premium {
   height: 56px;
   border-bottom: 1px solid var(--border);
-  background: rgba(14, 14, 17, 0.85);
-  backdrop-filter: blur(10px);
+  background: var(--bg-secondary);
 }
 
 .dashboard-shell {

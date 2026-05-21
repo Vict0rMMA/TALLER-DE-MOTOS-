@@ -14,14 +14,12 @@ import {
   MessageSquare,
   Calendar,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { BrandLogo } from './BrandLogo';
 import { useSidebarStore } from '@/stores/sidebar-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLogout } from '@/hooks/use-auth';
-import { useDashboardKPIs } from '@/hooks/use-analytics';
-import { api } from '@/lib/api-client';
+import { useNavBadges } from '@/hooks/use-nav-badges';
 import { cn } from '@/lib/utils';
 
 const PRINCIPAL = [
@@ -43,25 +41,10 @@ export function MobileSidebar() {
   const { isOpen, setOpen } = useSidebarStore();
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
-  const { data: lowStockCount = 0 } = useDashboardKPIs({
-    select: (d) => d?.lowStockCount ?? 0,
-  });
-
-  const { data: pendingConsultations = 0 } = useQuery({
-    queryKey: ['consultations-count'],
-    queryFn: () => api.get<{ count: number }>('/consultations/pending-count').then((r: { count: number }) => r.count),
-    staleTime: 2 * 60_000,
-    refetchInterval: 2 * 60_000,
-    refetchIntervalInBackground: false,
-  });
-
-  const { data: pendingAppointments = 0 } = useQuery({
-    queryKey: ['appointments-count'],
-    queryFn: () => api.get<{ count: number }>('/appointments/pending-count').then((r: { count: number }) => r.count),
-    staleTime: 2 * 60_000,
-    refetchInterval: 2 * 60_000,
-    refetchIntervalInBackground: false,
-  });
+  const { data: badges } = useNavBadges(0);
+  const lowStockCount = badges?.lowStock ?? 0;
+  const pendingConsultations = badges?.consultations ?? 0;
+  const pendingAppointments = badges?.appointments ?? 0;
 
   const initials = user?.name
     ?.split(' ')
@@ -90,7 +73,9 @@ export function MobileSidebar() {
                 onClick={() => setOpen(false)}
                 className={cn('sidebar-item', active && 'active')}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <span className={cn('sidebar-icon-wrap shrink-0', active && 'sidebar-icon-wrap-active')}>
+                  <Icon className="h-[17px] w-[17px]" strokeWidth={active ? 2.25 : 1.85} />
+                </span>
                 <span className="flex-1">{item.label}</span>
                 {'stockBadge' in item && lowStockCount > 0 && (
                   <span className="sidebar-badge-alert">{lowStockCount}</span>
@@ -115,7 +100,9 @@ export function MobileSidebar() {
                 onClick={() => setOpen(false)}
                 className={cn('sidebar-item', active && 'active')}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <span className={cn('sidebar-icon-wrap shrink-0', active && 'sidebar-icon-wrap-active')}>
+                  <Icon className="h-[17px] w-[17px]" strokeWidth={active ? 2.25 : 1.85} />
+                </span>
                 <span className="flex-1">{item.label}</span>
                 {badge > 0 && (
                   <span className="sidebar-badge-alert">{badge > 99 ? '99+' : badge}</span>
@@ -131,7 +118,14 @@ export function MobileSidebar() {
               pathname.startsWith('/configuracion') && 'active',
             )}
           >
-            <Settings className="h-[18px] w-[18px] shrink-0" />
+            <span
+              className={cn(
+                'sidebar-icon-wrap shrink-0',
+                pathname.startsWith('/configuracion') && 'sidebar-icon-wrap-active',
+              )}
+            >
+              <Settings className="h-[17px] w-[17px]" strokeWidth={1.85} />
+            </span>
             <span>Configuración</span>
           </Link>
         </nav>

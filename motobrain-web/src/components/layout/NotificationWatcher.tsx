@@ -45,7 +45,7 @@ export function NotificationWatcher() {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setActive(true), 4_000);
+    const t = setTimeout(() => setActive(true), 8_000);
     return () => clearTimeout(t);
   }, []);
 

@@ -63,7 +63,7 @@ function LoginFormInner() {
   };
 
   return (
-    <div className="auth-shell relative min-h-[100dvh] overflow-hidden font-[family-name:var(--font-inter)]">
+    <div className="auth-shell relative min-h-[100dvh] overflow-hidden font-sans">
       <div className="auth-bg-layer" aria-hidden />
       <div className="auth-bg-vignette" aria-hidden />
 

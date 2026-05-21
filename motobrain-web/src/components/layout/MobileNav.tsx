@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Wrench,
@@ -11,7 +10,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api } from '@/lib/api-client';
+import { useNavBadges } from '@/hooks/use-nav-badges';
 import { MOBILE_NAV_ITEMS } from '@/lib/constants';
 
 const ICONS = {
@@ -25,28 +24,14 @@ const ICONS = {
 export function MobileNav() {
   const pathname = usePathname();
 
-  const { data: pendingConsultations = 0 } = useQuery({
-    queryKey: ['consultations-count'],
-    queryFn: () =>
-      api.get<{ count: number }>('/consultations/pending-count').then((r: { count: number }) => r.count),
-    staleTime: 2 * 60_000,
-    refetchInterval: 2 * 60_000,
-    refetchIntervalInBackground: false,
-  });
-
-  const { data: pendingAppointments = 0 } = useQuery({
-    queryKey: ['appointments-count'],
-    queryFn: () =>
-      api.get<{ count: number }>('/appointments/pending-count').then((r: { count: number }) => r.count),
-    staleTime: 2 * 60_000,
-    refetchInterval: 2 * 60_000,
-    refetchIntervalInBackground: false,
-  });
+  const { data: badges } = useNavBadges(1500);
+  const pendingConsultations = badges?.consultations ?? 0;
+  const pendingAppointments = badges?.appointments ?? 0;
 
   const centerIndex = Math.floor(MOBILE_NAV_ITEMS.length / 2);
 
   return (
-    <nav className="mobile-nav-bar fixed bottom-0 left-0 right-0 z-50 flex items-end border-t border-border bg-bg-secondary/95 pb-safe backdrop-blur-md md:hidden">
+    <nav className="mobile-nav-bar fixed bottom-0 left-0 right-0 z-50 flex items-end border-t border-border bg-bg-secondary pb-safe md:hidden">
       {MOBILE_NAV_ITEMS.map((item, i) => {
         const Icon = ICONS[item.icon as keyof typeof ICONS];
         const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));

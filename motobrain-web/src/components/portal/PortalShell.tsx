@@ -26,7 +26,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
   if (!isHydrated || !token) return null;
 
   return (
-    <div className="portal-app min-h-[100dvh] bg-zinc-950 font-[family-name:var(--font-inter)] text-zinc-100">
+    <div className="portal-app min-h-[100dvh] bg-zinc-950 font-sans text-zinc-100">
       <PortalNavbar />
       <div className="portal-container py-6 pb-24 md:py-10 md:pb-10">{children}</div>
       <PortalBottomNav />

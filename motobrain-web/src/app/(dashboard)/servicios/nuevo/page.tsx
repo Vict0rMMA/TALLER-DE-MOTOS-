@@ -14,7 +14,7 @@ export default function NuevoServicioPage() {
   async function handleSubmit(data: ServiceInput) {
     try {
       await createService.mutateAsync(data);
-      router.push('/servicios');
+      router.replace('/servicios');
     } catch {
       // error shown via createService.isError
     }
