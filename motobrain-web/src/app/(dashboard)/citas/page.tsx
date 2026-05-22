@@ -139,7 +139,7 @@ export default function CitasPage() {
   const [tab, setTab] = useState<'pending' | 'confirmed' | 'all'>('pending');
 
   const { data: pendingTotal = 0 } = useDashboardKPIs({
-    select: (d) => d.pendingAppointments ?? 0,
+    select: (d) => d?.pendingAppointments ?? 0,
   });
 
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({

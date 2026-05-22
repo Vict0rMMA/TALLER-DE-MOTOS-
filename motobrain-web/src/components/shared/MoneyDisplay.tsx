@@ -8,6 +8,8 @@ interface MoneyDisplayProps {
 }
 
 export function MoneyDisplay({ value, className, responsive = true }: MoneyDisplayProps) {
+  const amount = Number.isFinite(value) ? value : 0;
+
   if (responsive) {
     return (
       <span
@@ -15,15 +17,15 @@ export function MoneyDisplay({ value, className, responsive = true }: MoneyDispl
           'money-display inline-block max-w-full font-mono font-semibold tabular-nums leading-tight',
           className,
         )}
-        title={formatCOP(value)}
+        title={formatCOP(amount)}
       >
-        <span className="md:hidden">{formatCOPCompact(value)}</span>
-        <span className="hidden md:inline">{formatCOP(value)}</span>
+        <span className="md:hidden">{formatCOPCompact(amount)}</span>
+        <span className="hidden md:inline">{formatCOP(amount)}</span>
       </span>
     );
   }
 
   return (
-    <span className={cn('font-mono font-medium tabular-nums', className)}>{formatCOP(value)}</span>
+    <span className={cn('font-mono font-medium tabular-nums', className)}>{formatCOP(amount)}</span>
   );
 }

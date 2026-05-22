@@ -1,9 +1,23 @@
 const ENV_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 const LOCAL_API = 'http://localhost:4000/api/v1';
+/** Proxy en Vercel → evita bloqueo HTTPS→HTTP (mixed content). Ver next.config rewrites. */
+const VERCEL_PROXY_BASE = '/backend';
+
+function useVercelProxy(hostname: string): boolean {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
+  if (process.env.NEXT_PUBLIC_API_USE_PROXY === 'true') return true;
+  if (process.env.NEXT_PUBLIC_API_USE_PROXY === 'false') return false;
+  try {
+    return new URL(ENV_API).protocol === 'http:';
+  } catch {
+    return true;
+  }
+}
 
 /**
- * En el PC (localhost:3000) usa siempre la API en localhost:4000.
- * En producción (Vercel) debe existir NEXT_PUBLIC_API_URL apuntando al VPS con HTTPS.
+ * Local: localhost:4000.
+ * Vercel + API en HTTP (VPS sin HTTPS): usa /backend (rewrite en next.config).
+ * Producción con API HTTPS: NEXT_PUBLIC_API_URL=https://api.tudominio.com/api/v1
  */
 export function resolveApiBase(): string {
   if (typeof window === 'undefined') return ENV_API;
@@ -11,6 +25,7 @@ export function resolveApiBase(): string {
   if (host === 'localhost' || host === '127.0.0.1') {
     return LOCAL_API;
   }
+  if (useVercelProxy(host)) return VERCEL_PROXY_BASE;
   return ENV_API;
 }
 
@@ -20,10 +35,11 @@ export function isApiMisconfigured(): boolean {
   const host = window.location.hostname;
   const isLocalFront = host === 'localhost' || host === '127.0.0.1';
   if (isLocalFront) return false;
+  if (useVercelProxy(host)) return false;
   const api = ENV_API;
   return api.includes('localhost') || api.includes('127.0.0.1');
 }
 
 export function getApiMisconfigMessage(): string {
-  return 'Falta NEXT_PUBLIC_API_URL en Vercel. Debe ser la URL HTTPS de tu API (ej. https://api.tudominio.com/api/v1).';
+  return 'Falta NEXT_PUBLIC_API_URL en Vercel o BACKEND_URL=http://TU_IP (puerto 80, sin :4000) para el proxy /backend.';
 }

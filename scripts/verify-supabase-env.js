@@ -64,5 +64,18 @@ if (!process.env.JWT_SECRET?.trim()) {
   exit = 1;
 } else console.log("· JWT_SECRET: definido");
 
+const supaKey = process.env.SUPABASE_SERVICE_KEY?.trim() ?? "";
+if (!process.env.SUPABASE_URL?.trim()) {
+  console.log("· SUPABASE_URL: (vacío) — fotos desactivadas");
+} else if (!supaKey) {
+  console.log("✗ SUPABASE_SERVICE_KEY: falta — no se pueden subir fotos.");
+  exit = 1;
+} else if (supaKey.startsWith("sb_") && !supaKey.startsWith("eyJ")) {
+  console.log("✗ SUPABASE_SERVICE_KEY: usa service_role (JWT eyJ…), no sb_secret.");
+  exit = 1;
+} else {
+  console.log("· SUPABASE_SERVICE_KEY: formato OK (JWT)");
+}
+
 console.log("");
 process.exit(exit);

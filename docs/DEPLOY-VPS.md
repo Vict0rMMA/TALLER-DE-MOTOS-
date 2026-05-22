@@ -53,7 +53,7 @@ ssh root@TU_IP_DEL_VPS
 
 ```bash
 apt-get install -y git
-git clone https://github.com/TU_USUARIO/proyecto-propiedades.git /opt/motobrain
+git clone https://github.com/Vict0rMMA/TALLER-DE-MOTOS-.git /opt/motobrain
 cd /opt/motobrain
 bash scripts/vps-setup.sh
 ```

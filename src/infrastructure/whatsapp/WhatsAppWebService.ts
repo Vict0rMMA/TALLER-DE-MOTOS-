@@ -68,12 +68,17 @@ async function qrToBase64(qr: string): Promise<string> {
 
 function buildClient(): Client {
   const executablePath = findChrome();
+  console.log(
+    '[WhatsApp] Chrome:',
+    executablePath ?? 'no encontrado (instala chromium-browser o define CHROME_PATH)',
+  );
+  console.log('[WhatsApp] Inicializando Puppeteer… (en VPS pequeño puede tardar 2-5 min)');
 
   const c = new Client({
     authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
     puppeteer: {
       headless: true,
-      protocolTimeout: 120000,
+      protocolTimeout: 180_000,
       ...(executablePath ? { executablePath } : {}),
       args: [
         '--no-sandbox',
@@ -88,22 +93,26 @@ function buildClient(): Client {
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
         '--disable-ipc-flooding-protection',
+        '--disable-software-rasterizer',
         '--window-size=800,600',
       ],
     },
   });
 
   c.on('qr', async (qr) => {
+    console.log('[WhatsApp] QR listo — escanea en Configuración del panel');
     qrBase64 = await qrToBase64(qr).catch(() => null);
     isReady = false;
     lastError = null;
   });
 
   c.on('authenticated', () => {
+    console.log('[WhatsApp] Sesión autenticada, conectando…');
     lastError = null;
   });
 
   c.on('ready', () => {
+    console.log('[WhatsApp] Conectado y listo para enviar mensajes');
     isReady = true;
     qrBase64 = null;
     lastError = null;
@@ -125,12 +134,14 @@ function buildClient(): Client {
     scheduleReconnect();
   });
 
-  c.initialize().catch((err) => {
-    console.error('[WhatsApp] Error al inicializar:', err.message);
-    lastError = err.message;
-    client = null;
-    scheduleReconnect();
-  });
+  c.initialize()
+    .then(() => console.log('[WhatsApp] Puppeteer arrancó — esperando QR o sesión guardada…'))
+    .catch((err) => {
+      console.error('[WhatsApp] Error al inicializar:', err.message);
+      lastError = err.message;
+      client = null;
+      scheduleReconnect();
+    });
 
   return c;
 }
@@ -157,6 +168,7 @@ export function getWhatsAppStatus() {
     hasQr: enabled ? !!qrBase64 : false,
     qr: enabled ? qrBase64 : null,
     error: enabled ? lastError : null,
+    chromePath: enabled ? (findChrome() ?? null) : null,
     enabled,
     wantsEnabled,
     supported,
@@ -210,11 +222,33 @@ export class WhatsAppWebService implements WhatsAppService {
 
   async sendMessage(phone: string, message: string): Promise<void> {
     if (!isReady) {
-      console.warn('[WhatsApp] No conectado — mensaje no enviado a', phone);
-      return;
+      const hint = qrBase64
+        ? 'WhatsApp esperando QR: entra a Configuración y escanéalo.'
+        : 'WhatsApp no conectado en el servidor. Revisa Configuración → WhatsApp.';
+      throw new Error(hint);
     }
     const chatId = formatPhone(phone);
-    await this.wa.sendMessage(chatId, message);
+    const digits = phone.replace(/\D/g, '');
+    try {
+      const registered = await this.wa.isRegisteredUser(chatId);
+      if (!registered) {
+        throw new Error(
+          `El número ${digits || phone} no tiene WhatsApp activo. Revisa el teléfono del cliente (10 dígitos, Colombia).`,
+        );
+      }
+      await this.wa.sendMessage(chatId, message);
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      if (raw.includes('No LID') || raw.includes('not registered')) {
+        throw new Error(
+          `El número ${digits || phone} no tiene WhatsApp activo. Revisa el teléfono del cliente.`,
+        );
+      }
+      if (raw.includes('not connected') || raw.includes('Session closed')) {
+        throw new Error('WhatsApp se desconectó en el servidor. Entra a Configuración y reconecta.');
+      }
+      throw err instanceof Error ? err : new Error(raw || 'No se pudo enviar por WhatsApp');
+    }
   }
 
   async sendTemplate(phone: string, templateId: string, params: Record<string, string>): Promise<void> {

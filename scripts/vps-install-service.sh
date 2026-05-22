@@ -39,6 +39,10 @@ if ! command -v pm2 >/dev/null 2>&1; then
 fi
 
 pm2 delete motobrain-api 2>/dev/null || true
+if [ ! -f ecosystem.config.cjs ]; then
+  echo "ERROR: Falta ecosystem.config.cjs en la raíz del proyecto."
+  exit 1
+fi
 pm2 start ecosystem.config.cjs
 pm2 save
 

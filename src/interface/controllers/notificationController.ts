@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
-import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { WhatsAppWebService, getWhatsAppStatus } from '../../infrastructure/whatsapp/WhatsAppWebService';
 
 const TEMPLATES: Record<string, (p: Record<string, string>) => string> = {
   service_completed: (p) =>
@@ -11,14 +11,34 @@ const TEMPLATES: Record<string, (p: Record<string, string>) => string> = {
     `💰 *MotoBrain* — Factura lista\n\nHola ${p['1']}, la factura de tu moto *${p['2']}* está lista.\n\n*Total a pagar:* $${p['3']}\n\nAcércate al taller para realizar el pago. ¡Gracias! 🙏`,
 };
 
-async function dispatchWA(phone: string, message: string): Promise<'sent' | 'failed'> {
+async function dispatchWA(phone: string, message: string): Promise<'sent' | 'failed' | { failed: true; reason: string }> {
+  const st = getWhatsAppStatus();
+  if (!st.enabled) {
+    return { failed: true, reason: 'WhatsApp desactivado en el VPS (ENABLE_WHATSAPP=true).' };
+  }
+  if (!st.isReady) {
+    return {
+      failed: true,
+      reason: st.hasQr
+        ? 'Escanea el QR en Configuración → WhatsApp.'
+        : (st.error ?? 'WhatsApp aún no está listo en el servidor.'),
+    };
+  }
   try {
     const wa = new WhatsAppWebService();
     await wa.sendMessage(phone, message);
     return 'sent';
-  } catch {
-    return 'failed';
+  } catch (err) {
+    return { failed: true, reason: (err as Error).message };
   }
+}
+
+function waFailure(result: 'sent' | 'failed' | { failed: true; reason: string }): result is { failed: true; reason: string } {
+  return typeof result === 'object' && result.failed === true;
+}
+
+function waErrorReason(result: 'sent' | 'failed' | { failed: true; reason: string }): string | null {
+  return waFailure(result) ? result.reason : null;
 }
 
 export const sendNotification = async (req: Request, res: Response, next: NextFunction) => {
@@ -58,13 +78,23 @@ export const sendNotification = async (req: Request, res: Response, next: NextFu
       },
     });
 
-    const status = await dispatchWA(phone, body.message);
-    await prisma.notification.update({ where: { id: record.id }, data: { status } });
+    const waResult = await dispatchWA(phone, body.message);
+    const status = waResult === 'sent' ? 'sent' : 'failed';
+    const errorMsg = waErrorReason(waResult);
+    await prisma.notification.update({
+      where: { id: record.id },
+      data: { status, errorMsg },
+    });
 
     if (status === 'sent') {
       res.json({ ok: true, id: record.id, status });
     } else {
-      res.status(502).json({ error: 'No se pudo enviar por WhatsApp', id: record.id, status });
+      res.status(422).json({
+        error: errorMsg ?? 'No se pudo enviar por WhatsApp',
+        id: record.id,
+        status,
+        whatsapp: getWhatsAppStatus(),
+      });
     }
   } catch (err) {
     next(err);
@@ -108,13 +138,23 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
       },
     });
 
-    const status = await dispatchWA(customer.phone, message);
-    await prisma.notification.update({ where: { id: record.id }, data: { status } });
+    const waResult = await dispatchWA(customer.phone, message);
+    const status = waResult === 'sent' ? 'sent' : 'failed';
+    const errorMsg = waErrorReason(waResult);
+    await prisma.notification.update({
+      where: { id: record.id },
+      data: { status, errorMsg },
+    });
 
     if (status === 'sent') {
       res.json({ ok: true, id: record.id, status });
     } else {
-      res.status(502).json({ error: 'No se pudo enviar por WhatsApp', id: record.id, status });
+      res.status(422).json({
+        error: errorMsg ?? 'No se pudo enviar por WhatsApp',
+        id: record.id,
+        status,
+        whatsapp: getWhatsAppStatus(),
+      });
     }
   } catch (err) {
     next(err);

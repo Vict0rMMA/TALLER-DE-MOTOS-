@@ -6,6 +6,7 @@ import { Camera, Trash2, X, Loader2, ImagePlus } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
+import { compressImageFile } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 interface ServicePhotosProps {
@@ -23,7 +24,7 @@ export function ServicePhotos({ serviceId, photos, readOnly = false }: ServicePh
   const remove = useMutation({
     mutationFn: (url: string) => api.delete(`/services/${serviceId}/photos`, { url }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['service', serviceId] });
+      qc.invalidateQueries({ queryKey: ['services', serviceId] });
       toast.success('Foto eliminada');
     },
     onError: (e) => toast.error((e as Error).message),
@@ -35,10 +36,11 @@ export function ServicePhotos({ serviceId, photos, readOnly = false }: ServicePh
     e.target.value = '';
     setUploading(true);
     try {
+      const prepared = await compressImageFile(file);
       const form = new FormData();
-      form.append('photo', file);
+      form.append('photo', prepared);
       await api.uploadForm(`/services/${serviceId}/photos`, form);
-      qc.invalidateQueries({ queryKey: ['service', serviceId] });
+      qc.invalidateQueries({ queryKey: ['services', serviceId] });
       toast.success('Foto subida');
     } catch (err) {
       toast.error('No se pudo subir', { description: (err as Error).message });

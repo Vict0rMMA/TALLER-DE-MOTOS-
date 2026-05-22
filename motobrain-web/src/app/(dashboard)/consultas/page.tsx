@@ -300,7 +300,7 @@ export default function ConsultasPage() {
   const [tab, setTab] = useState<'pending' | 'answered' | 'all'>('pending');
 
   const { data: pendingTotal = 0 } = useDashboardKPIs({
-    select: (d) => d.pendingConsultations ?? 0,
+    select: (d) => d?.pendingConsultations ?? 0,
   });
 
   const { data: consultations = [], isLoading } = useQuery<Consultation[]>({

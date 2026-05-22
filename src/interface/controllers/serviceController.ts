@@ -33,6 +33,7 @@ function mapServiceRow(r: any) {
     createdAt: r.createdAt,
     customerName: r.motorcycle?.customer?.name ?? undefined,
     placa: r.motorcycle?.placa ?? undefined,
+    photos: r.photos ?? [],
     products: (r.products ?? []).map((p: any) => ({
       productId: p.productId,
       productName: p.product?.name ?? 'Producto',
@@ -109,7 +110,16 @@ export const createService = async (req: Request, res: Response, next: NextFunct
       ...req.body,
       workshopId: req.workshopId!,
     });
-    res.status(201).json(result);
+    const row = await (prisma as any).service.findFirst({
+      where: { id: result.id, workshopId: req.workshopId! },
+      include: {
+        motorcycle: { include: { customer: { select: { name: true } } } },
+        mechanic: { select: { name: true } },
+        products: { include: { product: { select: { name: true } } } },
+      },
+    });
+    if (!row) throw new DomainError('Servicio no encontrado', 404);
+    res.status(201).json(mapServiceRow(row));
   } catch (e) {
     next(e);
   }

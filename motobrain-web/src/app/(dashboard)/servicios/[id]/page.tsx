@@ -224,20 +224,25 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
             <div className="border-t border-border pt-3 space-y-2">
               <p className="text-xs text-text-tertiary">Últimas notificaciones</p>
               {notifHistory.data.slice(0, 4).map((n) => (
-                <div key={n.id} className="flex items-start justify-between text-xs gap-2">
-                  <div className="flex items-center gap-1.5 text-text-tertiary">
-                    {n.status === 'sent' ? (
-                      <CheckCheck className="h-3.5 w-3.5 text-success shrink-0" />
-                    ) : n.status === 'failed' ? (
-                      <XCircle className="h-3.5 w-3.5 text-error shrink-0" />
-                    ) : (
-                      <Clock className="h-3.5 w-3.5 shrink-0" />
-                    )}
-                    <span className="capitalize">{n.type.replace(/_/g, ' ')}</span>
+                <div key={n.id} className="space-y-0.5">
+                  <div className="flex items-start justify-between text-xs gap-2">
+                    <div className="flex items-center gap-1.5 text-text-tertiary">
+                      {n.status === 'sent' ? (
+                        <CheckCheck className="h-3.5 w-3.5 text-success shrink-0" />
+                      ) : n.status === 'failed' ? (
+                        <XCircle className="h-3.5 w-3.5 text-error shrink-0" />
+                      ) : (
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="capitalize">{n.type.replace(/_/g, ' ')}</span>
+                    </div>
+                    <span className="text-text-tertiary shrink-0">
+                      {new Date(n.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
-                  <span className="text-text-tertiary shrink-0">
-                    {new Date(n.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  {n.status === 'failed' && n.errorMsg && (
+                    <p className="text-xs text-error pl-5">{n.errorMsg}</p>
+                  )}
                 </div>
               ))}
             </div>

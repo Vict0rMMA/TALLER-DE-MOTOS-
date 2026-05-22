@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    const backendUrl = process.env.BACKEND_URL || 'http://185.166.212.43';
+    const backendUrl = (process.env.BACKEND_URL || 'http://185.166.212.43').replace(/\/+$/, '');
     return [
       {
         source: '/backend/:path*',

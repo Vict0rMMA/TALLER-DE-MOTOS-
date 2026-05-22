@@ -15,6 +15,7 @@
     "prisma:seed": "ts-node-dev --transpile-only prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "check:env": "node scripts/verify-supabase-env.js",
+    "setup:storage": "node scripts/setup-supabase-storage.mjs",
     "vps:install": "bash scripts/vps-install-service.sh"
   },
   "keywords": [

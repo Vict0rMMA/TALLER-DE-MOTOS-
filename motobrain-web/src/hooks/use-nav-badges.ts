@@ -9,14 +9,16 @@ export interface NavBadges {
   appointments: number;
 }
 
-const selectBadges = (d: {
-  lowStockCount: number;
-  pendingConsultations?: number;
-  pendingAppointments?: number;
-}): NavBadges => ({
-  lowStock: d.lowStockCount ?? 0,
-  consultations: d.pendingConsultations ?? 0,
-  appointments: d.pendingAppointments ?? 0,
+const selectBadges = (
+  d?: {
+    lowStockCount: number;
+    pendingConsultations?: number;
+    pendingAppointments?: number;
+  },
+): NavBadges => ({
+  lowStock: d?.lowStockCount ?? 0,
+  consultations: d?.pendingConsultations ?? 0,
+  appointments: d?.pendingAppointments ?? 0,
 });
 
 /** Badges del menú — reutiliza KPIs cacheados; carga diferida para no competir con la página. */

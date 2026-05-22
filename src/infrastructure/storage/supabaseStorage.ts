@@ -3,10 +3,22 @@ import { env } from '../config/env';
 
 const BUCKET = 'service-photos';
 
-function getClient() {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_URL y SUPABASE_SERVICE_KEY requeridos para subir fotos');
+function assertStorageKey() {
+  const key = env.SUPABASE_SERVICE_KEY;
+  if (!env.SUPABASE_URL || !key) {
+    throw new Error(
+      'SUPABASE_URL y SUPABASE_SERVICE_KEY requeridos en el .env del VPS para subir fotos',
+    );
   }
+  if (key.startsWith('sb_') && !key.startsWith('eyJ')) {
+    throw new Error(
+      'SUPABASE_SERVICE_KEY inválida: usa la clave service_role (JWT eyJ…) en Supabase → Settings → API, no sb_secret.',
+    );
+  }
+}
+
+function getClient() {
+  assertStorageKey();
   return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 }
 
