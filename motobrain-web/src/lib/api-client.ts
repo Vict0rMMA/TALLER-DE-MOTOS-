@@ -39,12 +39,12 @@ class ApiClient {
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         throw new ApiError(
-          `La API no respondió a tiempo (${base}). ¿Está corriendo "npm run dev" en la raíz del proyecto?`,
+          'El servidor no respondió a tiempo. Verifica que el VPS esté activo y vuelve a intentarlo.',
           0,
         );
       }
       throw new ApiError(
-        `No se pudo conectar con la API (${base}). Revisa que el backend esté activo y la URL en .env.local.`,
+        'No se pudo conectar con el servidor. Verifica tu conexión o contacta al administrador.',
         0,
       );
     } finally {
