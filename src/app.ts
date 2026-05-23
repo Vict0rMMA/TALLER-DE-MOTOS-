@@ -34,6 +34,14 @@ app.get('/api/v1/health', (_req, res) => {
   res.json({ ok: true, message: 'MotoBrain AI API funcionando', version: 'v1' });
 });
 
+app.get('/api/v1', (_req, res) => {
+  res.json({
+    ok: true,
+    message: 'MotoBrain API v1 — usa rutas como /api/v1/health o /api/v1/auth/login',
+    health: '/api/v1/health',
+  });
+});
+
 app.use('/api/v1', apiRouter);
 
 app.use((req, _res, next) => {

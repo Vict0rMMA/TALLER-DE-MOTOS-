@@ -66,6 +66,20 @@ async function qrToBase64(qr: string): Promise<string> {
   return QRCodeLib.toDataURL(qr, { width: 280, margin: 2 });
 }
 
+function humanizeInitError(message: string, chromePath?: string): string {
+  if (message.includes('WS endpoint') || message.includes('Timed out after')) {
+    const chrome = chromePath ? ` (${chromePath})` : '';
+    return (
+      `Chrome no arrancó a tiempo${chrome}. En el VPS: bash scripts/vps-setup.sh (swap + Chromium), ` +
+      'confirma CHROME_PATH en .env y ejecuta pm2 restart motobrain-api. Puede tardar 2-5 min.'
+    );
+  }
+  if (!chromePath && message.toLowerCase().includes('chrome')) {
+    return 'Chromium no encontrado. En el VPS: apt install chromium-browser y CHROME_PATH=/usr/bin/chromium-browser en .env';
+  }
+  return message;
+}
+
 function buildClient(): Client {
   const executablePath = findChrome();
   console.log(
@@ -76,9 +90,17 @@ function buildClient(): Client {
 
   const c = new Client({
     authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
+    /** Evita descargar WA Web en cada arranque (más rápido en VPS). */
+    webVersionCache: {
+      type: 'remote',
+      remotePath:
+        'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+    },
     puppeteer: {
       headless: true,
-      protocolTimeout: 180_000,
+      /** Por defecto Puppeteer corta a 30s → error "WS endpoint URL". En VPS pequeño hace falta más. */
+      timeout: 180_000,
+      protocolTimeout: 300_000,
       ...(executablePath ? { executablePath } : {}),
       args: [
         '--no-sandbox',
@@ -87,6 +109,7 @@ function buildClient(): Client {
         '--disable-accelerated-2d-canvas',
         '--disable-gpu',
         '--no-first-run',
+        '--no-zygote',
         '--disable-extensions',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
@@ -138,7 +161,7 @@ function buildClient(): Client {
     .then(() => console.log('[WhatsApp] Puppeteer arrancó — esperando QR o sesión guardada…'))
     .catch((err) => {
       console.error('[WhatsApp] Error al inicializar:', err.message);
-      lastError = err.message;
+      lastError = humanizeInitError(err.message, executablePath);
       client = null;
       scheduleReconnect();
     });

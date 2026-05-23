@@ -474,7 +474,8 @@ function WhatsAppSection() {
             <div>
               <p className="text-sm font-medium text-warning">No conectado — generando QR…</p>
               <p className="text-xs text-text-tertiary mt-0.5">
-                Asegúrate de que el backend esté corriendo. El QR aparecerá en unos segundos.
+                En el VPS puede tardar 2-5 minutos la primera vez. Si falla, en el servidor ejecuta{' '}
+                <code className="text-[10px]">bash scripts/vps-whatsapp-fix.sh</code>.
               </p>
             </div>
           </div>
