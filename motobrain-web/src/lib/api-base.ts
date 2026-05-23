@@ -5,6 +5,8 @@ const VERCEL_PROXY_BASE = '/api/backend';
 
 function useVercelProxy(hostname: string): boolean {
   if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
+  // En Vercel siempre proxy interno (evita 405 si NEXT_PUBLIC_API_URL apunta a /api/v1 del propio front).
+  if (hostname.endsWith('.vercel.app')) return true;
   if (process.env.NEXT_PUBLIC_API_USE_PROXY === 'true') return true;
   if (process.env.NEXT_PUBLIC_API_USE_PROXY === 'false') return false;
   try {
@@ -16,7 +18,7 @@ function useVercelProxy(hostname: string): boolean {
 
 /**
  * Local: localhost:4000.
- * Vercel + API en HTTP (VPS sin HTTPS): usa /backend (rewrite en next.config).
+ * Vercel + API en HTTP (VPS): usa /api/backend (proxy serverless → VPS).
  * Producción con API HTTPS: NEXT_PUBLIC_API_URL=https://api.tudominio.com/api/v1
  */
 export function resolveApiBase(): string {

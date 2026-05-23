@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /** Compatibilidad: /backend → proxy serverless /api/backend (no sale directo al VPS desde el edge). */
+  /** Rutas al proxy (por si NEXT_PUBLIC_API_URL apunta mal al dominio de Vercel). */
   async rewrites() {
-    return [{ source: '/backend/:path*', destination: '/api/backend/:path*' }];
+    return [
+      { source: '/backend/:path*', destination: '/api/backend/:path*' },
+      { source: '/api/v1/:path*', destination: '/api/backend/:path*' },
+    ];
   },
   eslint: {
     // Vercel: el build no debe fallar por deuda de lint en archivos legacy

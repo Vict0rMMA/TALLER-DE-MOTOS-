@@ -77,9 +77,11 @@ class ApiClient {
       const msg =
         body.error ??
         body.message ??
-        (res.status === 500
-          ? 'Error del servidor. ¿Está la API en marcha y la base de datos migrada?'
-          : `HTTP ${res.status}`);
+        (res.status === 405
+          ? 'Ruta API incorrecta en Vercel. Redeploy el front y usa BACKEND_URL=http://185.166.212.43 (sin :4000).'
+          : res.status === 500
+            ? 'Error del servidor. ¿Está la API en marcha y la base de datos migrada?'
+            : `HTTP ${res.status}`);
       throw new ApiError(msg, res.status);
     }
 

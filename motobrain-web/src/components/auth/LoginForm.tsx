@@ -161,8 +161,14 @@ function LoginCard({
       return;
     }
     fetch('/api/backend/health', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d: { ok?: boolean }) => setServerStatus(d.ok ? 'ok' : 'down'))
+      .then(async (r) => {
+        if (!r.ok) {
+          setServerStatus('down');
+          return;
+        }
+        const d = (await r.json()) as { ok?: boolean };
+        setServerStatus(d.ok ? 'ok' : 'down');
+      })
       .catch(() => setServerStatus('down'));
   }, []);
 
