@@ -1,7 +1,7 @@
 const ENV_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 const LOCAL_API = 'http://localhost:4000/api/v1';
-/** Proxy en Vercel → evita bloqueo HTTPS→HTTP (mixed content). Ver next.config rewrites. */
-const VERCEL_PROXY_BASE = '/backend';
+/** Proxy en Vercel → evita mixed content HTTPS→HTTP. Ver app/api/backend/[...path]/route.ts */
+const VERCEL_PROXY_BASE = '/api/backend';
 
 function useVercelProxy(hostname: string): boolean {
   if (hostname === 'localhost' || hostname === '127.0.0.1') return false;

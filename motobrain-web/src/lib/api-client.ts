@@ -2,7 +2,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { clearAuthCookie } from '@/lib/utils';
 import { resolveApiBase } from '@/lib/api-base';
 
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 45_000;
 
 export class ApiError extends Error {
   constructor(
