@@ -160,9 +160,9 @@ function LoginCard({
       setServerStatus('ok');
       return;
     }
-    fetch('/api/status', { cache: 'no-store' })
+    fetch('/api/backend/health', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((d: { vpsReachable?: boolean }) => setServerStatus(d.vpsReachable ? 'ok' : 'down'))
+      .then((d: { ok?: boolean }) => setServerStatus(d.ok ? 'ok' : 'down'))
       .catch(() => setServerStatus('down'));
   }, []);
 
