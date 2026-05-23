@@ -7,10 +7,11 @@ echo "==> Firewall puerto 80..."
 ufw allow OpenSSH 2>/dev/null || true
 ufw allow 80/tcp 2>/dev/null || true
 ufw --force enable 2>/dev/null || true
-echo "==> Dependencias y build..."
+echo "==> Dependencias, Prisma y build..."
 npm ci
-npm run build
+npx prisma generate
 npx prisma migrate deploy
+npm run build
 echo "==> PM2..."
 pm2 delete motobrain-api 2>/dev/null || true
 pm2 start ecosystem.config.cjs

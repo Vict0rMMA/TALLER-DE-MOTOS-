@@ -29,7 +29,10 @@ echo "==> 3/4 Limpiar cachés pesados..."
 rm -rf .wwebjs_cache 2>/dev/null || true
 npm cache clean --force 2>/dev/null || true
 
-echo "==> 4/4 Build y PM2 con límites de memoria..."
+echo "==> 4/4 Dependencias, Prisma, build y PM2..."
+npm ci
+npx prisma generate
+npx prisma migrate deploy
 npm run build
 pm2 delete motobrain-api 2>/dev/null || true
 pm2 start ecosystem.config.cjs

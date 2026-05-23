@@ -34,6 +34,7 @@ echo "==> Limpiar sesión WhatsApp (QR nuevo)..."
 rm -rf .wwebjs_auth .wwebjs_cache 2>/dev/null || true
 
 echo "==> Rebuild y reinicio API..."
+npx prisma generate
 npm run build
 pm2 restart motobrain-api --update-env
 
