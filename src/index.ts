@@ -4,12 +4,19 @@ import { env } from './infrastructure/config/env';
 import { runReminderCron } from './infrastructure/jobs/reminderCron';
 
 if (process.env.ENABLE_WHATSAPP === 'true') {
-  import('./infrastructure/whatsapp/WhatsAppWebService')
-    .then(({ WhatsAppWebService }) => {
-      new WhatsAppWebService();
-      console.log('[WhatsApp] Iniciando bot...');
-    })
-    .catch((err) => console.error('[WhatsApp] No se pudo cargar:', err.message));
+  const lazy = process.env.WHATSAPP_LAZY_START !== 'false';
+  if (lazy) {
+    console.log(
+      '[WhatsApp] Modo ahorro de RAM: Chrome arranca al abrir Configuración → WhatsApp (WHATSAPP_LAZY_START=true)',
+    );
+  } else {
+    import('./infrastructure/whatsapp/WhatsAppWebService')
+      .then(({ WhatsAppWebService }) => {
+        new WhatsAppWebService();
+        console.log('[WhatsApp] Iniciando bot al arrancar la API…');
+      })
+      .catch((err) => console.error('[WhatsApp] No se pudo cargar:', err.message));
+  }
 } else {
   console.log('[WhatsApp] Desactivado — pon ENABLE_WHATSAPP=true para activar el bot');
 }

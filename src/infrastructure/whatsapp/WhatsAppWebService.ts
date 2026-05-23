@@ -9,8 +9,24 @@ let isReady = false;
 let client: Client | null = null;
 let lastError: string | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let startRequested = false;
 
 const RECONNECT_MS = 15_000;
+
+/** true = Chrome solo arranca al abrir Configuración o enviar mensaje (ahorra RAM). */
+export function isWhatsAppLazyStart(): boolean {
+  return process.env.WHATSAPP_LAZY_START !== 'false';
+}
+
+/** Inicia Puppeteer bajo demanda (VPS con poca RAM). */
+export function ensureWhatsAppStarted(): void {
+  if (process.env.ENABLE_WHATSAPP !== 'true' || !isWhatsAppRuntimeSupported()) return;
+  if (client) return;
+  if (startRequested) return;
+  startRequested = true;
+  console.log('[WhatsApp] Arranque bajo demanda (WHATSAPP_LAZY_START)…');
+  client = buildClient();
+}
 
 function clearReconnectTimer(): void {
   if (reconnectTimer) {
@@ -163,6 +179,7 @@ function buildClient(): Client {
       console.error('[WhatsApp] Error al inicializar:', err.message);
       lastError = humanizeInitError(err.message, executablePath);
       client = null;
+      startRequested = false;
       scheduleReconnect();
     });
 
@@ -171,6 +188,7 @@ function buildClient(): Client {
 
 function getClient(): Client {
   assertWhatsAppRuntime();
+  ensureWhatsAppStarted();
   if (!client) {
     client = buildClient();
   }
@@ -178,6 +196,9 @@ function getClient(): Client {
 }
 
 export function getWhatsAppStatus() {
+  if (process.env.ENABLE_WHATSAPP === 'true' && isWhatsAppLazyStart()) {
+    ensureWhatsAppStarted();
+  }
   const wantsEnabled = process.env.ENABLE_WHATSAPP === 'true';
   const supported = isWhatsAppRuntimeSupported();
   const enabled = wantsEnabled && supported;
@@ -214,6 +235,7 @@ export async function restartWhatsApp(deleteSession = false): Promise<void> {
   isReady = false;
   qrBase64 = null;
   lastError = null;
+  startRequested = false;
 
   if (deleteSession) {
     const sessionPath = path.resolve('.wwebjs_auth');
