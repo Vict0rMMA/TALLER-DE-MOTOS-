@@ -236,7 +236,10 @@ export class WhatsAppWebService implements WhatsAppService {
           `El número ${digits || phone} no tiene WhatsApp activo. Revisa el teléfono del cliente (10 dígitos, Colombia).`,
         );
       }
-      await this.wa.sendMessage(chatId, message);
+      const sent = await this.wa.sendMessage(chatId, message);
+      if (!sent?.id?._serialized && !sent?.id) {
+        throw new Error('WhatsApp no confirmó el envío. Reconecta en Configuración.');
+      }
     } catch (err) {
       const raw = err instanceof Error ? err.message : String(err);
       if (raw.includes('No LID') || raw.includes('not registered')) {

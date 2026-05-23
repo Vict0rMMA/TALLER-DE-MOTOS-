@@ -13,8 +13,19 @@ const allowedOrigins = [
   ...(process.env.EXTRA_ORIGINS ? process.env.EXTRA_ORIGINS.split(',').map((o) => o.trim()) : []),
 ].filter(Boolean);
 
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (process.env.NODE_ENV !== 'production') return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (/^https:\/\/[\w-]+\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? allowedOrigins : true,
+  origin: (origin, cb) => {
+    if (isAllowedOrigin(origin)) cb(null, true);
+    else cb(new Error(`CORS: origen no permitido (${origin})`));
+  },
   credentials: true,
 }));
 app.use(json());

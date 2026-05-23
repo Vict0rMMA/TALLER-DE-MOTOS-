@@ -3,6 +3,10 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "outputDirectory": ".next",
+  "env": {
+    "BACKEND_URL": "http://185.166.212.43",
+    "NEXT_PUBLIC_API_URL": "http://185.166.212.43/api/v1"
+  },
   "functions": {
     "src/app/api/backend/[...path]/route.ts": {
       "maxDuration": 60

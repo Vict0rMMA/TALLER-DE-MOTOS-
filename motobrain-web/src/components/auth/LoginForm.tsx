@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -151,6 +151,20 @@ function LoginCard({
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [serverStatus, setServerStatus] = useState<'checking' | 'ok' | 'down'>('checking');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      setServerStatus('ok');
+      return;
+    }
+    fetch('/api/status', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d: { vpsReachable?: boolean }) => setServerStatus(d.vpsReachable ? 'ok' : 'down'))
+      .catch(() => setServerStatus('down'));
+  }, []);
 
   function handleTallerSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -202,6 +216,12 @@ function LoginCard({
           Soy cliente
         </button>
       </div>
+
+      {tab === 'taller' && serverStatus === 'down' && (
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          El servidor del taller no responde desde Vercel. Revisa que la API en el VPS esté activa (puerto 80) y el firewall de Clouding.
+        </div>
+      )}
 
       {tab === 'taller' && (
         <form onSubmit={handleTallerSubmit} className="space-y-4">

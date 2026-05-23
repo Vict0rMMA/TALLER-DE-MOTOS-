@@ -44,7 +44,7 @@ async function proxy(req: NextRequest, pathSegments: string[]): Promise<NextResp
     return NextResponse.json(
       {
         error:
-          'No se pudo conectar con el VPS. En Vercel: BACKEND_URL=http://185.166.212.43 (sin :4000). Abre el puerto 80 en Clouding.',
+          'No se pudo conectar con el servidor del taller. Revisa que la API en el VPS esté activa (puerto 80) y el firewall de Clouding.',
         detail: msg,
       },
       { status: 502 },
