@@ -6,9 +6,14 @@ import { CreateService } from '../../application/usecases/services/CreateService
 import { UpdateService } from '../../application/usecases/services/UpdateService';
 import { CloseService } from '../../application/usecases/services/CloseService';
 import { GetUpcomingMaintenance } from '../../application/usecases/services/GetUpcomingMaintenance';
-import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
 import { DomainError } from '../../domain/errors/DomainError';
 import { env } from '../../infrastructure/config/env';
+import {
+  sendServiceCreatedEmail,
+  sendServiceInProgressEmail,
+  sendServiceCancelledEmail,
+  sendServiceClosedEmail,
+} from '../../infrastructure/email/serviceEmails';
 import prisma from '../../infrastructure/prisma/client';
 
 const serviceRepo = new PrismaServiceRepository();
@@ -120,6 +125,8 @@ export const createService = async (req: Request, res: Response, next: NextFunct
     });
     if (!row) throw new DomainError('Servicio no encontrado', 404);
     res.status(201).json(mapServiceRow(row));
+    // Email asíncrono — no bloquea la respuesta
+    sendServiceCreatedEmail(result.id).catch(() => {});
   } catch (e) {
     next(e);
   }
@@ -127,13 +134,17 @@ export const createService = async (req: Request, res: Response, next: NextFunct
 
 export const updateService = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json(
-      await new UpdateService(serviceRepo).execute({
-        id: String(req.params.id),
-        workshopId: req.workshopId!,
-        data: req.body,
-      }),
-    );
+    const serviceId = String(req.params.id);
+    const result = await new UpdateService(serviceRepo).execute({
+      id: serviceId,
+      workshopId: req.workshopId!,
+      data: req.body,
+    });
+    res.json(result);
+    // Emails automáticos según el nuevo estado
+    const newStatus = req.body.status;
+    if (newStatus === 'in_progress') sendServiceInProgressEmail(serviceId).catch(() => {});
+    if (newStatus === 'cancelled') sendServiceCancelledEmail(serviceId).catch(() => {});
   } catch (e) {
     next(e);
   }
@@ -148,32 +159,7 @@ export const closeService = async (req: Request, res: Response, next: NextFuncti
       ...req.body,
     });
 
-    (async () => {
-      try {
-        const row = await (prisma as any).service.findFirst({
-          where: { id: serviceId },
-          include: {
-            motorcycle: {
-              include: { customer: { select: { name: true, phone: true, optInWhatsapp: true } } },
-            },
-          },
-        });
-        const customer = row?.motorcycle?.customer;
-        if (customer?.optInWhatsapp && customer?.phone) {
-          const wa = new WhatsAppWebService();
-          const total = Number(result.totalCost ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
-          const receiptUrl = `${env.PUBLIC_APP_URL}/recibo/${serviceId}`;
-          await wa.sendMessage(
-            customer.phone,
-            `✅ *${customer.name ?? 'Cliente'}*, tu moto *${row?.motorcycle?.placa ?? ''}* ya está lista en el taller.\n\n` +
-            `🔧 ${row?.description ?? 'Servicio completado'}\n💰 Total: $${total} COP\n\n` +
-            `📄 Ver tu recibo completo:\n${receiptUrl}`,
-          );
-        }
-      } catch (waErr) {
-        console.warn('[closeService] WhatsApp notification failed:', (waErr as Error).message);
-      }
-    })();
+    sendServiceClosedEmail(serviceId, env.PUBLIC_APP_URL).catch(() => {});
 
     res.json(result);
   } catch (e) {
