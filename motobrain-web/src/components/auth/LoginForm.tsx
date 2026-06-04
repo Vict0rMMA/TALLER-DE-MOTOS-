@@ -225,7 +225,7 @@ function LoginCard({
 
       {tab === 'taller' && serverStatus === 'down' && (
         <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          El servidor del taller no responde desde Vercel. Revisa que la API en el VPS esté activa (puerto 80) y el firewall de Clouding.
+          El servidor no responde. Intenta de nuevo en unos segundos o contacta al administrador.
         </div>
       )}
 

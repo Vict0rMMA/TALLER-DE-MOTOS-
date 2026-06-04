@@ -4,12 +4,8 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 function backendRoot(): string {
-  const raw = process.env.BACKEND_URL?.trim() || 'http://185.166.212.43';
-  const base = raw.replace(/\/+$/, '');
-  if (base.includes(':4000')) {
-    console.warn('[api/backend] BACKEND_URL usa :4000; en el VPS la API suele estar en puerto 80.');
-  }
-  return base;
+  const raw = process.env.BACKEND_URL?.trim() || 'https://moto-taller-app.vercel.app';
+  return raw.replace(/\/+$/, '');
 }
 
 async function proxy(req: NextRequest, pathSegments: string[]): Promise<NextResponse> {
@@ -44,7 +40,7 @@ async function proxy(req: NextRequest, pathSegments: string[]): Promise<NextResp
     return NextResponse.json(
       {
         error:
-          'No se pudo conectar con el servidor del taller. Revisa que la API en el VPS esté activa (puerto 80) y el firewall de Clouding.',
+          'No se pudo conectar con el servidor. Intenta de nuevo en unos segundos.',
         detail: msg,
       },
       { status: 502 },
