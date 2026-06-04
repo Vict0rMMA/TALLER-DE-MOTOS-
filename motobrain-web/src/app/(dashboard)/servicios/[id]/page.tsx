@@ -48,8 +48,8 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
       { templateId },
       {
         onSuccess: (res) => {
-          if (res.status === 'sent') toast.success('Mensaje enviado por WhatsApp');
-          else toast.warning('Notificación registrada pero WhatsApp no está conectado');
+          if (res.status === 'sent') toast.success(`Notificación enviada por ${res.channel === 'email' ? 'email' : 'WhatsApp'}`);
+          else toast.warning('Notificación registrada pero no se pudo enviar');
         },
         onError: (e) => toast.error('Error al enviar', { description: (e as Error).message }),
       },
@@ -172,7 +172,7 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
                 closeService.mutate(undefined, {
                   onSuccess: () =>
                     toast.success('Servicio cerrado', {
-                      description: 'Se notificó al cliente por WhatsApp si está conectado.',
+                      description: 'Se notificó al cliente por email.',
                       duration: 6_000,
                     }),
                   onError: (e) => toast.error('Error al cerrar', { description: (e as Error).message }),
@@ -190,7 +190,7 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
       {service.status !== 'cancelled' && (
         <div className="glass-card p-5 space-y-4">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
-            <MessageCircle className="h-3.5 w-3.5" /> Notificar por WhatsApp
+            <MessageCircle className="h-3.5 w-3.5" /> Notificar al cliente
           </h2>
           <div className="flex flex-wrap gap-2">
             {service.status === 'closed' && (
