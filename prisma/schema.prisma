@@ -47,13 +47,14 @@ enum AppointmentStatus {
 }
 
 model Workshop {
-  id        String   @id @default(cuid())
-  name      String
-  nit       String?  @unique
-  phone     String?
-  address   String?
-  plan      String   @default("free")
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  nit        String?  @unique
+  phone      String?
+  address    String?
+  plan       String   @default("free")
+  inviteCode String?  @unique
+  createdAt  DateTime @default(now())
 
   users          User[]
   customers      Customer[]

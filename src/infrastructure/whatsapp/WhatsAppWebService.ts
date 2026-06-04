@@ -5,6 +5,7 @@ import * as path from 'path';
 import { WhatsAppService } from '../../domain/services/WhatsAppService';
 
 let qrBase64: string | null = null;
+let pairingCode: string | null = null;
 let isReady = false;
 let client: Client | null = null;
 let lastError: string | null = null;
@@ -140,7 +141,16 @@ function buildClient(): Client {
 
   c.on('qr', async (qr) => {
     console.log('[WhatsApp] QR listo — escanea en Configuración del panel');
+    pairingCode = null;
     qrBase64 = await qrToBase64(qr).catch(() => null);
+    isReady = false;
+    lastError = null;
+  });
+
+  c.on('code', (code: string) => {
+    console.log('[WhatsApp] Código de vinculación listo — introdúcelo en el celular');
+    pairingCode = code;
+    qrBase64 = null;
     isReady = false;
     lastError = null;
   });
@@ -154,6 +164,7 @@ function buildClient(): Client {
     console.log('[WhatsApp] Conectado y listo para enviar mensajes');
     isReady = true;
     qrBase64 = null;
+    pairingCode = null;
     lastError = null;
   });
 
@@ -211,6 +222,8 @@ export function getWhatsAppStatus() {
     isReady: enabled ? isReady : false,
     hasQr: enabled ? !!qrBase64 : false,
     qr: enabled ? qrBase64 : null,
+    hasPairingCode: enabled ? !!pairingCode : false,
+    pairingCode: enabled ? pairingCode : null,
     error: enabled ? lastError : null,
     chromePath: enabled ? (findChrome() ?? null) : null,
     enabled,
@@ -234,6 +247,7 @@ export async function restartWhatsApp(deleteSession = false): Promise<void> {
   }
   isReady = false;
   qrBase64 = null;
+  pairingCode = null;
   lastError = null;
   startRequested = false;
 
@@ -249,6 +263,75 @@ export async function restartWhatsApp(deleteSession = false): Promise<void> {
   }
 
   client = buildClient();
+}
+
+/** Número internacional sin símbolos (ej. 573001234567). Por defecto asume Colombia si son 10 dígitos. */
+export function formatPhoneInternational(raw: string): string {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.length === 10) digits = `57${digits}`;
+  return digits;
+}
+
+type ClientWithPairing = Client & {
+  requestPairingCode?: (phoneNumber: string, showNotification?: boolean, intervalMs?: number) => Promise<string>;
+  cancelPairingCode?: () => Promise<void>;
+  pupPage?: unknown;
+};
+
+async function waitForWhatsAppBrowser(maxMs = 120_000): Promise<ClientWithPairing> {
+  const c = getClient() as ClientWithPairing;
+  if (c.pupPage) return c;
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + maxMs;
+    const check = () => {
+      if (c.pupPage) {
+        resolve(c);
+        return;
+      }
+      if (Date.now() > deadline) {
+        reject(
+          new Error(
+            'WhatsApp aún está arrancando en el servidor. Espera 1-2 minutos y vuelve a generar el código.',
+          ),
+        );
+        return;
+      }
+      setTimeout(check, 1500);
+    };
+    check();
+  });
+}
+
+/** Vincular sin QR: código de 8 caracteres que introduces en el celular (Dispositivos vinculados → Vincular con número). */
+export async function requestWhatsAppPairingCode(rawPhone: string): Promise<string> {
+  if (process.env.ENABLE_WHATSAPP !== 'true') {
+    throw new Error('WhatsApp no está habilitado en este servidor');
+  }
+  assertWhatsAppRuntime();
+  const phone = formatPhoneInternational(rawPhone);
+  if (phone.length < 11) {
+    throw new Error('Número inválido. Ejemplo Colombia: 3001234567 o 573001234567');
+  }
+  const c = await waitForWhatsAppBrowser();
+  if (typeof c.requestPairingCode !== 'function') {
+    throw new Error(
+      'El servidor necesita whatsapp-web.js ≥ 1.34. Ejecuta en el VPS: npm update whatsapp-web.js && npm run build && pm2 restart motobrain-api',
+    );
+  }
+  const code = await c.requestPairingCode(phone, true, 180_000);
+  pairingCode = code;
+  qrBase64 = null;
+  return code;
+}
+
+export async function cancelWhatsAppPairingCode(): Promise<void> {
+  if (!client) return;
+  const c = client as ClientWithPairing;
+  if (typeof c.cancelPairingCode === 'function') {
+    await c.cancelPairingCode().catch(() => {});
+  }
+  pairingCode = null;
 }
 
 function formatPhone(phone: string): string {
@@ -267,9 +350,11 @@ export class WhatsAppWebService implements WhatsAppService {
 
   async sendMessage(phone: string, message: string): Promise<void> {
     if (!isReady) {
-      const hint = qrBase64
-        ? 'WhatsApp esperando QR: entra a Configuración y escanéalo.'
-        : 'WhatsApp no conectado en el servidor. Revisa Configuración → WhatsApp.';
+      const hint = pairingCode
+        ? 'WhatsApp esperando código: entra a Configuración y complétalo en el celular.'
+        : qrBase64
+          ? 'WhatsApp esperando QR: entra a Configuración y escanéalo.'
+          : 'WhatsApp no conectado en el servidor. Revisa Configuración → WhatsApp.';
       throw new Error(hint);
     }
     const chatId = formatPhone(phone);

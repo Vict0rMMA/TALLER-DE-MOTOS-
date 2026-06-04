@@ -6,13 +6,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Building2, Users, LogOut, Plus, Eye, EyeOff, Check, AlertCircle, MessageCircle, Wifi, WifiOff, RefreshCw, RotateCcw, Trash2, Pencil, Phone, MapPin, X } from 'lucide-react';
+import { User, Building2, Users, LogOut, Plus, Eye, EyeOff, Check, AlertCircle, MessageCircle, Wifi, WifiOff, RefreshCw, RotateCcw, Trash2, Pencil, Phone, MapPin, X, KeyRound, Copy, RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api-client';
-import { useWhatsAppStatus, restartWhatsAppClient } from '@/hooks/use-notifications';
+import {
+  useWhatsAppStatus,
+  restartWhatsAppClient,
+  requestWhatsAppPairingCode,
+  cancelWhatsAppPairingCode,
+} from '@/hooks/use-notifications';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Propietario',
@@ -359,6 +364,42 @@ function WhatsAppDisabledPanel({ reason }: { reason: WhatsAppDisabledReason }) {
 function WhatsAppSection() {
   const { data, isLoading, refetch, isFetching } = useWhatsAppStatus({ poll: true, pollMs: 5_000 });
   const [restarting, setRestarting] = useState(false);
+  const [linkMode, setLinkMode] = useState<'qr' | 'code'>('code');
+  const [phone, setPhone] = useState('');
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingError, setPairingError] = useState<string | null>(null);
+
+  async function handleRequestPairingCode() {
+    const trimmed = phone.replace(/\D/g, '');
+    if (trimmed.length < 10) {
+      setPairingError('Escribe el número de WhatsApp del taller (10 dígitos en Colombia).');
+      return;
+    }
+    setPairingLoading(true);
+    setPairingError(null);
+    try {
+      await requestWhatsAppPairingCode(phone);
+      toast.success('Código generado — introdúcelo en tu celular');
+      refetch();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'No se pudo generar el código';
+      setPairingError(msg);
+      toast.error(msg);
+    } finally {
+      setPairingLoading(false);
+    }
+  }
+
+  async function handleCancelPairing() {
+    setPairingLoading(true);
+    try {
+      await cancelWhatsAppPairingCode();
+      refetch();
+    } catch {
+    } finally {
+      setPairingLoading(false);
+    }
+  }
 
   async function handleRestart(deleteSession: boolean) {
     setRestarting(true);
@@ -436,7 +477,44 @@ function WhatsAppSection() {
             Desvincular y escanear de nuevo
           </button>
         </div>
-      ) : data?.hasQr && data.qr ? (
+      ) : !data?.isReady ? (
+        <div className="space-y-4">
+          <div className="flex rounded-lg border border-border p-1 bg-bg-elevated">
+            <button
+              type="button"
+              onClick={() => setLinkMode('code')}
+              className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
+                linkMode === 'code' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Código (sin QR)
+            </button>
+            <button
+              type="button"
+              onClick={() => setLinkMode('qr')}
+              className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
+                linkMode === 'qr' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Código QR
+            </button>
+          </div>
+
+          {linkMode === 'code' ? (
+            <WhatsAppPairingCodePanel
+              data={data}
+              phone={phone}
+              onPhoneChange={setPhone}
+              onGenerate={handleRequestPairingCode}
+              onCancel={handleCancelPairing}
+              onSwitchToQr={() => {
+                setLinkMode('qr');
+                handleCancelPairing();
+              }}
+              loading={pairingLoading}
+              error={pairingError}
+            />
+          ) : data?.hasQr && data.qr ? (
         <div className="space-y-4">
           <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
             <WifiOff className="h-5 w-5 text-warning flex-shrink-0" />
@@ -452,10 +530,14 @@ function WhatsAppSection() {
             <div className="rounded-2xl bg-white p-4 shadow-lg">
               <img src={data.qr} alt="WhatsApp QR" width={256} height={256} className="block" />
             </div>
+            <p className="max-w-sm rounded-lg border border-border bg-bg-elevated px-3 py-2 text-xs text-text-secondary text-center">
+              Si en el celular ves <strong className="text-text-primary">Chrome (macOS)</strong>, esa sesión es de tu PC en local.
+              Escanea <strong className="text-text-primary">este QR</strong> para vincular el servidor del taller (VPS).
+            </p>
             <ol className="space-y-2 text-sm text-text-secondary max-w-xs">
               <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">1.</span> Abre WhatsApp en tu teléfono</li>
               <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">2.</span> Ve a <span className="font-medium text-text-primary mx-1">Dispositivos vinculados</span> (menú ⋮ o Configuración)</li>
-              <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">3.</span> Toca <span className="font-medium text-text-primary mx-1">Vincular un dispositivo</span> y escanea el QR</li>
+              <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">3.</span> Toca <span className="font-medium text-text-primary mx-1">Vincular un dispositivo</span> y escanea el QR de esta pantalla</li>
             </ol>
             <button
               onClick={() => handleRestart(true)}
@@ -467,7 +549,7 @@ function WhatsAppSection() {
             </button>
           </div>
         </div>
-      ) : (
+          ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
             <WifiOff className="h-5 w-5 text-warning flex-shrink-0" />
@@ -500,7 +582,115 @@ function WhatsAppSection() {
             <div className="h-full w-1/3 animate-pulse rounded-full bg-warning/40" />
           </div>
         </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function WhatsAppPairingCodePanel({
+  data,
+  phone,
+  onPhoneChange,
+  onGenerate,
+  onCancel,
+  onSwitchToQr,
+  loading,
+  error,
+}: {
+  data: { hasPairingCode?: boolean; pairingCode?: string | null; error?: string | null } | undefined;
+  phone: string;
+  onPhoneChange: (v: string) => void;
+  onGenerate: () => void;
+  onCancel: () => void;
+  onSwitchToQr: () => void;
+  loading: boolean;
+  error: string | null;
+}) {
+  const code = data?.pairingCode;
+  const displayCode = code ? code.replace(/(.{4})/g, '$1 ').trim() : null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+        <WifiOff className="h-5 w-5 text-warning flex-shrink-0" />
+        <div>
+          <p className="text-sm font-medium text-warning">Vincular con número de teléfono</p>
+          <p className="text-xs text-text-tertiary mt-0.5">
+            Sin escanear QR: generas un código aquí y lo escribes en el celular (caduca en ~3 min).
+          </p>
+        </div>
+      </div>
+
+      {displayCode ? (
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-xs text-text-secondary text-center">Introduce este código en tu WhatsApp:</p>
+          <p className="font-mono text-3xl font-bold tracking-[0.35em] text-accent select-all">{displayCode}</p>
+          <ol className="space-y-2 text-sm text-text-secondary max-w-sm">
+            <li className="flex gap-2.5">
+              <span className="font-bold text-accent min-w-[16px]">1.</span>
+              Abre WhatsApp en el teléfono del taller
+            </li>
+            <li className="flex gap-2.5">
+              <span className="font-bold text-accent min-w-[16px]">2.</span>
+              Menú → <span className="font-medium text-text-primary">Dispositivos vinculados</span>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="font-bold text-accent min-w-[16px]">3.</span>
+              <span className="font-medium text-text-primary">Vincular un dispositivo</span> →{' '}
+              <span className="font-medium text-text-primary">Vincular con número de teléfono</span>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="font-bold text-accent min-w-[16px]">4.</span>
+              Escribe el código de arriba (no es SMS; es el código de WhatsApp)
+            </li>
+          </ol>
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={loading}
+            className="text-xs text-accent hover:underline disabled:opacity-50"
+          >
+            Generar código nuevo
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3 max-w-sm">
+          <label className="block text-xs font-medium text-text-secondary">
+            Número de WhatsApp del taller
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => onPhoneChange(e.target.value)}
+            placeholder="300 123 4567"
+            className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+          />
+          <p className="text-[11px] text-text-tertiary">
+            Colombia: 10 dígitos sin +57. Debe ser la misma línea que usará el taller para enviar mensajes.
+          </p>
+          {(error || data?.error) && (
+            <p className="text-xs text-danger">{error ?? data?.error}</p>
+          )}
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={loading}
+            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+          >
+            {loading ? 'Generando…' : 'Generar código de vinculación'}
+          </button>
+        </div>
       )}
+
+      <button
+        type="button"
+        onClick={onSwitchToQr}
+        className="text-xs text-text-tertiary hover:text-accent transition-colors"
+      >
+        Prefiero vincular con código QR
+      </button>
     </div>
   );
 }
@@ -512,6 +702,49 @@ const ROLE_COLORS: Record<string, string> = {
   mechanic: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
   seller: 'border-violet-500/30 bg-violet-500/10 text-violet-400',
 };
+
+function InviteCodeCard() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['invite-code'],
+    queryFn: () => api.get<{ inviteCode: string; workshopName: string }>('/auth/invite-code'),
+    staleTime: 60_000,
+  });
+
+  const regenerate = useMutation({
+    mutationFn: () => api.post<{ inviteCode: string }>('/auth/invite-code/regenerate', {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invite-code'] }); toast.success('Código regenerado'); },
+    onError: (e) => toast.error('Error', { description: (e as Error).message }),
+  });
+
+  function copyCode() {
+    if (!data?.inviteCode) return;
+    navigator.clipboard.writeText(data.inviteCode);
+    toast.success('Código copiado');
+  }
+
+  return (
+    <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <KeyRound className="h-4 w-4 text-accent" />
+        <p className="text-sm font-semibold text-text-primary">Código de invitación del taller</p>
+      </div>
+      <p className="text-xs text-text-tertiary">Comparte este código con mecánicos y vendedores para que se registren en tu taller.</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 rounded-lg border border-border bg-bg-elevated px-4 py-2 font-mono text-lg font-bold tracking-widest text-accent text-center">
+          {isLoading ? '...' : (data?.inviteCode ?? '—')}
+        </div>
+        <button onClick={copyCode} title="Copiar" className="rounded-lg border border-border p-2 text-text-tertiary hover:text-accent hover:border-accent transition-colors">
+          <Copy className="h-4 w-4" />
+        </button>
+        <button onClick={() => regenerate.mutate()} disabled={regenerate.isPending} title="Regenerar código" className="rounded-lg border border-border p-2 text-text-tertiary hover:text-accent hover:border-accent transition-colors disabled:opacity-50">
+          <RefreshCcw className={`h-4 w-4 ${regenerate.isPending ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+      <p className="text-[11px] text-text-tertiary">El nuevo usuario va a <strong className="text-text-secondary">taller-mts.vercel.app/register</strong> → "Soy mecánico/vendedor" e ingresa este código.</p>
+    </div>
+  );
+}
 
 function UsersSection() {
   const { user } = useAuthStore();
@@ -568,6 +801,9 @@ function UsersSection() {
           {showForm ? 'Cancelar' : 'Agregar usuario'}
         </button>
       </div>
+
+      {/* Código de invitación */}
+      <InviteCodeCard />
 
       {showForm && (
         <AddUserForm workshopId={user.workshopId} onSuccess={() => { setShowForm(false); qc.invalidateQueries({ queryKey: ['workshop-users'] }); }} />

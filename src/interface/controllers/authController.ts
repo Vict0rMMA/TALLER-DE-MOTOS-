@@ -6,6 +6,9 @@ import { PrismaUserRepository } from '../../infrastructure/repositories/PrismaUs
 import { PrismaWorkshopRepository } from '../../infrastructure/repositories/PrismaWorkshopRepository';
 import { BcryptPasswordHasher } from '../../infrastructure/security/BcryptPasswordHasher';
 import { DomainError } from '../../domain/errors/DomainError';
+import prisma from '../../infrastructure/prisma/client';
+import { signToken } from '../../infrastructure/config/jwt';
+import crypto from 'crypto';
 
 const userRepo = new PrismaUserRepository();
 const workshopRepo = new PrismaWorkshopRepository();
@@ -80,5 +83,81 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
     if (target.role === 'owner') throw new DomainError('No puedes desactivar al propietario', 403);
     await userRepo.update(id, { active: false });
     res.status(204).send();
+  } catch (e) { next(e); }
+};
+
+// Obtener o regenerar código de invitación del taller
+export const getInviteCode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ws = await (prisma as any).workshop.findUnique({
+      where: { id: req.workshopId! },
+      select: { inviteCode: true, name: true },
+    });
+    if (!ws) throw new DomainError('Taller no encontrado', 404);
+    res.json({ inviteCode: ws.inviteCode, workshopName: ws.name });
+  } catch (e) { next(e); }
+};
+
+export const regenerateInviteCode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const newCode = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 chars
+    const ws = await (prisma as any).workshop.update({
+      where: { id: req.workshopId! },
+      data: { inviteCode: newCode },
+      select: { inviteCode: true, name: true },
+    });
+    res.json({ inviteCode: ws.inviteCode, workshopName: ws.name });
+  } catch (e) { next(e); }
+};
+
+// Registro por código de invitación (staff: mecánico o vendedor)
+export const registerWithCode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { inviteCode, name, email, password, role } = req.body as {
+      inviteCode?: string; name?: string; email?: string; password?: string;
+      role?: 'mechanic' | 'seller';
+    };
+
+    if (!inviteCode?.trim() || !name?.trim() || !email?.trim() || !password?.trim()) {
+      throw new DomainError('Código, nombre, email y contraseña son requeridos', 400);
+    }
+
+    const validRoles = ['mechanic', 'seller'];
+    const userRole = validRoles.includes(role ?? '') ? role! : 'mechanic';
+
+    const workshop = await (prisma as any).workshop.findUnique({
+      where: { inviteCode: inviteCode.trim().toUpperCase() },
+      select: { id: true, name: true },
+    });
+    if (!workshop) throw new DomainError('Código de invitación inválido', 400);
+
+    const existing = await (prisma as any).user.findUnique({ where: { email: email.trim() } });
+    if (existing) throw new DomainError('Ya existe un usuario con ese email', 409);
+
+    const passwordHash = await passwordHasher.hash(password);
+    const user = await (prisma as any).user.create({
+      data: {
+        workshopId: workshop.id,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        passwordHash,
+        role: userRole,
+        active: true,
+      },
+    });
+
+    const token = signToken({
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      workshopId: workshop.id,
+    });
+
+    res.status(201).json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      workshopName: workshop.name,
+    });
   } catch (e) { next(e); }
 };

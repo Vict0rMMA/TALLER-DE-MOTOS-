@@ -16,6 +16,8 @@ interface WhatsAppStatus {
   isReady: boolean;
   hasQr: boolean;
   qr: string | null;
+  hasPairingCode?: boolean;
+  pairingCode?: string | null;
   error: string | null;
   enabled: boolean;
   wantsEnabled?: boolean;
@@ -59,6 +61,15 @@ export function useWhatsAppStatus(options?: WhatsAppQueryOptions) {
 
 export async function restartWhatsAppClient(deleteSession = false): Promise<void> {
   await api.post(`/whatsapp/restart${deleteSession ? '?force=true' : ''}`, {});
+}
+
+export async function requestWhatsAppPairingCode(phone: string): Promise<string> {
+  const res = await api.post<{ code: string }>('/whatsapp/pairing-code', { phone });
+  return res.code;
+}
+
+export async function cancelWhatsAppPairingCode(): Promise<void> {
+  await api.post('/whatsapp/pairing-code/cancel', {});
 }
 
 /** Alertas del panel — sin polling agresivo de WhatsApp */
