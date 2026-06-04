@@ -5,6 +5,53 @@ import { DomainError } from '../../domain/errors/DomainError';
 import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 import { normalizeCedula } from '../../infrastructure/phone/cedula';
 
+export const portalRegister = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, phone, cedula, email } = req.body as {
+      name?: string; phone?: string; cedula?: string; email?: string;
+    };
+    if (!name?.trim() || !phone?.trim() || !cedula?.trim()) {
+      return next(new DomainError('Nombre, teléfono y cédula son requeridos', 400));
+    }
+
+    // Usa el primer taller disponible (app mono-taller)
+    const workshop = await prisma.workshop.findFirst({ select: { id: true } });
+    if (!workshop) return next(new DomainError('Taller no configurado', 500));
+
+    // Verificar que no exista ya
+    const existing = await prisma.customer.findFirst({
+      where: { workshopId: workshop.id, phone: phone.trim() },
+    });
+    if (existing) return next(new DomainError('Ya existe un cliente con ese teléfono', 409));
+
+    const customer = await prisma.customer.create({
+      data: {
+        workshopId: workshop.id,
+        name: name.trim(),
+        phone: phone.trim(),
+        cedula: cedula.trim(),
+        email: email?.trim() ?? null,
+        portalActive: true,
+        optInWhatsapp: true,
+      },
+    });
+
+    const token = signCustomerToken({
+      customerId: customer.id,
+      workshopId: customer.workshopId,
+      name: customer.name,
+      phone: customer.phone,
+    });
+
+    res.status(201).json({
+      token,
+      customer: { id: customer.id, name: customer.name, phone: customer.phone, email: customer.email },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const portalLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { phone, password } = req.body as { phone?: string; password?: string };

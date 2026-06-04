@@ -9,6 +9,7 @@ import * as otpCtrl from '../../controllers/portalOtpController';
 const router = Router();
 
 router.post('/login', ctrl.portalLogin);
+router.post('/register', ctrl.portalRegister);
 router.post('/auth/otp/request', otpCtrl.requestOtp);
 router.post('/auth/otp/verify', otpCtrl.verifyOtp);
 
