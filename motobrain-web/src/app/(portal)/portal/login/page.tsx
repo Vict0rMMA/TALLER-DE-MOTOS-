@@ -27,6 +27,12 @@ export default function PortalLoginPage() {
   const [regCedula, setRegCedula] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [showRegCedula, setShowRegCedula] = useState(false);
+  // Moto
+  const [motoPlaca, setMotoPlaca] = useState('');
+  const [motoBrand, setMotoBrand] = useState('');
+  const [motoModel, setMotoModel] = useState('');
+  const [motoCC, setMotoCC] = useState('');
+  const [motoYear, setMotoYear] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -65,6 +71,13 @@ export default function PortalLoginPage() {
         phone: regPhone.trim(),
         cedula: regCedula.trim(),
         email: regEmail.trim() || undefined,
+        moto: motoPlaca.trim() && motoBrand.trim() && motoModel.trim() ? {
+          placa: motoPlaca.trim().toUpperCase(),
+          brand: motoBrand.trim(),
+          model: motoModel.trim(),
+          cc: motoCC ? Number(motoCC) : 125,
+          year: motoYear ? Number(motoYear) : undefined,
+        } : undefined,
       });
       goPortal(res.customer, res.token);
     } catch (err) {
@@ -174,6 +187,45 @@ export default function PortalLoginPage() {
                   placeholder="tu@correo.com" autoComplete="email"
                   className="w-full rounded-lg border border-border bg-bg-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors" />
               </div>
+              {/* Datos de la moto */}
+              <div className="rounded-lg border border-border/50 bg-bg-elevated/50 p-3 space-y-3">
+                <p className="text-xs font-medium text-text-secondary">Tu motocicleta (opcional)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="block text-xs text-text-tertiary">Placa</label>
+                    <input type="text" value={motoPlaca} onChange={(e) => setMotoPlaca(e.target.value.toUpperCase())}
+                      placeholder="ABC123" maxLength={6}
+                      className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors uppercase" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs text-text-tertiary">CC</label>
+                    <input type="number" value={motoCC} onChange={(e) => setMotoCC(e.target.value)}
+                      placeholder="125" min={50} max={2000}
+                      className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="block text-xs text-text-tertiary">Marca</label>
+                    <input type="text" value={motoBrand} onChange={(e) => setMotoBrand(e.target.value)}
+                      placeholder="Honda, Yamaha..."
+                      className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs text-text-tertiary">Modelo</label>
+                    <input type="text" value={motoModel} onChange={(e) => setMotoModel(e.target.value)}
+                      placeholder="CB 125, FZ 150..."
+                      className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-text-tertiary">Año</label>
+                  <input type="number" value={motoYear} onChange={(e) => setMotoYear(e.target.value)}
+                    placeholder="2023" min={1990} max={2030}
+                    className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors" />
+                </div>
+              </div>
+
               {error && <div className="rounded-lg border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">{error}</div>}
               {success && <div className="rounded-lg border border-success/30 bg-success/5 px-3.5 py-2.5 text-sm text-success">{success}</div>}
               <button type="submit" disabled={loading || !regName.trim() || !regPhone.trim() || !regCedula.trim()}

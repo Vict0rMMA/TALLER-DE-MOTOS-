@@ -7,18 +7,17 @@ import { normalizeCedula } from '../../infrastructure/phone/cedula';
 
 export const portalRegister = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, phone, cedula, email } = req.body as {
+    const { name, phone, cedula, email, moto } = req.body as {
       name?: string; phone?: string; cedula?: string; email?: string;
+      moto?: { placa?: string; brand?: string; model?: string; cc?: number; year?: number };
     };
     if (!name?.trim() || !phone?.trim() || !cedula?.trim()) {
       return next(new DomainError('Nombre, teléfono y cédula son requeridos', 400));
     }
 
-    // Usa el primer taller disponible (app mono-taller)
     const workshop = await prisma.workshop.findFirst({ select: { id: true } });
     if (!workshop) return next(new DomainError('Taller no configurado', 500));
 
-    // Verificar que no exista ya
     const existing = await prisma.customer.findFirst({
       where: { workshopId: workshop.id, phone: phone.trim() },
     });
@@ -35,6 +34,21 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
         optInWhatsapp: true,
       },
     });
+
+    // Registrar moto si viene en el body
+    if (moto?.placa?.trim() && moto?.brand?.trim() && moto?.model?.trim()) {
+      await prisma.motorcycle.create({
+        data: {
+          customerId: customer.id,
+          placa: moto.placa.trim().toUpperCase(),
+          brand: moto.brand.trim(),
+          model: moto.model.trim(),
+          cc: moto.cc ?? 125,
+          year: moto.year ?? null,
+          kmCurrent: 0,
+        },
+      });
+    }
 
     const token = signCustomerToken({
       customerId: customer.id,
