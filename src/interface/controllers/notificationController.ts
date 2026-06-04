@@ -1,44 +1,59 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
-import { WhatsAppWebService, getWhatsAppStatus } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { getWhatsAppStatus } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { sendEmail, isEmailConfigured, buildServiceEmailHtml } from '../../infrastructure/email/EmailService';
 
-const TEMPLATES: Record<string, (p: Record<string, string>) => string> = {
-  service_completed: (p) =>
-    `✅ *MotoBrain* — Servicio completado\n\nHola ${p['1']}, tu moto placa *${p['2']}* ya está lista.\n\n📋 *Trabajo realizado:* Servicio de mantenimiento\n💰 *Total:* $${p['3']}\n\n¡Puedes pasar a recogerla! Gracias por confiar en nosotros 🙏`,
-  service_update: (p) =>
-    `🔧 *MotoBrain* — Actualización de servicio\n\nHola ${p['1']}, te informamos sobre el servicio de tu moto *${p['2']}*.\n\nContacta al taller si tienes preguntas.`,
-  payment_ready: (p) =>
-    `💰 *MotoBrain* — Factura lista\n\nHola ${p['1']}, la factura de tu moto *${p['2']}* está lista.\n\n*Total a pagar:* $${p['3']}\n\nAcércate al taller para realizar el pago. ¡Gracias! 🙏`,
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  oil_change: 'Cambio de aceite',
+  brake_repair: 'Reparación de frenos',
+  brakes: 'Frenos',
+  general_service: 'Servicio general',
+  chain_replacement: 'Cambio de cadena',
+  diagnosis: 'Diagnóstico',
+  maintenance: 'Mantenimiento',
+  tire_change: 'Cambio de llanta',
+  electrical: 'Eléctrico',
+  other: 'Otro',
 };
 
-async function dispatchWA(phone: string, message: string): Promise<'sent' | 'failed' | { failed: true; reason: string }> {
-  const st = getWhatsAppStatus();
-  if (!st.enabled) {
-    return { failed: true, reason: 'WhatsApp desactivado en el VPS (ENABLE_WHATSAPP=true).' };
+async function dispatchNotification(
+  phone: string,
+  email: string | null | undefined,
+  message: string,
+  emailSubject: string,
+  emailHtml: string,
+): Promise<{ channel: string; status: 'sent' | 'failed'; reason?: string }> {
+  // Intentar WhatsApp primero si está disponible
+  const wa = getWhatsAppStatus();
+  if (wa.enabled && wa.isReady) {
+    try {
+      const { WhatsAppWebService } = await import('../../infrastructure/whatsapp/WhatsAppWebService');
+      const waService = new WhatsAppWebService();
+      await waService.sendMessage(phone, message);
+      return { channel: 'whatsapp', status: 'sent' };
+    } catch (err) {
+      // WhatsApp falló, intentar email
+    }
   }
-  if (!st.isReady) {
-    return {
-      failed: true,
-      reason: st.hasQr
-        ? 'Escanea el QR en Configuración → WhatsApp.'
-        : (st.error ?? 'WhatsApp aún no está listo en el servidor.'),
-    };
-  }
-  try {
-    const wa = new WhatsAppWebService();
-    await wa.sendMessage(phone, message);
-    return 'sent';
-  } catch (err) {
-    return { failed: true, reason: (err as Error).message };
-  }
-}
 
-function waFailure(result: 'sent' | 'failed' | { failed: true; reason: string }): result is { failed: true; reason: string } {
-  return typeof result === 'object' && result.failed === true;
-}
+  // Fallback: email
+  if (email && isEmailConfigured()) {
+    try {
+      await sendEmail(email, emailSubject, emailHtml);
+      return { channel: 'email', status: 'sent' };
+    } catch (err) {
+      return { channel: 'email', status: 'failed', reason: (err as Error).message };
+    }
+  }
 
-function waErrorReason(result: 'sent' | 'failed' | { failed: true; reason: string }): string | null {
-  return waFailure(result) ? result.reason : null;
+  // Sin canal disponible
+  const reason = !wa.enabled
+    ? 'WhatsApp no está activo. Configura GMAIL_USER y GMAIL_APP_PASSWORD para enviar emails.'
+    : !email
+    ? 'El cliente no tiene email registrado y WhatsApp no está disponible.'
+    : 'No se pudo enviar: WhatsApp no listo y email no configurado.';
+
+  return { channel: 'none', status: 'failed', reason };
 }
 
 export const sendNotification = async (req: Request, res: Response, next: NextFunction) => {
@@ -56,14 +71,12 @@ export const sendNotification = async (req: Request, res: Response, next: NextFu
       return res.status(400).json({ error: 'customerId, type y message son requeridos' });
     }
 
-    let phone = body.phone;
-    if (!phone) {
-      const customer = await prisma.customer.findUnique({
-        where: { id: body.customerId },
-        select: { phone: true },
-      });
-      phone = customer?.phone ?? undefined;
-    }
+    const customer = await prisma.customer.findUnique({
+      where: { id: body.customerId },
+      select: { phone: true, email: true, name: true },
+    });
+
+    const phone = body.phone ?? customer?.phone ?? null;
     if (!phone) return res.status(400).json({ error: 'El cliente no tiene teléfono registrado' });
 
     const record = await prisma.notification.create({
@@ -78,23 +91,28 @@ export const sendNotification = async (req: Request, res: Response, next: NextFu
       },
     });
 
-    const waResult = await dispatchWA(phone, body.message);
-    const status = waResult === 'sent' ? 'sent' : 'failed';
-    const errorMsg = waErrorReason(waResult);
-    await prisma.notification.update({
-      where: { id: record.id },
-      data: { status, errorMsg },
+    const emailHtml = buildServiceEmailHtml({
+      customerName: customer?.name ?? 'Cliente',
+      placa: '—',
+      type: body.type,
+      total: '0',
+      description: body.message,
     });
 
-    if (status === 'sent') {
-      res.json({ ok: true, id: record.id, status });
+    const result = await dispatchNotification(phone, customer?.email, body.message, 'Notificación MotoBrain', emailHtml);
+
+    await prisma.notification.update({
+      where: { id: record.id },
+      data: {
+        status: result.status,
+        errorMsg: result.reason ?? null,
+      },
+    });
+
+    if (result.status === 'sent') {
+      res.json({ ok: true, id: record.id, status: result.status, channel: result.channel });
     } else {
-      res.status(422).json({
-        error: errorMsg ?? 'No se pudo enviar por WhatsApp',
-        id: record.id,
-        status,
-        whatsapp: getWhatsAppStatus(),
-      });
+      res.status(422).json({ error: result.reason, id: record.id, status: result.status });
     }
   } catch (err) {
     next(err);
@@ -105,7 +123,7 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
   try {
     const workshopId = req.workshopId!;
     const serviceId = String(req.params['serviceId']);
-    const { templateId, extraParams } = req.body as { templateId: string; extraParams?: Record<string, string> };
+    const { templateId } = req.body as { templateId: string };
 
     const service = await prisma.service.findFirst({ where: { id: serviceId, workshopId } });
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
@@ -116,15 +134,20 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
     const customer = await prisma.customer.findUnique({ where: { id: motorcycle.customerId } });
     if (!customer?.phone) return res.status(400).json({ error: 'El cliente no tiene teléfono' });
 
-    const params: Record<string, string> = {
-      '1': customer.name,
-      '2': motorcycle.placa,
-      '3': String(Number(service.totalCost)),
-      ...extraParams,
-    };
+    const total = Number(service.totalCost).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+    const typeLabel = SERVICE_TYPE_LABELS[service.type] ?? service.type;
 
-    const builder = TEMPLATES[templateId];
-    const message = builder ? builder(params) : `MotoBrain: Servicio ${serviceId}`;
+    const waMessage = `🔧 *MotoBrain* — Actualización de servicio\n\nHola ${customer.name}, te informamos sobre el servicio de tu moto *${motorcycle.placa}*.\n\n📋 *Servicio:* ${typeLabel}\n💰 *Total:* $${total} COP\n\n¡Gracias por confiar en nosotros! 🙏`;
+
+    const emailHtml = buildServiceEmailHtml({
+      customerName: customer.name,
+      placa: motorcycle.placa,
+      type: typeLabel,
+      total,
+      description: service.description ?? undefined,
+    });
+
+    const emailSubject = `MotoBrain — Actualización de tu moto ${motorcycle.placa}`;
 
     const record = await prisma.notification.create({
       data: {
@@ -133,28 +156,22 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
         serviceId,
         type: templateId,
         phone: customer.phone,
-        message,
+        message: waMessage,
         status: 'pending',
       },
     });
 
-    const waResult = await dispatchWA(customer.phone, message);
-    const status = waResult === 'sent' ? 'sent' : 'failed';
-    const errorMsg = waErrorReason(waResult);
+    const result = await dispatchNotification(customer.phone, customer.email, waMessage, emailSubject, emailHtml);
+
     await prisma.notification.update({
       where: { id: record.id },
-      data: { status, errorMsg },
+      data: { status: result.status, errorMsg: result.reason ?? null },
     });
 
-    if (status === 'sent') {
-      res.json({ ok: true, id: record.id, status });
+    if (result.status === 'sent') {
+      res.json({ ok: true, id: record.id, status: result.status, channel: result.channel });
     } else {
-      res.status(422).json({
-        error: errorMsg ?? 'No se pudo enviar por WhatsApp',
-        id: record.id,
-        status,
-        whatsapp: getWhatsAppStatus(),
-      });
+      res.status(422).json({ error: result.reason, id: record.id, status: result.status });
     }
   } catch (err) {
     next(err);
@@ -175,13 +192,12 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
       ...(q['status'] ? { status: q['status'] } : {}),
     };
 
-    const skip = (page - 1) * limit;
     const [total, items] = await Promise.all([
       prisma.notification.count({ where }),
       prisma.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip,
+        skip: (page - 1) * limit,
         take: limit,
         include: { customer: { select: { name: true, phone: true } } },
       }),
