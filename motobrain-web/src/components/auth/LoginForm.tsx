@@ -361,6 +361,13 @@ function LoginCard({
             )}
           </button>
 
+          <p className="text-center text-sm text-text-tertiary pt-1">
+            ¿Cliente nuevo?{' '}
+            <a href="/portal/login" className="text-accent hover:underline font-medium">
+              Regístrate aquí
+            </a>
+          </p>
+
         </form>
       )}
     </>
