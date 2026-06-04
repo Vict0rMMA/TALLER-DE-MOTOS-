@@ -10,7 +10,12 @@ function createTransport() {
   });
 }
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  attachments?: { filename: string; content: Buffer; contentType: string }[],
+): Promise<void> {
   const transport = createTransport();
   if (!transport) throw new Error('GMAIL_USER o GMAIL_APP_PASSWORD no configurados');
   await transport.sendMail({
@@ -18,6 +23,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     to,
     subject,
     html,
+    attachments,
   });
 }
 

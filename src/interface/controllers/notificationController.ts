@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
 import { getWhatsAppStatus } from '../../infrastructure/whatsapp/WhatsAppWebService';
 import { sendEmail, isEmailConfigured, buildServiceEmailHtml } from '../../infrastructure/email/EmailService';
+import { generateReceiptPdf } from '../../infrastructure/pdf/generateReceiptPdf';
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   oil_change: 'Cambio de aceite',
@@ -22,6 +23,7 @@ async function dispatchNotification(
   message: string,
   emailSubject: string,
   emailHtml: string,
+  attachments?: { filename: string; content: Buffer; contentType: string }[],
 ): Promise<{ channel: string; status: 'sent' | 'failed'; reason?: string }> {
   // Intentar WhatsApp primero si está disponible
   const wa = getWhatsAppStatus();
@@ -39,7 +41,7 @@ async function dispatchNotification(
   // Fallback: email
   if (email && isEmailConfigured()) {
     try {
-      await sendEmail(email, emailSubject, emailHtml);
+      await sendEmail(email, emailSubject, emailHtml, attachments);
       return { channel: 'email', status: 'sent' };
     } catch (err) {
       return { channel: 'email', status: 'failed', reason: (err as Error).message };
@@ -125,7 +127,13 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
     const serviceId = String(req.params['serviceId']);
     const { templateId } = req.body as { templateId: string };
 
-    const service = await prisma.service.findFirst({ where: { id: serviceId, workshopId } });
+    const service = await prisma.service.findFirst({
+      where: { id: serviceId, workshopId },
+      include: {
+        workshop: { select: { name: true, phone: true, address: true } },
+        products: { include: { product: { select: { name: true, brand: true } } } },
+      },
+    });
     if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
 
     const motorcycle = await prisma.motorcycle.findUnique({ where: { id: service.motorcycleId } });
@@ -147,7 +155,46 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
       description: service.description ?? undefined,
     });
 
-    const emailSubject = `MotoBrain — Actualización de tu moto ${motorcycle.placa}`;
+    const emailSubject = `MotoBrain — Recibo de servicio · ${motorcycle.placa}`;
+
+    // Generar PDF del recibo
+    let pdfAttachment: { filename: string; content: Buffer; contentType: string } | undefined;
+    try {
+      const pdfBuffer = await generateReceiptPdf({
+        id: service.id,
+        type: service.type,
+        description: service.description,
+        serviceDate: service.serviceDate,
+        closedAt: service.closedAt,
+        kmAtService: service.kmAtService,
+        nextMaintenanceKm: service.nextMaintenanceKm,
+        laborCost: Number(service.laborCost),
+        totalCost: Number(service.totalCost),
+        workshop: service.workshop,
+        motorcycle: {
+          placa: motorcycle.placa,
+          brand: motorcycle.brand,
+          model: motorcycle.model,
+          year: motorcycle.year,
+          cc: motorcycle.cc,
+        },
+        customer: { name: customer.name, phone: customer.phone },
+        products: service.products.map((p) => ({
+          name: p.product.name,
+          brand: p.product.brand ?? null,
+          quantity: p.quantity,
+          unitPrice: Number(p.unitPrice),
+          subtotal: Number(p.unitPrice) * p.quantity,
+        })),
+      });
+      pdfAttachment = {
+        filename: `recibo-${motorcycle.placa}-${new Date().toISOString().slice(0, 10)}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      };
+    } catch {
+      // Si falla el PDF, igual envía el email sin adjunto
+    }
 
     const record = await prisma.notification.create({
       data: {
@@ -161,7 +208,14 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
       },
     });
 
-    const result = await dispatchNotification(customer.phone, customer.email, waMessage, emailSubject, emailHtml);
+    const result = await dispatchNotification(
+      customer.phone,
+      customer.email,
+      waMessage,
+      emailSubject,
+      emailHtml,
+      pdfAttachment ? [pdfAttachment] : undefined,
+    );
 
     await prisma.notification.update({
       where: { id: record.id },
