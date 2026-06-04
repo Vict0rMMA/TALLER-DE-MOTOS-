@@ -212,6 +212,7 @@ export async function sendServiceClosedEmail(serviceId: string, publicAppUrl: st
       workshop: s.workshop,
       motorcycle: { placa, brand: s.motorcycle.brand, model: s.motorcycle.model, year: s.motorcycle.year, cc: s.motorcycle.cc },
       customer: { name: customer.name, phone: customer.phone },
+      photos: s.photos ?? [],
       products: s.products.map((p: any) => ({
         name: p.product.name, brand: p.product.brand ?? null,
         quantity: p.quantity, unitPrice: Number(p.unitPrice),
