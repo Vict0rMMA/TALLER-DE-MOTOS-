@@ -34,6 +34,8 @@
     "@supabase/supabase-js": "^2.105.4",
     "@types/nodemailer": "^8.0.0",
     "@types/pdfkit": "^0.17.6",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",

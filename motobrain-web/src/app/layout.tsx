@@ -21,6 +21,23 @@ export const metadata: Metadata = {
   },
   formatDetection: { telephone: false },
   themeColor: '#10b981',
+  openGraph: {
+    type: 'website',
+    siteName: 'MotoBrain',
+    title: 'MotoBrain — Gestión inteligente para talleres de motos',
+    description: 'Administra servicios, clientes e inventario de tu taller de motos desde el celular.',
+    images: [{ url: '/api/icons/1200', width: 1200, height: 630, alt: 'MotoBrain' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MotoBrain — Gestión inteligente para talleres de motos',
+    description: 'Administra servicios, clientes e inventario de tu taller de motos desde el celular.',
+    images: ['/api/icons/1200'],
+  },
+  icons: {
+    icon: '/api/icons/32',
+    apple: '/api/icons/180',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -29,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/api/icons/180" />
       </head>
       <body className={`${plusJakarta.variable} font-sans antialiased`}>
         <AppProviders>{children}</AppProviders>

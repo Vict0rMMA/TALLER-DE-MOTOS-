@@ -48,7 +48,7 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
       { templateId },
       {
         onSuccess: (res) => {
-          if (res.status === 'sent') toast.success(`Notificación enviada por ${res.channel === 'email' ? 'email' : 'WhatsApp'}`);
+          if (res.status === 'sent') toast.success('Notificación enviada por email');
           else toast.warning('Notificación registrada pero no se pudo enviar');
         },
         onError: (e) => toast.error('Error al enviar', { description: (e as Error).message }),
