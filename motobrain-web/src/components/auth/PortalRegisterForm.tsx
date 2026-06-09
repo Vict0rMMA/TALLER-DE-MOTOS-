@@ -70,6 +70,25 @@ interface Step2Data {
   photoPreview: string | null;
 }
 
+// ── Normalizadores ──────────────────────────────────────────────
+function normalizePhone(raw: string): string {
+  // Quita +57 / 57 al inicio, espacios, guiones, paréntesis
+  let n = raw.replace(/[\s\-()+]/g, '');
+  if (n.startsWith('57') && n.length > 10) n = n.slice(2);
+  return n;
+}
+
+function normalizeCedula(raw: string): string {
+  // Quita puntos, espacios, guiones (ej: 1.234.567 → 1234567)
+  return raw.replace(/[\s.\-]/g, '');
+}
+
+function normalizeName(raw: string): string {
+  // Colapsa espacios dobles, no permite solo números
+  return raw.replace(/\s{2,}/g, ' ');
+}
+// ────────────────────────────────────────────────────────────────
+
 function PortalRegisterInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,20 +107,31 @@ function PortalRegisterInner() {
 
   function validateStep1(): boolean {
     const errs: Partial<Step1Data> = {};
-    if (!s1.name.trim()) errs.name = 'El nombre es requerido';
-    const rawPhone = s1.phone.replace(/[\s\-().+]/g, '');
-    if (rawPhone.length < 7) errs.phone = 'Ingresa tu número de celular';
-    if (!s1.cedula.trim() || s1.cedula.trim().length < 4) errs.cedula = 'Ingresa tu número de cédula';
+    const name = s1.name.trim();
+    if (!name) errs.name = 'El nombre es requerido';
+    else if (/^\d+$/.test(name)) errs.name = 'Ingresa tu nombre real';
+
+    const phone = normalizePhone(s1.phone);
+    if (!phone) errs.phone = 'Ingresa tu número de celular';
+    else if (phone.length < 7) errs.phone = 'Número muy corto';
+    else if (phone.length > 12) errs.phone = 'Número muy largo';
+
+    const cedula = normalizeCedula(s1.cedula);
+    if (!cedula) errs.cedula = 'Ingresa tu número de cédula';
+    else if (cedula.length < 4) errs.cedula = 'Cédula muy corta';
+
     if (!s1.email.trim()) errs.email = 'El email es requerido';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim())) errs.email = 'Email inválido';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim())) errs.email = 'Email inválido (ej: juan@gmail.com)';
+
     setS1Errors(errs);
     return Object.keys(errs).length === 0;
   }
 
   function validateStep2(): boolean {
     const errs: Partial<Record<keyof Step2Data, string>> = {};
-    const placa = s2.placa.toUpperCase().replace(/\s/g, '');
-    if (placa.length < 3) errs.placa = 'Ingresa la placa de la moto (ej: ABC123)';
+    const placa = s2.placa.toUpperCase().replace(/[\s\-]/g, '');
+    if (!placa) errs.placa = 'Ingresa la placa de la moto';
+    else if (placa.length < 3) errs.placa = 'Placa inválida (ej: ABC123)';
     if (!s2.brand) errs.brand = 'Selecciona la marca';
     if (!s2.model.trim()) errs.model = 'El modelo es requerido';
     setS2Errors(errs);
@@ -125,11 +155,11 @@ function PortalRegisterInner() {
       const yearNum = s2.year ? parseInt(s2.year) : undefined;
       const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/register', {
         name: s1.name.trim(),
-        phone: s1.phone.trim(),
-        cedula: s1.cedula.trim(),
-        email: s1.email.trim(),
+        phone: normalizePhone(s1.phone),
+        cedula: normalizeCedula(s1.cedula),
+        email: s1.email.trim().toLowerCase(),
         moto: {
-          placa: s2.placa.toUpperCase().trim(),
+          placa: s2.placa.toUpperCase().replace(/[\s\-]/g, ''),
           brand: s2.brand,
           model: s2.model.trim(),
           cc: ccNum && ccNum > 0 ? ccNum : undefined,
@@ -191,7 +221,7 @@ function PortalRegisterInner() {
                     type="text"
                     placeholder="Juan Pérez"
                     value={s1.name}
-                    onChange={(e) => { setS1((p) => ({ ...p, name: e.target.value })); setS1Errors((p) => ({ ...p, name: '' })); }}
+                    onChange={(e) => { setS1((p) => ({ ...p, name: normalizeName(e.target.value) })); setS1Errors((p) => ({ ...p, name: '' })); }}
                     className="auth-input"
                     autoComplete="name"
                   />
@@ -209,7 +239,7 @@ function PortalRegisterInner() {
                     placeholder="3001234567"
                     inputMode="numeric"
                     value={s1.phone}
-                    onChange={(e) => { setS1((p) => ({ ...p, phone: e.target.value })); setS1Errors((p) => ({ ...p, phone: '' })); }}
+                    onChange={(e) => { setS1((p) => ({ ...p, phone: normalizePhone(e.target.value) })); setS1Errors((p) => ({ ...p, phone: '' })); }}
                     className="auth-input"
                     autoComplete="tel"
                   />
@@ -227,7 +257,7 @@ function PortalRegisterInner() {
                     placeholder="••••••••"
                     inputMode="numeric"
                     value={s1.cedula}
-                    onChange={(e) => { setS1((p) => ({ ...p, cedula: e.target.value })); setS1Errors((p) => ({ ...p, cedula: '' })); }}
+                    onChange={(e) => { setS1((p) => ({ ...p, cedula: normalizeCedula(e.target.value) })); setS1Errors((p) => ({ ...p, cedula: '' })); }}
                     className="auth-input"
                     autoComplete="off"
                   />
