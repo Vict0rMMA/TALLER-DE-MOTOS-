@@ -380,29 +380,30 @@ function PortalRegisterInner() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* CC opcional */}
+                  {/* CC */}
                   <div className="auth-field">
                     <label className="auth-label flex items-center gap-1">
                       <Gauge className="h-3 w-3 text-zinc-500" />
                       CC
-                      <OptionalBadge />
                     </label>
                     <input
                       type="text"
-                      placeholder="125"
+                      placeholder="10.000"
                       inputMode="numeric"
-                      value={s2.cc}
-                      onChange={(e) => setS2((p) => ({ ...p, cc: e.target.value.replace(/\D/g, '') }))}
+                      value={s2.cc ? s2.cc.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\./g, '').replace(/\D/g, '');
+                        setS2((p) => ({ ...p, cc: raw }));
+                      }}
                       className="auth-input"
                     />
                   </div>
 
-                  {/* Año opcional */}
+                  {/* Año */}
                   <div className="auth-field">
                     <label className="auth-label flex items-center gap-1">
                       <Calendar className="h-3 w-3 text-zinc-500" />
                       Año
-                      <OptionalBadge />
                     </label>
                     <input
                       type="text"
