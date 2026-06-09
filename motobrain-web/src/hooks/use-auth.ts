@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
+import { useSplashStore } from '@/stores/splash-store';
 import type { LoginResponse } from '@/types/api.types';
 import type { LoginInput, RegisterInput } from '@/validators/auth.schema';
 
@@ -27,7 +28,7 @@ export function useLogin() {
           createdAt: new Date().toISOString(),
         } satisfies LoginResponse['user']);
       setAuth(user, res.token);
-      toast.success(`Bienvenido, ${user.name}`);
+      useSplashStore.getState().activate();
       router.push('/');
       router.refresh();
     },
