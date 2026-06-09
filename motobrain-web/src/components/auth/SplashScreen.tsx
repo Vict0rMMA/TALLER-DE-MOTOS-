@@ -51,17 +51,17 @@ export function SplashScreen() {
     <div className={`splash-overlay${exiting ? ' splash-exit' : ''}`}>
       <div className="splash-bg-glow" aria-hidden />
 
-      {/* Speed lines — solo lado izquierdo (moto va hacia la derecha) */}
+      {/* Speed lines — left side behind moto */}
       <div className="splash-lines-panel" aria-hidden>
-        {[0, 1, 2, 3, 4, 5].map((i) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
           <span
             key={i}
             className="splash-line"
             style={
               {
-                '--delay': `${i * 110}ms`,
-                '--y': `${-40 + i * 16}px`,
-                '--len': `${55 + (i % 3) * 20}px`,
+                '--delay': `${i * 90}ms`,
+                '--y': `${-52 + i * 15}px`,
+                '--len': `${70 + (i % 4) * 28}px`,
               } as React.CSSProperties
             }
           />
@@ -74,25 +74,28 @@ export function SplashScreen() {
         <Image
           src="/images/moto-splash.png"
           alt=""
-          width={480}
-          height={280}
+          width={520}
+          height={320}
           className="splash-moto-img"
           priority
         />
       </div>
 
-      {/* Dashed road */}
-      <div className="splash-road" aria-hidden />
+      {/* Ground glow line */}
+      <div className="splash-ground-line" aria-hidden />
 
       {/* Logo */}
       <div className="splash-logo">
         <div className="splash-logo-icon">
-          <Wrench className="h-5 w-5 text-emerald-400" strokeWidth={2.25} />
+          <Wrench className="h-6 w-6 text-white" strokeWidth={2.5} />
         </div>
         <span className="splash-logo-text">
-          Moto<span className="splash-logo-accent">Brain</span>
+          Moto<strong className="splash-logo-accent">Brain</strong>
         </span>
       </div>
+
+      {/* Subtitle */}
+      <p className="splash-subtitle">— PREPARANDO TU MOTO —</p>
 
       {/* Message */}
       <p className="splash-msg" key={msgIdx}>
@@ -109,6 +112,9 @@ export function SplashScreen() {
       >
         <div className="splash-bar-fill" style={{ width: `${progress}%` }} />
       </div>
+
+      {/* Percentage */}
+      <p className="splash-percent">{Math.round(progress)}%</p>
     </div>
   );
 }
