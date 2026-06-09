@@ -17,7 +17,7 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
       return next(new DomainError('Nombre, teléfono y cédula son requeridos', 400));
     }
 
-    const workshop = await prisma.workshop.findFirst({ select: { id: true } });
+    const workshop = await prisma.workshop.findFirst({ select: { id: true }, orderBy: { createdAt: 'asc' } });
     if (!workshop) return next(new DomainError('Taller no configurado', 500));
 
     const existing = await prisma.customer.findFirst({
