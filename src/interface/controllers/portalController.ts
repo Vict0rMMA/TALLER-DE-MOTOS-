@@ -32,7 +32,7 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
         phone: phone.trim(),
         cedula: cedula.trim(),
         email: email?.trim() ?? null,
-        portalActive: true,
+        portalActive: false,
         optInWhatsapp: true,
       },
     });
@@ -72,23 +72,13 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
           const wa = new WhatsAppWebService();
           await wa.sendMessage(
             ws.phone,
-            `🆕 *Nuevo cliente registrado en el portal*\n\n👤 ${customer.name}\n📱 ${customer.phone}\n📧 ${customer.email ?? '—'}\n\n_Ya puede ver sus motos y agendar citas._`,
+            `🔔 *Solicitud de registro en el portal*\n\n👤 ${customer.name}\n📱 ${customer.phone}\n📧 ${customer.email ?? '—'}\n\n_Entra al panel y aprueba al cliente para que pueda acceder._`,
           );
         }
       } catch { /* no bloquear */ }
     })();
 
-    const token = signCustomerToken({
-      customerId: customer.id,
-      workshopId: customer.workshopId,
-      name: customer.name,
-      phone: customer.phone,
-    });
-
-    res.status(201).json({
-      token,
-      customer: { id: customer.id, name: customer.name, phone: customer.phone, email: customer.email },
-    });
+    res.status(201).json({ pending: true });
   } catch (err) {
     next(err);
   }
@@ -103,11 +93,15 @@ export const portalLogin = async (req: Request, res: Response, next: NextFunctio
     if (!variants.length) return next(new DomainError('Ingresa un número de celular válido', 400));
 
     const customer = await prisma.customer.findFirst({
-      where: { portalActive: true, phone: { in: variants } },
+      where: { phone: { in: variants } },
     });
 
     if (!customer?.cedula) {
       return next(new DomainError('Teléfono o cédula incorrectos', 401));
+    }
+
+    if (!customer.portalActive) {
+      return next(new DomainError('Tu cuenta está pendiente de aprobación por el taller', 403));
     }
 
     const inputCedula = normalizeCedula(password);

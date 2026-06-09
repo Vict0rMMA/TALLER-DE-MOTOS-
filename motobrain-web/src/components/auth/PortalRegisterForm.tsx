@@ -97,6 +97,7 @@ function PortalRegisterInner() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [s1, setS1] = useState<Step1Data>({ name: '', phone: '', cedula: '', email: '' });
@@ -177,7 +178,7 @@ function PortalRegisterInner() {
         imageBase64 = parts[1];
       }
 
-      const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/register', {
+      const res = await portalApi.post<{ pending: boolean }>('/register', {
         name: s1.name.trim(),
         phone: normalizePhone(s1.phone),
         cedula: normalizeCedula(s1.cedula),
@@ -191,14 +192,40 @@ function PortalRegisterInner() {
           ...(imageBase64 && { imageBase64, imageMimeType: 'image/jpeg' }),
         },
       });
-      setAuth(res.customer, res.token);
-      const from = searchParams.get('from') ?? '/portal';
-      router.replace(from.startsWith('/portal') ? from : '/portal');
+      setPending(true);
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'No se pudo completar el registro');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (pending) {
+    return (
+      <div className="auth-shell relative min-h-[100dvh] overflow-hidden font-sans flex items-center justify-center">
+        <div className="auth-bg-layer" aria-hidden />
+        <div className="auth-bg-vignette" aria-hidden />
+        <div className="relative z-10 flex flex-col items-center gap-6 px-6 text-center max-w-sm">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30">
+            <svg className="h-10 w-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-white">¡Solicitud enviada!</h1>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              Tu registro fue recibido. El taller revisará tu solicitud y te avisará por WhatsApp cuando tu cuenta esté activa.
+            </p>
+          </div>
+          <a
+            href="/login?tab=cliente"
+            className="mt-2 text-sm text-emerald-400 hover:underline"
+          >
+            Volver al inicio de sesión
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (

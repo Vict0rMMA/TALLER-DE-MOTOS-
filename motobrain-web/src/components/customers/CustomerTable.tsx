@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Trash2, Bike, MessageCircle } from 'lucide-react';
+import { Edit, Trash2, Bike, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { Customer } from '@/types/entities';
-import { useDeleteCustomer } from '@/hooks/use-customers';
+import { useDeleteCustomer, useApprovePortal } from '@/hooks/use-customers';
 import { cn } from '@/lib/utils';
 
 interface CustomerTableProps {
@@ -15,6 +15,7 @@ interface CustomerTableProps {
 export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
   const router = useRouter();
   const deleteCustomer = useDeleteCustomer();
+  const approvePortal = useApprovePortal();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   function handleDelete(id: string) {
@@ -132,7 +133,14 @@ export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
               className="bg-bg-secondary transition-colors hover:bg-bg-elevated"
             >
               <td className="px-4 py-3">
-                <div className="font-medium text-text-primary">{c.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-text-primary">{c.name}</span>
+                  {!c.portalActive && (
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                      Pendiente
+                    </span>
+                  )}
+                </div>
                 {c.email && <div className="text-xs text-text-tertiary">{c.email}</div>}
               </td>
               <td className="px-4 py-3 font-mono text-text-tertiary">{c.cedula ?? '—'}</td>
@@ -161,6 +169,19 @@ export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center justify-end gap-1">
+                  {!c.portalActive && (
+                    <button
+                      onClick={() => approvePortal.mutate(c.id)}
+                      disabled={approvePortal.isPending}
+                      className="rounded px-2 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 transition-colors"
+                      title="Aprobar acceso al portal"
+                    >
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Aprobar
+                      </span>
+                    </button>
+                  )}
                   <button
                     onClick={() => router.push(`/clientes/${c.id}`)}
                     className="rounded p-1.5 text-text-secondary hover:bg-bg-primary hover:text-accent transition-colors"
