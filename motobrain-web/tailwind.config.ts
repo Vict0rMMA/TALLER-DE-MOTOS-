@@ -63,6 +63,9 @@ const config: Config = {
         shimmer: 'shimmer 1.5s infinite',
         'fade-in': 'fadeIn 0.35s ease-out',
         'slide-in': 'slideIn 0.2s ease-out',
+        entrance: 'entrance 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'pulse-soft': 'pulseSoft 2.5s ease-in-out infinite',
+        glow: 'glow 2s ease-in-out infinite',
       },
       keyframes: {
         shimmer: {
@@ -76,6 +79,18 @@ const config: Config = {
         slideIn: {
           from: { opacity: '0', transform: 'translateX(-12px)' },
           to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        entrance: {
+          from: { opacity: '0', transform: 'translateY(12px) scale(0.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        pulseSoft: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+        glow: {
+          '0%, 100%': { boxShadow: '0 0 12px rgba(16,185,129,0.15)' },
+          '50%': { boxShadow: '0 0 24px rgba(16,185,129,0.3)' },
         },
       },
     },

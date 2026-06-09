@@ -21,10 +21,11 @@ function LogoMark({ size = 36 }: { size?: number }) {
       <defs>
         <linearGradient id="mb-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#10b981" />
-          <stop offset="100%" stopColor="#059669" />
+          <stop offset="55%" stopColor="#059669" />
+          <stop offset="100%" stopColor="#06b6d4" />
         </linearGradient>
         <linearGradient id="mb-shine" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.18" />
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -49,9 +50,9 @@ function LogoWordmark({ compact }: { compact?: boolean }) {
   return (
     <span className={cn('flex items-center gap-1.5 select-none', compact ? 'text-[14px]' : 'text-[15px]')}>
       <span className="font-semibold tracking-tight text-[--text-primary]">
-        Moto<span className="text-[--accent]">Brain</span>
+        Moto<span className="text-gradient">Brain</span>
       </span>
-      <span className="sidebar-brand-pill hidden sm:inline-flex">Taller</span>
+      <span className="sidebar-brand-pill hidden sm:inline-flex">AI</span>
     </span>
   );
 }
