@@ -266,7 +266,6 @@ export default function PortalDashboard() {
                       className="object-cover"
                       sizes="144px"
                       unoptimized={!!m.imageUrl}
-                      unoptimized
                     />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -402,7 +401,7 @@ export default function PortalDashboard() {
             <ChevronRight className="h-4 w-4" />
           </a>
         ) : (
-          <button type="button" onClick={openAI} className="portal-btn-primary shrink-0">
+          <button type="button" onClick={() => openAI()} className="portal-btn-primary shrink-0">
             Hablar con la IA
             <ChevronRight className="h-4 w-4" />
           </button>

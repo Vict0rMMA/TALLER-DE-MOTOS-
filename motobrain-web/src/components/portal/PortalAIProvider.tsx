@@ -5,7 +5,7 @@ import { PortalAIChatSheet } from '@/components/portal/PortalAIChatSheet';
 
 interface PortalAIContextValue {
   open: boolean;
-  openAI: () => void;
+  openAI: (initialMessage?: string) => void;
   closeAI: () => void;
   setOpen: (open: boolean) => void;
 }
@@ -14,8 +14,12 @@ const PortalAIContext = createContext<PortalAIContextValue | null>(null);
 
 export function PortalAIProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [initialMessage, setInitialMessage] = useState<string | undefined>();
 
-  const openAI = useCallback(() => setOpen(true), []);
+  const openAI = useCallback((msg?: string) => {
+    setInitialMessage(msg);
+    setOpen(true);
+  }, []);
   const closeAI = useCallback(() => setOpen(false), []);
 
   const value = useMemo(
@@ -26,7 +30,7 @@ export function PortalAIProvider({ children }: { children: React.ReactNode }) {
   return (
     <PortalAIContext.Provider value={value}>
       {children}
-      <PortalAIChatSheet open={open} onOpenChange={setOpen} />
+      <PortalAIChatSheet open={open} onOpenChange={setOpen} initialMessage={initialMessage} />
     </PortalAIContext.Provider>
   );
 }

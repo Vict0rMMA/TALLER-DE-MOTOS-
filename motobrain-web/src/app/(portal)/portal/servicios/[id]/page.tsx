@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, Clock, Wrench, CheckCircle2, XCircle, User,
-  Bike, Calendar, Gauge, AlertCircle, Package,
+  Bike, Calendar, Gauge, AlertCircle, Package, MessageCircle, Sparkles, ExternalLink,
 } from 'lucide-react';
+import { usePortalAI } from '@/components/portal/PortalAIProvider';
 import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
 
@@ -46,6 +47,14 @@ function fmtDate(d: string) {
 export default function PortalServiceDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { token, isHydrated } = usePortalAuthStore();
+  const { openAI } = usePortalAI();
+
+  const { data: portalMe } = useQuery<{ workshop: { name: string; phone: string | null } }>({
+    queryKey: ['portal-me'],
+    queryFn: () => portalApi.get('/me'),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     if (isHydrated && !token) router.replace('/login?tab=cliente');
@@ -228,6 +237,67 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
             </div>
           </div>
         ) : null}
+
+        {/* Contacto y ayuda */}
+        <div className="portal-card p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-text-primary">¿Tienes dudas sobre este servicio?</h2>
+
+          {portalMe?.workshop?.phone && (
+            <a
+              href={`https://wa.me/${portalMe.workshop.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi servicio *${service.type}* - Placa: ${service.motorcycle.placa}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-[#25D366]/30 bg-[#25D366]/8 px-4 py-3.5 text-[#25D366] transition hover:bg-[#25D366]/14 active:opacity-80"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15">
+                <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold leading-tight">Hablar con el taller por WhatsApp</p>
+                <p className="text-xs opacity-65 mt-0.5">Te responden directo en WhatsApp</p>
+              </div>
+              <ExternalLink className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+            </a>
+          )}
+
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-zinc-800/80" />
+            <span className="text-[11px] text-zinc-600 shrink-0">o también puedes</span>
+            <div className="h-px flex-1 bg-zinc-800/80" />
+          </div>
+
+          <div className="space-y-2.5">
+            <p className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.75} />
+              Pregúntale a la IA — responde al instante
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                `¿Por qué se cambió el ${service.type} en mi ${service.motorcycle.brand}?`,
+                '¿Cada cuánto debo hacer este servicio?',
+                '¿Qué debo revisar después del servicio?',
+                service.status === 'in_progress' ? '¿Cuánto tiempo tarda este servicio?' : '¿Qué significa el estado actual?',
+              ].map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => openAI(q)}
+                  className="rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-left text-xs text-zinc-400 transition hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-300"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => openAI()}
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/6 px-3.5 py-2 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/10"
+            >
+              <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Hacer otra pregunta a la IA
+            </button>
+          </div>
+        </div>
 
         <div className="portal-card p-5 space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Resumen de costos</h2>

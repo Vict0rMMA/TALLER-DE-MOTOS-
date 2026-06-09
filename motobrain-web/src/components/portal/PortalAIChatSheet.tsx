@@ -73,6 +73,7 @@ function isScheduleRequest(symptom: string) {
 interface PortalAIChatSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialMessage?: string;
 }
 
 function AiBubble({
@@ -180,7 +181,7 @@ function HistoryThread({ c }: { c: Consultation }) {
   );
 }
 
-export function PortalAIChatSheet({ open, onOpenChange }: PortalAIChatSheetProps) {
+export function PortalAIChatSheet({ open, onOpenChange, initialMessage }: PortalAIChatSheetProps) {
   const { token } = usePortalAuthStore();
   const [symptom, setSymptom] = useState('');
   const [motoId, setMotoId] = useState('');
@@ -188,6 +189,7 @@ export function PortalAIChatSheet({ open, onOpenChange }: PortalAIChatSheetProps
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const initialMessageHandled = useRef(false);
 
   const { data: me } = useQuery<{ motorcycles: Motorcycle[] }>({
     queryKey: ['portal-me'],
@@ -209,6 +211,15 @@ export function PortalAIChatSheet({ open, onOpenChange }: PortalAIChatSheetProps
       requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
     }
   }, [open, pendingQuestion, consultations.length]);
+
+  useEffect(() => {
+    if (open && initialMessage && !initialMessageHandled.current) {
+      initialMessageHandled.current = true;
+      setSymptom(initialMessage);
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+    if (!open) initialMessageHandled.current = false;
+  }, [open, initialMessage]);
 
   async function handleSubmit(e?: React.FormEvent, textOverride?: string) {
     e?.preventDefault();

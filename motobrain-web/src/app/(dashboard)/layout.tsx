@@ -3,7 +3,6 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { MobileSidebar } from '@/components/layout/MobileSidebar';
-import { SplashOverlay } from '@/components/auth/SplashOverlay';
 
 const NotificationWatcher = dynamic(
   () =>
@@ -14,7 +13,6 @@ const NotificationWatcher = dynamic(
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-bg-primary">
-      <SplashOverlay />
       <Sidebar />
       <MobileSidebar />
       <div className="flex flex-1 flex-col min-w-0">

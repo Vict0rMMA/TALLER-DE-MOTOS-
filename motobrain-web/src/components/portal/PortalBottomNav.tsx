@@ -36,7 +36,7 @@ export function PortalBottomNav() {
               <button
                 key="ai"
                 type="button"
-                onClick={openAI}
+                onClick={() => openAI()}
                 className="relative -mt-6 flex h-14 w-14 flex-col items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
                 aria-label="Hablar con la IA"
               >
