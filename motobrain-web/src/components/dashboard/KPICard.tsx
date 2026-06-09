@@ -20,7 +20,7 @@ const VARIANT = {
     valueColor: 'text-[--text-primary]',
   },
   accent: {
-    bar: 'from-emerald-400 via-emerald-500 to-cyan-500',
+    bar: 'from-emerald-400 via-emerald-500 to-emerald-700',
     iconBg: 'bg-emerald-500/10 border-emerald-500/20',
     iconColor: 'text-emerald-400',
     valueColor: 'text-[--text-primary]',

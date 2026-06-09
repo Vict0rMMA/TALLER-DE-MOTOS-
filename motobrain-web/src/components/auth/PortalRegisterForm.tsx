@@ -19,7 +19,7 @@ const BRANDS = [
 
 function OptionalBadge() {
   return (
-    <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-400">
+    <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
       <Sparkles className="h-2.5 w-2.5" />
       Opcional
     </span>
@@ -89,8 +89,9 @@ function PortalRegisterInner() {
   function validateStep1(): boolean {
     const errs: Partial<Step1Data> = {};
     if (!s1.name.trim()) errs.name = 'El nombre es requerido';
-    if (!/^3\d{9}$/.test(s1.phone.replace(/\s/g, ''))) errs.phone = 'Ingresa un celular colombiano válido (10 dígitos)';
-    if (!s1.cedula.trim() || s1.cedula.trim().length < 5) errs.cedula = 'Ingresa tu número de cédula';
+    const rawPhone = s1.phone.replace(/[\s\-().+]/g, '');
+    if (rawPhone.length < 7) errs.phone = 'Ingresa tu número de celular';
+    if (!s1.cedula.trim() || s1.cedula.trim().length < 4) errs.cedula = 'Ingresa tu número de cédula';
     if (s1.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim())) errs.email = 'Email inválido';
     setS1Errors(errs);
     return Object.keys(errs).length === 0;
@@ -98,7 +99,8 @@ function PortalRegisterInner() {
 
   function validateStep2(): boolean {
     const errs: Partial<Record<keyof Step2Data, string>> = {};
-    if (!/^[A-Z0-9]{3,7}$/.test(s2.placa.toUpperCase().replace(/\s/g, ''))) errs.placa = 'Placa inválida (ej: ABC123)';
+    const placa = s2.placa.toUpperCase().replace(/\s/g, '');
+    if (placa.length < 3) errs.placa = 'Ingresa la placa de la moto (ej: ABC123)';
     if (!s2.brand) errs.brand = 'Selecciona la marca';
     if (!s2.model.trim()) errs.model = 'El modelo es requerido';
     setS2Errors(errs);

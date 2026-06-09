@@ -25,12 +25,12 @@
     --accent-glow: 0 0 20px rgba(16, 185, 129, 0.15), 0 0 40px rgba(16, 185, 129, 0.05);
     --accent-glow-strong: 0 0 30px rgba(16, 185, 129, 0.25), 0 0 60px rgba(16, 185, 129, 0.08);
     --accent-primary: var(--accent);
-    --accent-secondary: #06b6d4;
+    --accent-secondary: #059669;
 
-    --gradient-accent: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-    --gradient-accent-hover: linear-gradient(135deg, #0d9668 0%, #0891b2 100%);
+    --gradient-accent: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --gradient-accent-hover: linear-gradient(135deg, #0d9668 0%, #047857 100%);
     --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
-    --gradient-sidebar: linear-gradient(180deg, rgba(16,185,129,0.03) 0%, transparent 40%, rgba(6,182,212,0.02) 100%);
+    --gradient-sidebar: linear-gradient(180deg, rgba(16,185,129,0.03) 0%, transparent 40%, rgba(16,185,129,0.01) 100%);
     --gradient-page: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16,185,129,0.07), transparent 70%);
 
     --text-primary: #f0f0f5;

@@ -21,8 +21,7 @@ function LogoMark({ size = 36 }: { size?: number }) {
       <defs>
         <linearGradient id="mb-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#10b981" />
-          <stop offset="55%" stopColor="#059669" />
-          <stop offset="100%" stopColor="#06b6d4" />
+          <stop offset="100%" stopColor="#047857" />
         </linearGradient>
         <linearGradient id="mb-shine" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
