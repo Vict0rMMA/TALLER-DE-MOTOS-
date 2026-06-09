@@ -124,6 +124,35 @@ export const portalCreateAppointment = async (req: Request, res: Response, next:
       },
     });
 
+    // Notificar al taller por WhatsApp
+    void (async () => {
+      try {
+        const workshop = await prisma.workshop.findUnique({
+          where: { id: req.workshopId! },
+          select: { phone: true, name: true },
+        });
+        const customer = await prisma.customer.findUnique({
+          where: { id: req.customerId! },
+          select: { name: true, phone: true },
+        });
+        if (workshop?.phone && customer) {
+          const wa = new WhatsAppWebService();
+          const fechaTexto = parsedPreferred
+            ? parsedPreferred.toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+            : 'Por definir';
+          const motoTexto = motorcycle
+            ? `${motorcycle.placa} · ${motorcycle.brand} ${motorcycle.model}`
+            : 'Sin moto especificada';
+          await wa.sendMessage(
+            workshop.phone,
+            `📅 *Nueva cita solicitada*\n\n👤 Cliente: ${customer.name} (${customer.phone})\n🏍️ Moto: ${motoTexto}\n📆 Fecha preferida: ${fechaTexto}${appointment.notes ? `\n📝 Notas: ${appointment.notes}` : ''}\n\n_Entra al panel de MotoBrain para confirmarla._`,
+          );
+        }
+      } catch {
+        // No bloquear la respuesta si falla el envío
+      }
+    })();
+
     res.status(201).json({
       ...toPortalDto(appointment),
       message:

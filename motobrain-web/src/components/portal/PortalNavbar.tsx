@@ -41,7 +41,8 @@ export function PortalNavbar() {
         <div className="hidden items-center gap-2 lg:flex">
           <button type="button" onClick={openAI} className="portal-ai-btn">
             <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
-            Hablar con la IA
+            <span>Hablar con la</span>
+            <span className="font-bold tracking-wide">IA</span>
           </button>
         </div>
 

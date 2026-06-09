@@ -23,7 +23,7 @@ export class PrismaCustomerRepository implements CustomerRepository {
       where: { workshopId },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
     return rows.map(this.toDomain);
   }
