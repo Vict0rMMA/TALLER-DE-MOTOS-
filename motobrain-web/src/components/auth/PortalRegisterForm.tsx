@@ -319,27 +319,52 @@ function PortalRegisterInner() {
                 </div>
 
                 {/* Marca — chips */}
-                <div className="auth-field">
-                  <label className="auth-label">Marca</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {BRANDS.map((b) => (
-                      <button
-                        key={b}
-                        type="button"
-                        onClick={() => { setS2((p) => ({ ...p, brand: b })); setS2Errors((p) => ({ ...p, brand: '' })); }}
-                        className={cn(
-                          'rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all',
-                          s2.brand === b
-                            ? 'border-emerald-500/40 bg-gradient-to-r from-emerald-500/20 to-cyan-500/10 text-emerald-300'
-                            : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200',
-                        )}
-                      >
-                        {b}
-                      </button>
-                    ))}
-                  </div>
-                  {s2Errors.brand && <p className="auth-error">{s2Errors.brand}</p>}
-                </div>
+                {(() => {
+                  const knownBrands = BRANDS.slice(0, -1); // todo excepto "Otro"
+                  const isOtroMode = s2.brand === 'Otro' || (s2.brand !== '' && !knownBrands.includes(s2.brand));
+                  const otroDisplayValue = isOtroMode && s2.brand !== 'Otro' ? s2.brand : '';
+                  return (
+                    <div className="auth-field">
+                      <label className="auth-label">Marca</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {BRANDS.map((b) => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => {
+                              setS2((p) => ({ ...p, brand: b }));
+                              setS2Errors((p) => ({ ...p, brand: '' }));
+                            }}
+                            className={cn(
+                              'rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all',
+                              (s2.brand === b) || (b === 'Otro' && isOtroMode)
+                                ? 'border-emerald-500/40 bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 text-emerald-300'
+                                : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200',
+                            )}
+                          >
+                            {b}
+                          </button>
+                        ))}
+                      </div>
+                      {isOtroMode && (
+                        <input
+                          type="text"
+                          placeholder="¿Cuál marca? (ej: Lifan, Shineray, CF Moto...)"
+                          autoFocus
+                          defaultValue={otroDisplayValue}
+                          className="auth-input mt-2"
+                          onChange={(e) => {
+                            const val = e.target.value.trim();
+                            setS2((p) => ({ ...p, brand: val || 'Otro' }));
+                            setS2Errors((p) => ({ ...p, brand: '' }));
+                          }}
+                        />
+                      )}
+                      {s2Errors.brand && <p className="auth-error">{s2Errors.brand}</p>}
+                    </div>
+                  );
+                })()}
+
 
                 {/* Modelo */}
                 <div className="auth-field">
