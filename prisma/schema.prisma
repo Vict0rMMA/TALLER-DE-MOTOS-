@@ -114,6 +114,7 @@ model Motorcycle {
   cc         Int      @default(125)
   year       Int?
   kmCurrent  Int      @default(0)
+  imageUrl   String?
   createdAt  DateTime @default(now())
 
   customer          Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)

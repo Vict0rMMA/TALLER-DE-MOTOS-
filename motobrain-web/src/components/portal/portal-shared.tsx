@@ -9,6 +9,7 @@ export interface PortalMotorcycle {
   cc: number;
   year: number | null;
   kmCurrent: number;
+  imageUrl?: string | null;
 }
 
 export interface PortalWorkshop {

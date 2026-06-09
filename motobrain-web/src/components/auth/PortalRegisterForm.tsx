@@ -142,7 +142,23 @@ function PortalRegisterInner() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setS2((p) => ({ ...p, photoPreview: ev.target?.result as string }));
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      // Comprimir con canvas (max 900px, JPEG 75%)
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 900;
+        let { width, height } = img;
+        if (width > MAX) { height = Math.round(height * MAX / width); width = MAX; }
+        if (height > MAX) { width = Math.round(width * MAX / height); height = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.75);
+        setS2((p) => ({ ...p, photoPreview: compressed }));
+      };
+      img.src = dataUrl;
+    };
     reader.readAsDataURL(file);
   }
 
@@ -153,6 +169,14 @@ function PortalRegisterInner() {
     try {
       const ccNum = s2.cc ? parseInt(s2.cc) : undefined;
       const yearNum = s2.year ? parseInt(s2.year) : undefined;
+
+      // Extraer base64 puro del data URL (quita "data:image/jpeg;base64,")
+      let imageBase64: string | undefined;
+      if (s2.photoPreview) {
+        const parts = s2.photoPreview.split(',');
+        imageBase64 = parts[1];
+      }
+
       const res = await portalApi.post<{ token: string; customer: PortalCustomer }>('/register', {
         name: s1.name.trim(),
         phone: normalizePhone(s1.phone),
@@ -164,6 +188,7 @@ function PortalRegisterInner() {
           model: s2.model.trim(),
           cc: ccNum && ccNum > 0 ? ccNum : undefined,
           year: yearNum && yearNum > 1980 ? yearNum : undefined,
+          ...(imageBase64 && { imageBase64, imageMimeType: 'image/jpeg' }),
         },
       });
       setAuth(res.customer, res.token);

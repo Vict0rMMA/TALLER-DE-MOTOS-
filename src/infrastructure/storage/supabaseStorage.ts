@@ -44,6 +44,27 @@ export async function uploadServicePhoto(
   return data.publicUrl;
 }
 
+export async function uploadMotoPhoto(
+  customerId: string,
+  motoId: string,
+  buffer: Buffer,
+  mimeType: string,
+): Promise<string> {
+  const supabase = getClient();
+  const ext = mimeType.includes('png') ? 'png' : 'jpg';
+  const path = `motos/${customerId}/${motoId}.${ext}`;
+
+  const { error } = await supabase.storage.from(BUCKET).upload(path, buffer, {
+    contentType: mimeType,
+    upsert: true,
+  });
+
+  if (error) throw new Error(`Storage error: ${error.message}`);
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function deleteServicePhoto(publicUrl: string): Promise<void> {
   const supabase = getClient();
   const url = new URL(publicUrl);

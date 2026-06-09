@@ -4,12 +4,13 @@ import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { DomainError } from '../../domain/errors/DomainError';
 import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 import { normalizeCedula } from '../../infrastructure/phone/cedula';
+import { uploadMotoPhoto } from '../../infrastructure/storage/supabaseStorage';
 
 export const portalRegister = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, phone, cedula, email, moto } = req.body as {
       name?: string; phone?: string; cedula?: string; email?: string;
-      moto?: { placa?: string; brand?: string; model?: string; cc?: number; year?: number };
+      moto?: { placa?: string; brand?: string; model?: string; cc?: number; year?: number; imageBase64?: string; imageMimeType?: string };
     };
     if (!name?.trim() || !phone?.trim() || !cedula?.trim()) {
       return next(new DomainError('Nombre, teléfono y cédula son requeridos', 400));
@@ -37,7 +38,7 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
 
     // Registrar moto si viene en el body
     if (moto?.placa?.trim() && moto?.brand?.trim() && moto?.model?.trim()) {
-      await prisma.motorcycle.create({
+      const newMoto = await prisma.motorcycle.create({
         data: {
           customerId: customer.id,
           placa: moto.placa.trim().toUpperCase(),
@@ -48,6 +49,18 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
           kmCurrent: 0,
         },
       });
+
+      // Subir foto si viene en base64
+      if (moto.imageBase64) {
+        try {
+          const mimeType = moto.imageMimeType ?? 'image/jpeg';
+          const buffer = Buffer.from(moto.imageBase64, 'base64');
+          const imageUrl = await uploadMotoPhoto(customer.id, newMoto.id, buffer, mimeType);
+          await prisma.motorcycle.update({ where: { id: newMoto.id }, data: { imageUrl } });
+        } catch {
+          // No bloquear el registro si falla la foto
+        }
+      }
     }
 
     const token = signCustomerToken({
@@ -136,6 +149,7 @@ export const portalMe = async (req: Request, res: Response, next: NextFunction) 
         cc: m.cc,
         year: m.year,
         kmCurrent: m.kmCurrent,
+        imageUrl: m.imageUrl ?? null,
       })),
     });
   } catch (err) {

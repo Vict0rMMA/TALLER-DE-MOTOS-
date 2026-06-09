@@ -260,11 +260,12 @@ export default function PortalDashboard() {
                 <div key={m.id} className="portal-card flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                   <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-xl bg-zinc-800 sm:h-24 sm:w-36">
                     <Image
-                      src={MOTO_THUMB}
+                      src={m.imageUrl || MOTO_THUMB}
                       alt=""
                       fill
                       className="object-cover"
                       sizes="144px"
+                      unoptimized={!!m.imageUrl}
                       unoptimized
                     />
                   </div>
