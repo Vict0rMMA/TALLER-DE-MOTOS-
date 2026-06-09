@@ -60,10 +60,3 @@ export function useDeleteCustomer() {
   });
 }
 
-export function useApprovePortal() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api.put<void>(`/portal/enable/${id}`, {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
-  });
-}
