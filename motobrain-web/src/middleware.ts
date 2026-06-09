@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const STAFF_PUBLIC_PATHS = ['/login', '/register'];
+const STAFF_PUBLIC_PATHS = ['/login', '/register', '/portal-registro'];
 const PORTAL_PREFIX = '/portal';
 
 export function middleware(request: NextRequest) {
@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (pathname.startsWith(PORTAL_PREFIX)) {
+  if (pathname === PORTAL_PREFIX || pathname.startsWith(PORTAL_PREFIX + '/')) {
     const portalToken = request.cookies.get('motobrain_portal_token')?.value;
 
     if (!portalToken) {
