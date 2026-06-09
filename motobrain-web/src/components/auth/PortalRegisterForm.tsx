@@ -92,7 +92,8 @@ function PortalRegisterInner() {
     const rawPhone = s1.phone.replace(/[\s\-().+]/g, '');
     if (rawPhone.length < 7) errs.phone = 'Ingresa tu número de celular';
     if (!s1.cedula.trim() || s1.cedula.trim().length < 4) errs.cedula = 'Ingresa tu número de cédula';
-    if (s1.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim())) errs.email = 'Email inválido';
+    if (!s1.email.trim()) errs.email = 'El email es requerido';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim())) errs.email = 'Email inválido';
     setS1Errors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -126,7 +127,7 @@ function PortalRegisterInner() {
         name: s1.name.trim(),
         phone: s1.phone.trim(),
         cedula: s1.cedula.trim(),
-        email: s1.email.trim() || undefined,
+        email: s1.email.trim(),
         moto: {
           placa: s2.placa.toUpperCase().trim(),
           brand: s2.brand,
@@ -239,7 +240,6 @@ function PortalRegisterInner() {
                   <label className="auth-label flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5 text-zinc-500" />
                     Email
-                    <OptionalBadge />
                   </label>
                   <input
                     type="email"
