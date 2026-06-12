@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Loader2, X, Camera } from 'lucide-react';
-import { MotorcyclePlaceholder, inferMotoType } from '@/components/portal/MotorcyclePlaceholder';
+import { MotorcyclePlaceholder } from '@/components/portal/MotorcyclePlaceholder';
 import Image from 'next/image';
 import { useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api-client';
