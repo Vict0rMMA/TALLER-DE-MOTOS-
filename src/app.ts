@@ -1,11 +1,14 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { json } from 'express';
 import apiRouter from './interface/routes';
 import { errorHandler } from './interface/middlewares/errorMiddleware';
 import { DomainError } from './domain/errors/DomainError';
 
 const app = express();
+app.set('trust proxy', 1);
+app.use(helmet());
 
 const allowedOrigins = [
   'http://localhost:3000',
