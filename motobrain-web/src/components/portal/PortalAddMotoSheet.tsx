@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Loader2, X, Camera, Bike } from 'lucide-react';
+import { Loader2, X, Camera } from 'lucide-react';
+import { MotorcyclePlaceholder, inferMotoType } from '@/components/portal/MotorcyclePlaceholder';
 import Image from 'next/image';
 import { useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api-client';
@@ -112,11 +113,12 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
               {imagePreview ? (
                 <Image src={imagePreview} alt="" fill className="object-cover" unoptimized />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-zinc-500">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
-                    <Camera className="h-5 w-5" />
+                <div className="relative h-full w-full">
+                  <MotorcyclePlaceholder brand={brand || undefined} model={model || undefined} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/40">
+                    <Camera className="h-5 w-5 text-white/70" />
+                    <span className="text-xs text-white/60">Toca para agregar foto</span>
                   </div>
-                  <span className="text-xs">Toca para agregar foto</span>
                 </div>
               )}
               {imagePreview && (

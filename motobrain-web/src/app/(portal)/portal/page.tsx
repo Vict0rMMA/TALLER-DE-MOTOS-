@@ -25,6 +25,7 @@ import { formatServiceLabel } from '@/lib/utils';
 import { PortalAddMotoSheet } from '@/components/portal/PortalAddMotoSheet';
 import { PortalScheduleSheet } from '@/components/portal/PortalScheduleSheet';
 import { PortalWorkshopReplyBanner } from '@/components/portal/PortalWorkshopReplyBanner';
+import { MotorcyclePlaceholder } from '@/components/portal/MotorcyclePlaceholder';
 
 interface Me {
   id: string;
@@ -342,9 +343,7 @@ export default function PortalDashboard() {
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
                       </>
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900">
-                        <Bike className="h-12 w-12 text-zinc-600" strokeWidth={1} />
-                      </div>
+                      <MotorcyclePlaceholder brand={m.brand} model={m.model} />
                     )}
                     <button
                       type="button"
