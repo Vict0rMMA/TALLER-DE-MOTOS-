@@ -127,7 +127,7 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
                 </div>
               )}
             </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+            <input ref={fileRef} type="file" accept="image/*" style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} aria-hidden onChange={onFileChange} />
           </div>
 
           <label className="block space-y-1.5">

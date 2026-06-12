@@ -521,7 +521,9 @@ export default function PortalDashboard() {
         ref={photoInputRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, pointerEvents: 'none' }}
+        tabIndex={-1}
+        aria-hidden
         onChange={onPhotoSelected}
       />
       <PortalAddMotoSheet open={addMotoOpen} onOpenChange={setAddMotoOpen} />
