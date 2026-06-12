@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Loader2, X, Camera } from 'lucide-react';
-import { MotorcyclePlaceholder } from '@/components/portal/MotorcyclePlaceholder';
-import Image from 'next/image';
+import { useState } from 'react';
+import { Loader2, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api-client';
 
@@ -19,31 +17,13 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
   const [model, setModel] = useState('');
   const [cc, setCc] = useState('');
   const [year, setYear] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageMimeType(file.type || 'image/jpeg');
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setImagePreview(dataUrl);
-      setImageBase64(dataUrl.split(',')[1]);
-    };
-    reader.readAsDataURL(file);
-  }
-
   function reset() {
-    setPlaca(''); setBrand(''); setModel(''); setCc(''); setYear('');
-    setImagePreview(null); setImageBase64(null); setError('');
+    setPlaca(''); setBrand(''); setModel(''); setCc(''); setYear(''); setError('');
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,25 +31,13 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
     setError('');
     setLoading(true);
     try {
-      const moto = await portalApi.post<{ id: string }>('/motorcycles', {
+      await portalApi.post('/motorcycles', {
         placa: placa.trim(),
         brand: brand.trim(),
         model: model.trim(),
         cc: Number(cc) || 125,
         year: year ? Number(year) : undefined,
       });
-
-      if (imageBase64 && moto?.id) {
-        try {
-          await portalApi.patch(`/motorcycles/${moto.id}/photo`, {
-            imageBase64,
-            imageMimeType,
-          });
-        } catch {
-          // no bloquear si falla la foto
-        }
-      }
-
       await queryClient.invalidateQueries({ queryKey: ['portal-dashboard'] });
       reset();
       onOpenChange(false);
@@ -99,37 +67,7 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
             <X className="h-5 w-5" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
-
-          {/* Foto */}
-          <div>
-            <span className="mb-1.5 block text-xs font-medium text-zinc-400">Foto de la moto</span>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-zinc-700 bg-zinc-900 transition-colors hover:border-zinc-600"
-            >
-              {imagePreview ? (
-                <Image src={imagePreview} alt="" fill className="object-cover" unoptimized />
-              ) : (
-                <div className="relative h-full w-full">
-                  <MotorcyclePlaceholder brand={brand || undefined} model={model || undefined} />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/40">
-                    <Camera className="h-5 w-5 text-white/70" />
-                    <span className="text-xs text-white/60">Toca para agregar foto</span>
-                  </div>
-                </div>
-              )}
-              {imagePreview && (
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <Camera className="h-6 w-6 text-white" />
-                </div>
-              )}
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} aria-hidden onChange={onFileChange} />
-          </div>
-
           <label className="block space-y-1.5">
             <span className="text-xs font-medium text-zinc-400">Placa *</span>
             <input
@@ -188,7 +126,6 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
               />
             </label>
           </div>
-
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button type="submit" disabled={loading} className="portal-btn-primary w-full justify-center">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar moto'}

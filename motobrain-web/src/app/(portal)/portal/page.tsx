@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ColombiaFlag } from '@/components/ui/ColombiaFlag';
@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bike, Wrench, Calendar, DollarSign, Plus, ChevronRight,
   ClipboardList, MessageCircle, Heart, Sparkles, ArrowRight,
-  Clock, CheckCircle2, Camera, X, Loader2,
+  Clock, CheckCircle2, X,
 } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
@@ -77,9 +77,6 @@ export default function PortalDashboard() {
   const [addMotoOpen, setAddMotoOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [uploadingMotoId, setUploadingMotoId] = useState<string | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const pendingMotoId = useRef<string | null>(null);
 
   const cancelAppt = useMutation({
     mutationFn: (id: string) => portalApi.patch(`/appointments/${id}/cancel`, {}),
@@ -89,35 +86,6 @@ export default function PortalDashboard() {
     },
     onError: () => setCancellingId(null),
   });
-
-  function pickMotoPhoto(motoId: string) {
-    pendingMotoId.current = motoId;
-    photoInputRef.current?.click();
-  }
-
-  async function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    const motoId = pendingMotoId.current;
-    if (!file || !motoId) return;
-    e.target.value = '';
-    setUploadingMotoId(motoId);
-    try {
-      const base64 = await new Promise<string>((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res((reader.result as string).split(',')[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-      });
-      await portalApi.patch(`/motorcycles/${motoId}/photo`, {
-        imageBase64: base64,
-        imageMimeType: file.type,
-      });
-      await qc.invalidateQueries({ queryKey: ['portal-dashboard'] });
-    } finally {
-      setUploadingMotoId(null);
-      pendingMotoId.current = null;
-    }
-  }
 
   const { data: dash, isLoading } = useQuery<PortalDashboardData>({
     queryKey: ['portal-dashboard'],
@@ -336,17 +304,6 @@ export default function PortalDashboard() {
                     ) : (
                       <MotorcyclePlaceholder brand={m.brand} model={m.model} />
                     )}
-                    <button
-                      type="button"
-                      onClick={() => pickMotoPhoto(m.id)}
-                      disabled={uploadingMotoId === m.id}
-                      className="absolute bottom-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900/80 backdrop-blur-sm border border-zinc-700/60 text-zinc-300 hover:text-white transition-colors"
-                      title="Cambiar foto"
-                    >
-                      {uploadingMotoId === m.id
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        : <Camera className="h-3.5 w-3.5" />}
-                    </button>
                   </div>
                   <div className="p-3">
                     <p className="font-mono text-sm font-bold tracking-wider text-white">{m.placa}</p>
@@ -517,15 +474,6 @@ export default function PortalDashboard() {
         </p>
       </footer>
 
-      <input
-        ref={photoInputRef}
-        type="file"
-        accept="image/*"
-        style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, pointerEvents: 'none' }}
-        tabIndex={-1}
-        aria-hidden
-        onChange={onPhotoSelected}
-      />
       <PortalAddMotoSheet open={addMotoOpen} onOpenChange={setAddMotoOpen} />
       <PortalScheduleSheet
         open={scheduleOpen}
