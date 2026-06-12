@@ -25,7 +25,7 @@ import { formatServiceLabel } from '@/lib/utils';
 import { PortalAddMotoSheet } from '@/components/portal/PortalAddMotoSheet';
 import { PortalScheduleSheet } from '@/components/portal/PortalScheduleSheet';
 import { PortalWorkshopReplyBanner } from '@/components/portal/PortalWorkshopReplyBanner';
-import { MotorcyclePlaceholder } from '@/components/portal/MotorcyclePlaceholder';
+import { MotoBrandPlaceholder } from '@/components/shared/MotoBrandPlaceholder';
 
 interface PortalDashboardData {
   customer: { id: string; name: string; phone: string; email: string | null; cedula: string };
@@ -302,7 +302,7 @@ export default function PortalDashboard() {
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
                       </>
                     ) : (
-                      <MotorcyclePlaceholder brand={m.brand} model={m.model} />
+                      <MotoBrandPlaceholder brand={m.brand} />
                     )}
                   </div>
                   <div className="p-3">
