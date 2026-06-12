@@ -46,7 +46,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/api/icons/180" />
+        <meta name="apple-mobile-web-app-title" content="MotoBrain" />
       </head>
       <body className={`${plusJakarta.variable} font-sans antialiased`}>
         <AppProviders>{children}</AppProviders>

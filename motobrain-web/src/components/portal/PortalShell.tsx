@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { PortalAIProvider, usePortalAI } from '@/components/portal/PortalAIProvider';
 import { PortalNavbar } from '@/components/portal/PortalNavbar';
 import { PortalBottomNav } from '@/components/portal/PortalBottomNav';
+import { PwaRegister } from '@/components/portal/PwaRegister';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
 
 function PortalShellInner({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
       <PortalNavbar />
       <div className="portal-container py-6 pb-24 md:py-10 md:pb-10">{children}</div>
       <PortalBottomNav />
+      <PwaRegister />
     </div>
   );
 }

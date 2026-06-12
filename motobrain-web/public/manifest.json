@@ -1,0 +1,47 @@
+{
+  "name": "MotoBrain — Portal del Cliente",
+  "short_name": "MotoBrain",
+  "description": "Sigue tus servicios, habla con el taller y consulta el historial de tu moto",
+  "start_url": "/portal",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#10b981",
+  "lang": "es",
+  "categories": ["automotive", "utilities"],
+  "icons": [
+    {
+      "src": "/api/icons/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/icons/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/icons/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mis servicios",
+      "short_name": "Servicios",
+      "url": "/portal#servicios",
+      "icons": [{ "src": "/api/icons/96", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Consultar IA",
+      "short_name": "IA",
+      "url": "/portal?ai=1",
+      "icons": [{ "src": "/api/icons/96", "sizes": "96x96", "type": "image/png" }]
+    }
+  ]
+}
