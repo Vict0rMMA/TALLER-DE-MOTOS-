@@ -41,7 +41,6 @@ const TOOLS_ALL = [
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Propietario',
   mechanic: 'Mecánico',
-  seller: 'Vendedor',
 };
 
 function NavLink({

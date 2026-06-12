@@ -15,7 +15,7 @@ const workshopRepo = new PrismaWorkshopRepository();
 const passwordHasher = new BcryptPasswordHasher();
 
 const ROLE_LABELS: Record<string, string> = {
-  owner: 'Propietario', mechanic: 'Mecánico', seller: 'Vendedor',
+  owner: 'Propietario', mechanic: 'Mecánico',
 };
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -110,20 +110,19 @@ export const regenerateInviteCode = async (req: Request, res: Response, next: Ne
   } catch (e) { next(e); }
 };
 
-// Registro por código de invitación (staff: mecánico o vendedor)
+// Registro por código de invitación (staff: mecánico)
 export const registerWithCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { inviteCode, name, email, password, role } = req.body as {
       inviteCode?: string; name?: string; email?: string; password?: string;
-      role?: 'mechanic' | 'seller';
+      role?: 'mechanic';
     };
 
     if (!inviteCode?.trim() || !name?.trim() || !email?.trim() || !password?.trim()) {
       throw new DomainError('Código, nombre, email y contraseña son requeridos', 400);
     }
 
-    const validRoles = ['mechanic', 'seller'];
-    const userRole = validRoles.includes(role ?? '') ? role! : 'mechanic';
+    const userRole: 'mechanic' = 'mechanic';
 
     const workshop = await (prisma as any).workshop.findUnique({
       where: { inviteCode: inviteCode.trim().toUpperCase() },

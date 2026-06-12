@@ -22,14 +22,13 @@ import {
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Propietario',
   mechanic: 'Mecánico',
-  seller: 'Vendedor',
 };
 
 const newUserSchema = z.object({
   name: z.string().min(2, 'Nombre requerido'),
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres'),
-  role: z.enum(['mechanic', 'seller', 'owner']),
+  role: z.enum(['mechanic', 'owner']),
 });
 type NewUserInput = z.infer<typeof newUserSchema>;
 
@@ -263,7 +262,6 @@ function AddUserForm({ workshopId, onSuccess }: { workshopId: string; onSuccess:
             className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none appearance-none"
           >
             <option value="mechanic">Mecánico</option>
-            <option value="seller">Vendedor</option>
             <option value="owner">Propietario</option>
           </select>
         </div>
@@ -700,7 +698,6 @@ interface WorkshopUser { id: string; name: string; email: string; role: string; 
 const ROLE_COLORS: Record<string, string> = {
   owner: 'border-accent/30 bg-accent/10 text-accent',
   mechanic: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
-  seller: 'border-violet-500/30 bg-violet-500/10 text-violet-400',
 };
 
 function InviteCodeCard() {
@@ -729,7 +726,7 @@ function InviteCodeCard() {
         <KeyRound className="h-4 w-4 text-accent" />
         <p className="text-sm font-semibold text-text-primary">Código de invitación del taller</p>
       </div>
-      <p className="text-xs text-text-tertiary">Comparte este código con mecánicos y vendedores para que se registren en tu taller.</p>
+      <p className="text-xs text-text-tertiary">Comparte este código con mecánicos para que se registren en tu taller.</p>
       <div className="flex items-center gap-2">
         <div className="flex-1 rounded-lg border border-border bg-bg-elevated px-4 py-2 font-mono text-lg font-bold tracking-widest text-accent text-center">
           {isLoading ? '...' : (data?.inviteCode ?? '—')}
@@ -741,7 +738,7 @@ function InviteCodeCard() {
           <RefreshCcw className={`h-4 w-4 ${regenerate.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
-      <p className="text-[11px] text-text-tertiary">El nuevo usuario va a <strong className="text-text-secondary">taller-mts.vercel.app/register</strong> → "Soy mecánico/vendedor" e ingresa este código.</p>
+      <p className="text-[11px] text-text-tertiary">El nuevo usuario va a <strong className="text-text-secondary">taller-mts.vercel.app/register</strong> → "Soy mecánico" e ingresa este código.</p>
     </div>
   );
 }

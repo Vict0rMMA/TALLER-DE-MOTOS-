@@ -14,7 +14,6 @@ type Mode = 'choose' | 'new-workshop' | 'join-code';
 
 const ROLE_OPTIONS = [
   { value: 'mechanic', label: 'Mecánico' },
-  { value: 'seller', label: 'Vendedor' },
 ];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -119,7 +118,7 @@ export function RegisterForm() {
                     <KeyRound className="h-5 w-5 text-accent" />
                   </div>
                   <div>
-                    <p className="font-semibold text-text-primary text-sm">Soy mecánico / vendedor</p>
+                    <p className="font-semibold text-text-primary text-sm">Soy mecánico</p>
                     <p className="text-xs text-text-tertiary mt-0.5">Ingresa el código que te dio el administrador del taller</p>
                   </div>
                 </button>

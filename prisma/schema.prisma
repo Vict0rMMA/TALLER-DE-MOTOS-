@@ -9,7 +9,6 @@ datasource db {
 enum UserRole {
   owner
   mechanic
-  seller
 }
 
 enum ServiceStatus {
