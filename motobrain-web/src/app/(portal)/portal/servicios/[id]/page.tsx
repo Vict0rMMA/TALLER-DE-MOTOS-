@@ -41,7 +41,8 @@ function cop(n: number) {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const s = new Date(d).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export default function PortalServiceDetailPage({ params }: { params: { id: string } }) {
@@ -140,7 +141,7 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
               <Calendar className="h-4 w-4 text-text-tertiary shrink-0" />
               <div>
                 <p className="text-xs text-text-tertiary">Fecha de ingreso</p>
-                <p className="text-sm font-medium text-text-primary capitalize">{fmtDate(service.serviceDate)}</p>
+                <p className="text-sm font-medium text-text-primary">{fmtDate(service.serviceDate)}</p>
               </div>
             </div>
             {service.closedAt && (
@@ -148,7 +149,7 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
                 <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                 <div>
                   <p className="text-xs text-text-tertiary">Fecha de entrega</p>
-                  <p className="text-sm font-medium text-text-primary capitalize">{fmtDate(service.closedAt)}</p>
+                  <p className="text-sm font-medium text-text-primary">{fmtDate(service.closedAt)}</p>
                 </div>
               </div>
             )}
@@ -190,8 +191,8 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
               {service.nextMaintenanceDate && (
                 <p className="text-sm text-text-primary">
                   <span className="text-text-tertiary">Fecha: </span>
-                  <span className="font-semibold capitalize">
-                    {new Date(service.nextMaintenanceDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  <span className="font-semibold">
+                    {(() => { const s = new Date(service.nextMaintenanceDate!).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); })()}
                   </span>
                 </p>
               )}

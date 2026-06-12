@@ -59,13 +59,14 @@ const APPT_STATUS: Record<string, string> = {
 function fmtApptWhen(a: PortalAppointment) {
   const d = a.scheduledAt ?? a.preferredDate;
   if (!d) return 'Por definir';
-  return new Date(d).toLocaleString('es-CO', {
+  const s = new Date(d).toLocaleString('es-CO', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
   });
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 const MOTO_THUMB = '/images/moto-akt-tt-ds.png';
