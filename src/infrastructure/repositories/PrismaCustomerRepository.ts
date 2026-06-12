@@ -48,7 +48,7 @@ export class PrismaCustomerRepository implements CustomerRepository {
     return this.toDomain(r);
   }
 
-  async update(id: string, workshopId: string, data: Partial<Omit<Customer, 'id' | 'workshopId' | 'createdAt'>>): Promise<Customer> {
+  async update(id: string, _workshopId: string, data: Partial<Omit<Customer, 'id' | 'workshopId' | 'createdAt'>>): Promise<Customer> {
     const r = await (prisma as any).customer.update({ where: { id }, data });
     return this.toDomain(r);
   }

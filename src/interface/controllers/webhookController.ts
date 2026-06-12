@@ -21,7 +21,7 @@ export const handleWebhook = (req: Request, res: Response) => {
   }
 
   const messages = body.entry?.[0]?.changes?.[0]?.value?.messages ?? [];
-  for (const msg of messages) {
+  for (const _msg of messages) {
   }
 
   res.status(200).json({ status: 'EVENT_RECEIVED' });

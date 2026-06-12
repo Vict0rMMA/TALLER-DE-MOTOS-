@@ -20,12 +20,4 @@ export async function runDemandPrediction(workshopId: string): Promise<void> {
     demandMap.set(m.productId, entry);
   }
 
-  const predictions = Array.from(demandMap.entries()).map(([productId, d]) => ({
-    productId,
-    name: d.name,
-    avgDailySales: d.totalSold / 30,
-    daysUntilStockout: (d.totalSold / 30) > 0 ? Math.floor(d.stock / (d.totalSold / 30)) : 999,
-    recommendedOrder: Math.max(0, d.stockMin * 2 - d.stock),
-  }));
-
 }
