@@ -113,7 +113,7 @@ export const regenerateInviteCode = async (req: Request, res: Response, next: Ne
 // Registro por código de invitación (staff: mecánico)
 export const registerWithCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { inviteCode, name, email, password, role } = req.body as {
+    const { inviteCode, name, email, password } = req.body as {
       inviteCode?: string; name?: string; email?: string; password?: string;
       role?: 'mechanic';
     };

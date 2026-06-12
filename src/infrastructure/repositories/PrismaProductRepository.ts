@@ -33,12 +33,12 @@ export class PrismaProductRepository implements ProductRepository {
     return this.toDomain(r);
   }
 
-  async update(id: string, workshopId: string, data: Partial<Omit<Product, 'id' | 'workshopId' | 'createdAt' | 'updatedAt'>>): Promise<Product> {
+  async update(id: string, _workshopId: string, data: Partial<Omit<Product, 'id' | 'workshopId' | 'createdAt' | 'updatedAt'>>): Promise<Product> {
     const r = await (prisma as any).product.update({ where: { id }, data });
     return this.toDomain(r);
   }
 
-  async delete(id: string, workshopId: string): Promise<void> {
+  async delete(id: string, _workshopId: string): Promise<void> {
     await (prisma as any).product.update({ where: { id }, data: { active: false } });
   }
 

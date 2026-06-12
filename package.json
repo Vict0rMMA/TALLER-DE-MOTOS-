@@ -1,10 +1,9 @@
 {
-  "name": "propiedades-3",
+  "name": "motobrain-api",
   "version": "1.0.0",
-  "description": "API REST de gestion de propiedades con Node.js, Express, Prisma y PostgreSQL",
-  "main": "src/server.js",
+  "description": "API de gestión de talleres de motos — Express + TypeScript + Prisma + PostgreSQL",
+  "main": "dist/index.js",
   "scripts": {
-    "dev:old": "nodemon src/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "prisma generate && tsc",
     "start": "node dist/index.js",
@@ -36,7 +35,6 @@
     "@types/pdfkit": "^0.17.6",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -46,13 +44,11 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^8.0.10",
     "pdfkit": "^0.18.0",
     "pg": "^8.20.0",
     "qrcode": "^1.5.4",
-    "qrcode-terminal": "^0.12.0",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.34.5",
     "ts-node-dev": "^2.0.0",
@@ -61,7 +57,6 @@
     "zod": "^4.4.1"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -69,7 +64,6 @@
     "@types/node": "^25.8.0",
     "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
-    "@types/qrcode-terminal": "^0.12.2",
     "nodemon": "^3.1.14",
     "prisma": "^7.8.0"
   }

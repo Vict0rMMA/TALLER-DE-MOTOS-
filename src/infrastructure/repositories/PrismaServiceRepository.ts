@@ -49,12 +49,12 @@ export class PrismaServiceRepository implements ServiceRepository {
     return this.toDomain(r);
   }
 
-  async update(id: string, workshopId: string, data: Partial<Omit<Service, 'id' | 'workshopId' | 'createdAt' | 'updatedAt'>>): Promise<Service> {
+  async update(id: string, _workshopId: string, data: Partial<Omit<Service, 'id' | 'workshopId' | 'createdAt' | 'updatedAt'>>): Promise<Service> {
     const r = await (prisma as any).service.update({ where: { id }, data });
     return this.toDomain(r);
   }
 
-  async close(id: string, workshopId: string, closedAt: Date): Promise<Service> {
+  async close(id: string, _workshopId: string, closedAt: Date): Promise<Service> {
     const r = await (prisma as any).service.update({
       where: { id },
       data: { status: 'closed', closedAt },
