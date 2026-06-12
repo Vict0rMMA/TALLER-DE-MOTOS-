@@ -60,7 +60,6 @@ function fmtApptWhen(a: PortalAppointment) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const MOTO_THUMB = '/images/moto-akt-tt-ds.png';
 
 function whatsappUrl(phone: string) {
   const digits = phone.replace(/\D/g, '');
@@ -116,10 +115,7 @@ export default function PortalDashboard() {
         <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-emerald-500/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-4 right-10 h-24 w-24 rounded-full bg-emerald-400/8 blur-xl" />
 
-        <p className="text-xs font-medium uppercase tracking-widest text-emerald-400/70">
-          {me?.workshop?.name ?? 'Tu taller'}
-        </p>
-        <h1 className="mt-1.5 text-[1.6rem] font-bold leading-tight text-white">
+        <h1 className="text-[1.6rem] font-bold leading-tight text-white">
           Hola, {firstName} 👋
         </h1>
         <p className="mt-1 text-sm text-zinc-400">
@@ -288,16 +284,24 @@ export default function PortalDashboard() {
                       En taller
                     </div>
                   )}
-                  <div className="relative h-32 w-full bg-zinc-800">
-                    <Image
-                      src={m.imageUrl || MOTO_THUMB}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="208px"
-                      unoptimized={!!m.imageUrl}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
+                  <div className="relative h-32 w-full bg-zinc-800/80">
+                    {m.imageUrl ? (
+                      <>
+                        <Image
+                          src={m.imageUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="208px"
+                          unoptimized
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900">
+                        <Bike className="h-12 w-12 text-zinc-600" strokeWidth={1} />
+                      </div>
+                    )}
                   </div>
                   <div className="p-3">
                     <p className="font-mono text-sm font-bold tracking-wider text-white">{m.placa}</p>
