@@ -1432,6 +1432,14 @@
   word-spacing: normal;
 }
 
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 .portal-card {
   border-radius: 1rem;
   border: 1px solid rgb(39 39 42);
