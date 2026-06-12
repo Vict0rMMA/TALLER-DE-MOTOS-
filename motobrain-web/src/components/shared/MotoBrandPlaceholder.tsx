@@ -48,12 +48,12 @@ export const MotoBrandPlaceholder = memo(function MotoBrandPlaceholder({
       />
       <span
         aria-hidden
-        className="pointer-events-none relative select-none bg-gradient-to-b from-emerald-300/30 to-emerald-700/5 bg-clip-text text-[7.5rem] font-extrabold leading-none text-transparent"
+        className="pointer-events-none relative select-none bg-gradient-to-b from-emerald-500 to-emerald-800 bg-clip-text text-[8rem] font-bold leading-none text-transparent"
       >
         {initial}
       </span>
       {name && (
-        <span className="relative mb-3 -mt-2 text-[11px] font-medium uppercase tracking-[0.35em] text-zinc-500">
+        <span className="relative mb-4 -mt-1 text-[11px] font-semibold uppercase tracking-[0.4em] text-zinc-500">
           {name}
         </span>
       )}
