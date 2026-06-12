@@ -172,6 +172,95 @@ export const portalMe = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+export const portalDashboard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const customerId = req.customerId!;
+
+    // Query 1: cliente + motos + taller (1 round-trip)
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+      include: {
+        motorcycles: { orderBy: { createdAt: 'asc' } },
+        workshop: { select: { name: true, phone: true, address: true } },
+      },
+    });
+    if (!customer) return next(new DomainError('Cliente no encontrado', 404));
+
+    const motoIds = customer.motorcycles.map((m) => m.id);
+
+    // Query 2: servicios + citas en paralelo (1 round-trip)
+    const [services, appointments] = await Promise.all([
+      prisma.service.findMany({
+        where: { motorcycleId: { in: motoIds } },
+        orderBy: { serviceDate: 'desc' },
+        include: {
+          motorcycle: { select: { placa: true, brand: true, model: true } },
+          mechanic: { select: { name: true } },
+          products: { include: { product: { select: { name: true } } } },
+        },
+      }),
+      prisma.workshopAppointment.findMany({
+        where: { customerId },
+        orderBy: [{ scheduledAt: 'asc' }, { preferredDate: 'asc' }, { createdAt: 'desc' }],
+        take: 20,
+        include: { motorcycle: { select: { placa: true, brand: true, model: true } } },
+      }),
+    ]);
+
+    res.json({
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        cedula: customer.cedula,
+      },
+      workshop: customer.workshop,
+      motorcycles: customer.motorcycles.map((m) => ({
+        id: m.id,
+        placa: m.placa,
+        brand: m.brand,
+        model: m.model,
+        cc: m.cc,
+        year: m.year,
+        kmCurrent: m.kmCurrent,
+        imageUrl: m.imageUrl ?? null,
+      })),
+      services: services.map((s) => ({
+        id: s.id,
+        type: s.type,
+        description: s.description,
+        status: s.status,
+        serviceDate: s.serviceDate,
+        closedAt: s.closedAt,
+        laborCost: Number(s.laborCost),
+        totalCost: Number(s.totalCost),
+        kmAtService: s.kmAtService,
+        nextMaintenanceKm: s.nextMaintenanceKm,
+        nextMaintenanceDate: s.nextMaintenanceDate,
+        motorcycle: s.motorcycle,
+        mechanic: s.mechanic?.name ?? null,
+        products: s.products.map((p) => ({
+          name: p.product.name,
+          quantity: p.quantity,
+          unitPrice: Number(p.unitPrice),
+        })),
+      })),
+      appointments: appointments.map((a) => ({
+        id: a.id,
+        notes: a.notes,
+        preferredDate: a.preferredDate,
+        scheduledAt: a.scheduledAt,
+        status: a.status,
+        createdAt: a.createdAt,
+        motorcycle: a.motorcycle,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const portalServices = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const motorcycles = await prisma.motorcycle.findMany({

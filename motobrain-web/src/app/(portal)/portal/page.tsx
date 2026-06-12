@@ -27,11 +27,12 @@ import { PortalScheduleSheet } from '@/components/portal/PortalScheduleSheet';
 import { PortalWorkshopReplyBanner } from '@/components/portal/PortalWorkshopReplyBanner';
 import { MotorcyclePlaceholder } from '@/components/portal/MotorcyclePlaceholder';
 
-interface Me {
-  id: string;
-  name: string;
+interface PortalDashboardData {
+  customer: { id: string; name: string; phone: string; email: string | null; cedula: string };
   workshop: PortalWorkshop;
   motorcycles: PortalMotorcycle[];
+  services: PortalService[];
+  appointments: PortalAppointment[];
 }
 
 interface PortalAppointment {
@@ -83,8 +84,7 @@ export default function PortalDashboard() {
   const cancelAppt = useMutation({
     mutationFn: (id: string) => portalApi.patch(`/appointments/${id}/cancel`, {}),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['portal-appointments'] });
-      void qc.invalidateQueries({ queryKey: ['portal-appointment-next'] });
+      void qc.invalidateQueries({ queryKey: ['portal-dashboard'] });
       setCancellingId(null);
     },
     onError: () => setCancellingId(null),
@@ -112,39 +112,30 @@ export default function PortalDashboard() {
         imageBase64: base64,
         imageMimeType: file.type,
       });
-      await qc.invalidateQueries({ queryKey: ['portal-me'] });
+      await qc.invalidateQueries({ queryKey: ['portal-dashboard'] });
     } finally {
       setUploadingMotoId(null);
       pendingMotoId.current = null;
     }
   }
 
-  const { data: me } = useQuery<Me>({
-    queryKey: ['portal-me'],
-    queryFn: () => portalApi.get<Me>('/me'),
+  const { data: dash, isLoading } = useQuery<PortalDashboardData>({
+    queryKey: ['portal-dashboard'],
+    queryFn: () => portalApi.get<PortalDashboardData>('/dashboard'),
+    staleTime: 30_000,
   });
 
-  const { data: services = [], isLoading } = useQuery<PortalService[]>({
-    queryKey: ['portal-services'],
-    queryFn: () => portalApi.get<PortalService[]>('/services'),
-  });
-
-  const { data: nextAppointment } = useQuery<PortalAppointment | null>({
-    queryKey: ['portal-appointment-next'],
-    queryFn: () => portalApi.get<PortalAppointment | null>('/appointments/next'),
-  });
-
-  const { data: appointments = [] } = useQuery<PortalAppointment[]>({
-    queryKey: ['portal-appointments'],
-    queryFn: () => portalApi.get<PortalAppointment[]>('/appointments'),
-  });
-
+  const services = dash?.services ?? [];
+  const appointments = dash?.appointments ?? [];
   const activeServices = services.filter((s) => s.status === 'open' || s.status === 'in_progress');
   const historyServices = services.filter((s) => s.status === 'closed' || s.status === 'cancelled');
   const totalSpent = services.filter((s) => s.status === 'closed').reduce((sum, s) => sum + (s.totalCost ?? 0), 0);
   const activePlacas = new Set(activeServices.map((s) => s.motorcycle.placa));
-  const firstName = (customer?.name ?? me?.name ?? '').split(' ')[0] || 'Cliente';
-  const workshopPhone = me?.workshop?.phone;
+  const nextAppointment = appointments.find(
+    (a) => a.status === 'pending' || a.status === 'confirmed',
+  ) ?? null;
+  const firstName = (customer?.name ?? dash?.customer?.name ?? '').split(' ')[0] || 'Cliente';
+  const workshopPhone = dash?.workshop?.phone;
 
   function latestServiceForPlaca(placa: string) {
     return services
@@ -171,7 +162,7 @@ export default function PortalDashboard() {
 
         <div className="mt-5 grid grid-cols-3 divide-x divide-zinc-700/60">
           {[
-            { label: 'Motos', value: me?.motorcycles?.length ?? 0, icon: Bike },
+            { label: 'Motos', value: dash?.motorcycles?.length ?? 0, icon: Bike },
             { label: 'Activos', value: activeServices.length, icon: Wrench },
             { label: 'Gastado', value: totalSpent > 0 ? formatCop(totalSpent) : '$0', icon: DollarSign },
           ].map(({ label, value, icon: Icon }) => (
@@ -314,9 +305,9 @@ export default function PortalDashboard() {
           </button>
         </div>
 
-        {me?.motorcycles && me.motorcycles.length > 0 ? (
+        {dash?.motorcycles && dash?.motorcycles.length > 0 ? (
           <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
-            {me.motorcycles.map((m) => {
+            {dash?.motorcycles.map((m) => {
               const inShop = activePlacas.has(m.placa);
               const last = latestServiceForPlaca(m.placa);
               return (
@@ -537,7 +528,7 @@ export default function PortalDashboard() {
       <PortalScheduleSheet
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
-        motorcycles={me?.motorcycles ?? []}
+        motorcycles={dash?.motorcycles ?? []}
       />
     </div>
   );

@@ -13,6 +13,7 @@ router.post('/register', ctrl.portalRegister);
 router.post('/auth/otp/request', otpCtrl.requestOtp);
 router.post('/auth/otp/verify', otpCtrl.verifyOtp);
 
+router.get('/dashboard', authenticateCustomer, ctrl.portalDashboard);
 router.get('/me', authenticateCustomer, ctrl.portalMe);
 router.get('/services', authenticateCustomer, ctrl.portalServices);
 router.get('/services/:id', authenticateCustomer, ctrl.portalServiceDetail);

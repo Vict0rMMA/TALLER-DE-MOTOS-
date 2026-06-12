@@ -70,7 +70,7 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
         }
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['portal-me'] });
+      await queryClient.invalidateQueries({ queryKey: ['portal-dashboard'] });
       reset();
       onOpenChange(false);
     } catch (err) {

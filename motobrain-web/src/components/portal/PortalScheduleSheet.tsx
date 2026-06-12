@@ -46,8 +46,7 @@ export function PortalScheduleSheet({ open, onOpenChange, motorcycles }: PortalS
         preferredDate: preferredDate || undefined,
         notes: notes.trim() || undefined,
       });
-      await queryClient.invalidateQueries({ queryKey: ['portal-appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['portal-appointment-next'] });
+      await queryClient.invalidateQueries({ queryKey: ['portal-dashboard'] });
       setSuccess(res.message);
       setNotes('');
       setPreferredDate('');
