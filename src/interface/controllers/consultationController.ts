@@ -57,7 +57,13 @@ export const portalConsult = async (req: Request, res: Response, next: NextFunct
     }
 
     const motorcycleInfo = motorcycle
-      ? `${motorcycle.brand} ${motorcycle.model} ${motorcycle.year ?? ''} ${motorcycle.cc}cc — Placa: ${motorcycle.placa}`
+      ? [
+          `${motorcycle.brand} ${motorcycle.model}`,
+          motorcycle.year ? `(${motorcycle.year})` : null,
+          `${motorcycle.cc}cc`,
+          motorcycle.kmCurrent ? `· ${motorcycle.kmCurrent.toLocaleString('es-CO')} km` : null,
+          `· Placa ${motorcycle.placa}`,
+        ].filter(Boolean).join(' ')
       : 'Moto no especificada';
 
     const catalogItems = await findRelevantCatalogItems(req.workshopId!, symptom.trim());
