@@ -63,6 +63,9 @@ class PortalApiClient {
   post<T>(endpoint: string, data?: unknown) {
     return this.request<T>(endpoint, { method: 'POST', body: JSON.stringify(data ?? {}) });
   }
+  patch<T>(endpoint: string, data?: unknown) {
+    return this.request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(data ?? {}) });
+  }
 }
 
 export const portalApi = new PortalApiClient();

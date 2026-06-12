@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ColombiaFlag } from '@/components/ui/ColombiaFlag';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bike, Wrench, Calendar, DollarSign, Plus, ChevronRight,
   ClipboardList, MessageCircle, Heart, Sparkles, ArrowRight,
-  Clock, CheckCircle2,
+  Clock, CheckCircle2, Camera, X, Loader2,
 } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
@@ -71,8 +71,52 @@ const SERVICE_STEPS = ['open', 'in_progress', 'closed'];
 export default function PortalDashboard() {
   const { customer } = usePortalAuthStore();
   const { openAI } = usePortalAI();
+  const qc = useQueryClient();
   const [addMotoOpen, setAddMotoOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [uploadingMotoId, setUploadingMotoId] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const pendingMotoId = useRef<string | null>(null);
+
+  const cancelAppt = useMutation({
+    mutationFn: (id: string) => portalApi.patch(`/appointments/${id}/cancel`, {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['portal-appointments'] });
+      void qc.invalidateQueries({ queryKey: ['portal-appointment-next'] });
+      setCancellingId(null);
+    },
+    onError: () => setCancellingId(null),
+  });
+
+  function pickMotoPhoto(motoId: string) {
+    pendingMotoId.current = motoId;
+    photoInputRef.current?.click();
+  }
+
+  async function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const motoId = pendingMotoId.current;
+    if (!file || !motoId) return;
+    e.target.value = '';
+    setUploadingMotoId(motoId);
+    try {
+      const base64 = await new Promise<string>((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res((reader.result as string).split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      await portalApi.patch(`/motorcycles/${motoId}/photo`, {
+        imageBase64: base64,
+        imageMimeType: file.type,
+      });
+      await qc.invalidateQueries({ queryKey: ['portal-me'] });
+    } finally {
+      setUploadingMotoId(null);
+      pendingMotoId.current = null;
+    }
+  }
 
   const { data: me } = useQuery<Me>({
     queryKey: ['portal-me'],
@@ -302,6 +346,17 @@ export default function PortalDashboard() {
                         <Bike className="h-12 w-12 text-zinc-600" strokeWidth={1} />
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => pickMotoPhoto(m.id)}
+                      disabled={uploadingMotoId === m.id}
+                      className="absolute bottom-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900/80 backdrop-blur-sm border border-zinc-700/60 text-zinc-300 hover:text-white transition-colors"
+                      title="Cambiar foto"
+                    >
+                      {uploadingMotoId === m.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Camera className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                   <div className="p-3">
                     <p className="font-mono text-sm font-bold tracking-wider text-white">{m.placa}</p>
@@ -379,30 +434,63 @@ export default function PortalDashboard() {
       )}
 
       {/* ── CITAS ─────────────────────────────────────────── */}
-      {appointments.length > 1 && (
+      {appointments.length > 0 && (
         <section id="citas" className="scroll-mt-24 space-y-3">
           <h2 className="text-base font-semibold text-white">Mis citas</h2>
           <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
-            {appointments.slice(0, 4).map((a, i) => (
-              <div key={a.id} className={`flex items-center justify-between gap-3 px-4 py-3.5 ${i !== 0 ? 'border-t border-zinc-800/80' : ''}`}>
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800">
-                    <Clock className="h-4 w-4 text-sky-400/70" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-white">
-                      {a.motorcycle ? `${a.motorcycle.placa} · ${a.motorcycle.brand}` : 'Revisión general'}
-                    </p>
-                    <p className="text-[11px] text-zinc-500">{fmtApptWhen(a)}</p>
-                  </div>
+            {appointments.slice(0, 5).map((a, i) => (
+              <div key={a.id} className={`flex items-start gap-3 px-4 py-3.5 ${i !== 0 ? 'border-t border-zinc-800/80' : ''}`}>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800 mt-0.5">
+                  <Clock className="h-4 w-4 text-sky-400/70" strokeWidth={1.75} />
                 </div>
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                  a.status === 'confirmed'
-                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
-                    : 'border-amber-500/25 bg-amber-500/10 text-amber-400'
-                }`}>
-                  {APPT_STATUS[a.status]}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">
+                    {a.motorcycle ? `${a.motorcycle.placa} · ${a.motorcycle.brand}` : 'Revisión general'}
+                  </p>
+                  <p className="text-[11px] text-zinc-500">{fmtApptWhen(a)}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                    a.status === 'confirmed'
+                      ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
+                      : a.status === 'cancelled'
+                        ? 'border-zinc-700/50 bg-zinc-800/50 text-zinc-500'
+                        : 'border-amber-500/25 bg-amber-500/10 text-amber-400'
+                  }`}>
+                    {APPT_STATUS[a.status]}
+                  </span>
+                  {(a.status === 'pending' || a.status === 'confirmed') && (
+                    cancellingId === a.id
+                      ? (
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => { setCancellingId(null); }}
+                            className="rounded-lg border border-zinc-700 px-2 py-0.5 text-[10px] text-zinc-400 hover:text-zinc-200"
+                          >
+                            No
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => cancelAppt.mutate(a.id)}
+                            disabled={cancelAppt.isPending}
+                            className="rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                          >
+                            {cancelAppt.isPending ? '...' : 'Sí, cancelar'}
+                          </button>
+                        </div>
+                      )
+                      : (
+                        <button
+                          type="button"
+                          onClick={() => setCancellingId(a.id)}
+                          className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-red-400 transition-colors"
+                        >
+                          <X className="h-3 w-3" /> Cancelar
+                        </button>
+                      )
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -439,6 +527,13 @@ export default function PortalDashboard() {
         </p>
       </footer>
 
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onPhotoSelected}
+      />
       <PortalAddMotoSheet open={addMotoOpen} onOpenChange={setAddMotoOpen} />
       <PortalScheduleSheet
         open={scheduleOpen}

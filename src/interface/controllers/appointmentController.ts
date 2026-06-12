@@ -163,6 +163,27 @@ export const portalCreateAppointment = async (req: Request, res: Response, next:
   }
 };
 
+export const portalCancelAppointment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const apptId = String(req.params.id);
+    const appt = await prisma.workshopAppointment.findFirst({
+      where: { id: apptId, customerId: req.customerId! },
+    });
+    if (!appt) return next(new DomainError('Cita no encontrada', 404));
+    if (appt.status === 'cancelled') return next(new DomainError('Ya está cancelada', 400));
+    if (appt.status === 'completed') return next(new DomainError('No se puede cancelar una cita completada', 400));
+
+    await prisma.workshopAppointment.update({
+      where: { id: apptId },
+      data: { status: 'cancelled' },
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+};
+
 export const listAppointments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const status = (req.query.status as string) || 'pending';

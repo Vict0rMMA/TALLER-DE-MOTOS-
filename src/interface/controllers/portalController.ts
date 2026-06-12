@@ -317,6 +317,29 @@ export const portalAddMotorcycle = async (req: Request, res: Response, next: Nex
   }
 };
 
+export const portalUpdateMotoPhoto = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const motoId = String(req.params.id);
+    const { imageBase64, imageMimeType } = req.body as { imageBase64?: string; imageMimeType?: string };
+
+    const moto = await prisma.motorcycle.findFirst({
+      where: { id: motoId, customerId: req.customerId! },
+    });
+    if (!moto) return next(new DomainError('Moto no encontrada', 404));
+    if (!imageBase64?.trim()) return next(new DomainError('Imagen requerida', 400));
+
+    const buffer = Buffer.from(imageBase64, 'base64');
+    const mimeType = imageMimeType ?? 'image/jpeg';
+    const imageUrl = await uploadMotoPhoto(req.customerId!, motoId, buffer, mimeType);
+
+    await prisma.motorcycle.update({ where: { id: motoId }, data: { imageUrl } });
+
+    res.json({ ok: true, imageUrl });
+  } catch (e) {
+    next(e);
+  }
+};
+
 export const portalScheduleRevision = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { motorcycleId, notes, preferredDate } = req.body as {

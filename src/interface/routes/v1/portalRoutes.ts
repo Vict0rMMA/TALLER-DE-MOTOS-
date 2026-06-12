@@ -23,6 +23,8 @@ router.get('/appointments', authenticateCustomer, apptCtrl.portalListAppointment
 router.get('/appointments/next', authenticateCustomer, apptCtrl.portalNextAppointment);
 router.post('/appointments', authenticateCustomer, apptCtrl.portalCreateAppointment);
 router.post('/schedule-revision', authenticateCustomer, apptCtrl.portalCreateAppointment);
+router.patch('/appointments/:id/cancel', authenticateCustomer, apptCtrl.portalCancelAppointment);
+router.patch('/motorcycles/:id/photo', authenticateCustomer, ctrl.portalUpdateMotoPhoto);
 
 router.put('/enable/:customerId', authenticate, tenantMiddleware, ctrl.enablePortal);
 router.delete('/disable/:customerId', authenticate, tenantMiddleware, ctrl.disablePortal);
