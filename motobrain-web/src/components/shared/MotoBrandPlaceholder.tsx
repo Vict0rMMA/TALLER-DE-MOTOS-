@@ -22,33 +22,34 @@ export const MotoBrandPlaceholder = memo(function MotoBrandPlaceholder({
   const initial = name ? name[0].toUpperCase() : "•";
   const h = hashBrand(name.toLowerCase() || "moto");
 
-  const blobX = 15 + (h % 40);
-  const blobY = 60 + ((h >> 4) % 40);
-  const blob2X = 60 + ((h >> 8) % 30);
-  const opacity = 0.45 + ((h >> 12) % 20) / 100;
+  // Aurora siempre en la esquina inferior — nunca detrás de la letra
+  const blobX = 5 + (h % 30);      // 5–35% → esquina izquierda-abajo
+  const blob2X = 65 + (h % 30);    // 65–95% → esquina derecha-abajo
+  const blobOpacity = 0.55 + ((h >> 8) % 20) / 100;
 
   return (
     <div
       role="img"
       aria-label={name || "Moto"}
       className={cn(
-        "relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#070e09]",
+        "relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#050c07]",
         className,
       )}
     >
+      {/* Aurora fijo en la parte baja, lejos de la letra */}
       <div
         aria-hidden
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background: [
-            `radial-gradient(70% 70% at ${blobX}% ${blobY}%, rgba(4,108,72,${opacity}), transparent 65%)`,
-            `radial-gradient(50% 55% at ${blob2X}% 10%, rgba(16,185,129,0.20), transparent 60%)`,
+            `radial-gradient(55% 45% at ${blobX}% 100%, rgba(5,120,80,${blobOpacity}), transparent 70%)`,
+            `radial-gradient(45% 40% at ${blob2X}% 100%, rgba(16,185,129,0.30), transparent 65%)`,
           ].join(", "),
         }}
       />
       <span
         aria-hidden
-        className="pointer-events-none relative z-10 select-none text-[5.5rem] font-bold leading-none text-emerald-600"
+        className="pointer-events-none relative z-10 select-none text-[6rem] font-bold leading-none text-emerald-400"
       >
         {initial}
       </span>
