@@ -25,35 +25,50 @@ async function dispatchNotification(
   emailHtml: string,
   attachments?: { filename: string; content: Buffer; contentType: string }[],
 ): Promise<{ channel: string; status: 'sent' | 'failed'; reason?: string }> {
-  // Intentar WhatsApp primero si el canal configurado está disponible
-  const waReady = isWhatsAppReady();
-  if (waReady) {
+  const sentChannels: string[] = [];
+  const errors: string[] = [];
+
+  if (isWhatsAppReady()) {
     try {
       await getWhatsAppService().sendMessage(phone, message);
-      return { channel: 'whatsapp', status: 'sent' };
+      sentChannels.push('whatsapp');
     } catch (err) {
-      // WhatsApp falló, intentar email
+      errors.push(`WhatsApp: ${(err as Error).message}`);
     }
   }
 
-  // Fallback: email
   if (email && isEmailConfigured()) {
     try {
       await sendEmail(email, emailSubject, emailHtml, attachments);
-      return { channel: 'email', status: 'sent' };
+      sentChannels.push('email');
     } catch (err) {
-      return { channel: 'email', status: 'failed', reason: (err as Error).message };
+      errors.push(`Email: ${(err as Error).message}`);
     }
   }
 
-  // Sin canal disponible
-  const reason = !waReady
-    ? 'WhatsApp no está activo. Configura GMAIL_USER y GMAIL_APP_PASSWORD para enviar emails.'
-    : !email
-    ? 'El cliente no tiene email registrado y WhatsApp no está disponible.'
-    : 'No se pudo enviar: WhatsApp no listo y email no configurado.';
+  if (sentChannels.length > 0) {
+    return {
+      channel: sentChannels.join(','),
+      status: 'sent',
+      reason: errors.length > 0 ? errors.join('; ') : undefined,
+    };
+  }
 
-  return { channel: 'none', status: 'failed', reason };
+  if (!isWhatsAppReady() && !(email && isEmailConfigured())) {
+    return {
+      channel: 'none',
+      status: 'failed',
+      reason: !email
+        ? 'WhatsApp no está activo y el cliente no tiene email. Configura GMAIL_USER y GMAIL_APP_PASSWORD.'
+        : 'WhatsApp no está activo y el email no está configurado.',
+    };
+  }
+
+  return {
+    channel: 'none',
+    status: 'failed',
+    reason: errors.join('; ') || 'No se pudo enviar por ningún canal.',
+  };
 }
 
 export const sendNotification = async (req: Request, res: Response, next: NextFunction) => {
