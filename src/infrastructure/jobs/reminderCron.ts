@@ -1,12 +1,12 @@
 import { PrismaReminderRepository } from '../repositories/PrismaReminderRepository';
 import { SendReminder } from '../../application/usecases/reminders/SendReminder';
+import { getWhatsAppService, isWhatsAppReady } from '../whatsapp/factory';
 
 export async function runReminderCron(): Promise<void> {
-  if (process.env.ENABLE_WHATSAPP !== 'true') return;
+  if (!isWhatsAppReady()) return;
 
-  const { WhatsAppWebService } = await import('../whatsapp/WhatsAppWebService');
   const reminderRepo = new PrismaReminderRepository();
-  const whatsapp = new WhatsAppWebService();
+  const whatsapp = getWhatsAppService();
   const sendReminder = new SendReminder(reminderRepo, whatsapp);
 
   const now = new Date();

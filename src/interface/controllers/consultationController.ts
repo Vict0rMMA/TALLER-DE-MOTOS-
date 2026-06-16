@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
 import { runPortalConsultationAI } from '../../infrastructure/ai/portalConsultationAI';
-import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 import { DomainError } from '../../domain/errors/DomainError';
 
 async function findRelevantCatalogItems(workshopId: string, symptom: string) {
@@ -166,6 +166,7 @@ export const respondToConsultation = async (req: Request, res: Response, next: N
         customer: { select: { name: true, phone: true, optInWhatsapp: true } },
         motorcycle: { select: { placa: true, brand: true, model: true } },
         mechanic: { select: { name: true } },
+        workshop: { select: { name: true } },
       },
     });
 
@@ -173,7 +174,7 @@ export const respondToConsultation = async (req: Request, res: Response, next: N
       try {
         const { customer, motorcycle } = updated;
         if (customer?.optInWhatsapp && customer.phone) {
-          const wa = new WhatsAppWebService();
+          const wa = getWhatsAppService();
           const priceLine =
             mechanicPrice != null
               ? `$${Number(mechanicPrice).toLocaleString('es-CO')} COP`
@@ -183,6 +184,7 @@ export const respondToConsultation = async (req: Request, res: Response, next: N
             '2': motorcycle?.placa ?? 'tu moto',
             '3': responseText.length > 280 ? `${responseText.slice(0, 277)}…` : responseText,
             '4': priceLine,
+            'w': updated.workshop?.name ?? '',
           });
         }
       } catch (waErr) {

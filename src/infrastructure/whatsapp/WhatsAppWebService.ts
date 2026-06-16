@@ -3,6 +3,7 @@ import QRCodeLib from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { WhatsAppService } from '../../domain/services/WhatsAppService';
+import { renderTemplateText } from './templates';
 
 let qrBase64: string | null = null;
 let pairingCode: string | null = null;
@@ -385,28 +386,6 @@ export class WhatsAppWebService implements WhatsAppService {
   }
 
   async sendTemplate(phone: string, templateId: string, params: Record<string, string>): Promise<void> {
-    const messages: Record<string, (p: Record<string, string>) => string> = {
-      maintenance_reminder: (p) =>
-        `🏍️ *MotoBrain* — Recordatorio de mantenimiento\n\nHola ${p['1']}, tu moto placa *${p['2']}* tiene mantenimiento programado en *${p['3']} días*.\n\nReserva tu cita en el taller. ¡Te esperamos! 🔧`,
-
-      service_completed: (p) =>
-        `✅ *MotoBrain* — Servicio completado\n\nHola ${p['1']}, tu moto placa *${p['2']}* ya está lista.\n\n📋 *Trabajo realizado:* ${p['3'] ?? 'Servicio de mantenimiento'}\n💰 *Total:* $${p['4'] ?? '0'}\n\n¡Puedes pasar a recogerla! Gracias por confiar en nosotros 🙏`,
-
-      low_stock_alert: (p) =>
-        `⚠️ *MotoBrain* — Alerta de stock bajo\n\nEl producto *${p['1']}* tiene solo *${p['2']} unidades* en stock (mínimo: ${p['3']}).\n\nEs momento de reabastecer. 📦`,
-
-      diagnosis_ready: (p) =>
-        `🤖 *MotoBrain IA* — Diagnóstico listo\n\nHola ${p['1']}, el diagnóstico de tu moto *${p['2']}* está disponible.\n\nContacta al taller para más detalles. 🔍`,
-
-      consultation_answered: (p) =>
-        `💬 *MotoBrain* — El taller respondió tu consulta\n\nHola ${p['1']}, sobre tu moto *${p['2']}*:\n\n${p['3']}\n\n${p['4'] ? `💰 *Precio confirmado:* ${p['4']}\n\n` : ''}Entra al portal del cliente para ver el detalle. 🔧`,
-
-      appointment_confirmed: (p) =>
-        `📅 *MotoBrain* — Cita confirmada\n\nHola ${p['1']}, tu cita para la moto *${p['2']}* quedó agendada:\n\n🕐 *${p['3']}*\n\nTe esperamos en el taller. Si necesitas cambiarla, escríbenos por WhatsApp.`,
-    };
-
-    const builder = messages[templateId];
-    const text = builder ? builder(params) : `MotoBrain: ${JSON.stringify(params)}`;
-    await this.sendMessage(phone, text);
+    await this.sendMessage(phone, renderTemplateText(templateId, params));
   }
 }

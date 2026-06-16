@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
 import { signCustomerToken } from '../../infrastructure/config/jwt';
-import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 import { DomainError } from '../../domain/errors/DomainError';
 import { normalizePhoneDigits, phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 
@@ -35,7 +35,7 @@ export const requestOtp = async (req: Request, res: Response, next: NextFunction
     setTimeout(() => otpStore.delete(key), 5 * 60_000);
 
     try {
-      const wa = new WhatsAppWebService();
+      const wa = getWhatsAppService();
       const digits = normalizePhoneDigits(phone);
       const to = digits.startsWith('57') ? digits : `57${digits}`;
       await wa.sendMessage(to, `🔐 Tu código de acceso a MotoBrain es: *${code}*\n\nVálido por 5 minutos. No lo compartas con nadie.`);

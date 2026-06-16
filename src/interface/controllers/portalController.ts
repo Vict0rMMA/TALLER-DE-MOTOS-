@@ -5,7 +5,7 @@ import { DomainError } from '../../domain/errors/DomainError';
 import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 import { normalizeCedula } from '../../infrastructure/phone/cedula';
 import { uploadMotoPhoto } from '../../infrastructure/storage/supabaseStorage';
-import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 
 export const portalRegister = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -69,7 +69,7 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
       try {
         const ws = await prisma.workshop.findUnique({ where: { id: workshop.id }, select: { phone: true } });
         if (ws?.phone) {
-          const wa = new WhatsAppWebService();
+          const wa = getWhatsAppService();
           await wa.sendMessage(
             ws.phone,
             `🆕 *Nuevo cliente registrado en el portal*\n\n👤 ${customer.name}\n📱 ${customer.phone}\n📧 ${customer.email ?? '—'}\n\n_Ya puede ver sus motos y agendar citas._`,

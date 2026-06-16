@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
-import { WhatsAppWebService } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 import { DomainError } from '../../domain/errors/DomainError';
 
 function toPortalDto(row: {
@@ -136,7 +136,7 @@ export const portalCreateAppointment = async (req: Request, res: Response, next:
           select: { name: true, phone: true },
         });
         if (workshop?.phone && customer) {
-          const wa = new WhatsAppWebService();
+          const wa = getWhatsAppService();
           const fechaTexto = parsedPreferred
             ? parsedPreferred.toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
             : 'Por definir';
@@ -248,6 +248,7 @@ export const confirmAppointment = async (req: Request, res: Response, next: Next
         customer: { select: { id: true, name: true, phone: true, optInWhatsapp: true } },
         motorcycle: { select: { placa: true, brand: true, model: true } },
         mechanic: { select: { name: true } },
+        workshop: { select: { name: true } },
       },
     });
 
@@ -255,7 +256,7 @@ export const confirmAppointment = async (req: Request, res: Response, next: Next
       try {
         const { customer, motorcycle } = updated;
         if (customer?.optInWhatsapp && customer.phone) {
-          const wa = new WhatsAppWebService();
+          const wa = getWhatsAppService();
           const fecha = when.toLocaleString('es-CO', {
             weekday: 'long',
             day: 'numeric',
@@ -267,6 +268,7 @@ export const confirmAppointment = async (req: Request, res: Response, next: Next
             '1': customer.name ?? 'Cliente',
             '2': motorcycle?.placa ?? 'tu moto',
             '3': fecha,
+            'w': updated.workshop?.name ?? '',
           });
         }
       } catch (waErr) {

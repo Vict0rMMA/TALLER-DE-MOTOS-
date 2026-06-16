@@ -22,9 +22,13 @@ export class MetaWhatsAppService implements WhatsAppService {
     const template = TEMPLATES[templateId as TemplateId];
     if (!template) throw new DomainError(`Template '${templateId}' no existe`, 400);
 
-    const components = Object.keys(params).length > 0
-      ? [{ type: 'body', parameters: Object.values(params).map(v => ({ type: 'text', text: v })) }]
-      : [];
+    // Solo las variables numeradas ({{1}}, {{2}}, …) en orden; ignora claves
+    // auxiliares como 'w' (nombre del taller) que usan los canales de texto libre.
+    const numbered = Object.keys(params)
+      .filter((k) => /^\d+$/.test(k))
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => ({ type: 'text', text: params[k] }));
+    const components = numbered.length > 0 ? [{ type: 'body', parameters: numbered }] : [];
 
     await this.callApi(`/${this.phoneNumberId}/messages`, {
       messaging_product: 'whatsapp',

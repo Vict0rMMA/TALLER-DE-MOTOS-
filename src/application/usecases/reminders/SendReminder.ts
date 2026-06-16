@@ -17,7 +17,14 @@ export class SendReminder {
     const row = await (prisma as any).reminder.findUnique({
       where: { id: reminderId },
       include: {
-        customer: { select: { name: true, phone: true, optInWhatsapp: true } },
+        customer: {
+          select: {
+            name: true,
+            phone: true,
+            optInWhatsapp: true,
+            workshop: { select: { name: true } },
+          },
+        },
         motorcycle: { select: { placa: true } },
       },
     });
@@ -42,6 +49,7 @@ export class SendReminder {
         '1': row.customer.name ?? 'Cliente',
         '2': row.motorcycle?.placa ?? '',
         '3': String(days),
+        'w': row.customer.workshop?.name ?? '',
       });
       await this.reminderRepo.updateStatus(reminderId, 'sent', new Date());
     } catch {

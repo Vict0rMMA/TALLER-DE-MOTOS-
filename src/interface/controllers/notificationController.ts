@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
-import { getWhatsAppStatus } from '../../infrastructure/whatsapp/WhatsAppWebService';
+import { getWhatsAppService, isWhatsAppReady } from '../../infrastructure/whatsapp/factory';
 import { sendEmail, isEmailConfigured, buildServiceEmailHtml } from '../../infrastructure/email/EmailService';
 import { generateReceiptPdf } from '../../infrastructure/pdf/generateReceiptPdf';
 
@@ -25,13 +25,11 @@ async function dispatchNotification(
   emailHtml: string,
   attachments?: { filename: string; content: Buffer; contentType: string }[],
 ): Promise<{ channel: string; status: 'sent' | 'failed'; reason?: string }> {
-  // Intentar WhatsApp primero si está disponible
-  const wa = getWhatsAppStatus();
-  if (wa.enabled && wa.isReady) {
+  // Intentar WhatsApp primero si el canal configurado está disponible
+  const waReady = isWhatsAppReady();
+  if (waReady) {
     try {
-      const { WhatsAppWebService } = await import('../../infrastructure/whatsapp/WhatsAppWebService');
-      const waService = new WhatsAppWebService();
-      await waService.sendMessage(phone, message);
+      await getWhatsAppService().sendMessage(phone, message);
       return { channel: 'whatsapp', status: 'sent' };
     } catch (err) {
       // WhatsApp falló, intentar email
@@ -49,7 +47,7 @@ async function dispatchNotification(
   }
 
   // Sin canal disponible
-  const reason = !wa.enabled
+  const reason = !waReady
     ? 'WhatsApp no está activo. Configura GMAIL_USER y GMAIL_APP_PASSWORD para enviar emails.'
     : !email
     ? 'El cliente no tiene email registrado y WhatsApp no está disponible.'
@@ -145,7 +143,23 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
     const total = Number(service.totalCost).toLocaleString('es-CO', { maximumFractionDigits: 0 });
     const typeLabel = SERVICE_TYPE_LABELS[service.type] ?? service.type;
 
-    const waMessage = `🔧 *MotoBrain* — Actualización de servicio\n\nHola ${customer.name}, te informamos sobre el servicio de tu moto *${motorcycle.placa}*.\n\n📋 *Servicio:* ${typeLabel}\n💰 *Total:* $${total} COP\n\n¡Gracias por confiar en nosotros! 🙏`;
+    const shop = service.workshop?.name?.trim() || 'Tu taller';
+    const motoLabel = motorcycle.brand
+      ? `${motorcycle.placa} · ${motorcycle.brand}${motorcycle.model ? ` ${motorcycle.model}` : ''}`
+      : motorcycle.placa;
+    const addressLine = service.workshop?.address?.trim()
+      ? `*Recoger en:* ${service.workshop.address.trim()}\n`
+      : '';
+    const waMessage =
+      `🏍️ *${shop}*\n` +
+      `━━━━━━━━━━━━━━━\n` +
+      `✅ *Tu moto ya está lista*\n\n` +
+      `*Cliente:* ${customer.name}\n` +
+      `*Moto:* ${motoLabel}\n` +
+      `*Servicio:* ${typeLabel}\n` +
+      `*Total:* $${total} COP\n` +
+      addressLine +
+      `\nPuedes pasar a recogerla cuando quieras. Cualquier duda, respóndenos por aquí. 🙌`;
 
     const emailHtml = buildServiceEmailHtml({
       customerName: customer.name,
