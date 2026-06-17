@@ -35,7 +35,6 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
 
   // Datos de factura que se guardan al cerrar el servicio
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentReference, setPaymentReference] = useState('');
   const [warranty, setWarranty] = useState('');
   const [notes, setNotes] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -209,18 +208,6 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
                 </select>
               </div>
 
-              {paymentMethod && paymentMethod !== 'efectivo' && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-text-secondary">Referencia de pago</label>
-                  <input
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    className={closeInputCls}
-                    placeholder="N.º de transferencia / Nequi"
-                  />
-                </div>
-              )}
-
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-text-secondary">Garantía</label>
                 <select
@@ -257,10 +244,6 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
                 closeService.mutate(
                   {
                     paymentMethod: paymentMethod || undefined,
-                    paymentReference:
-                      paymentMethod && paymentMethod !== 'efectivo'
-                        ? paymentReference.trim() || undefined
-                        : undefined,
                     warranty: warranty || undefined,
                     notes: notes.trim() || undefined,
                     discount: discount > 0 ? discount : undefined,
