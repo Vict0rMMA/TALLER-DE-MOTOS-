@@ -48,7 +48,7 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className="relative -mt-5 flex flex-1 flex-col items-center"
-              aria-label="Diagnóstico IA"
+              aria-label={item.label}
             >
               <span
                 className={cn(
@@ -60,7 +60,7 @@ export function MobileNav() {
               >
                 <Icon className="h-6 w-6 text-white" strokeWidth={1.75} />
               </span>
-              <span className="mt-1 pb-1 text-[10px] font-medium text-emerald-400">IA</span>
+              <span className="mt-1 pb-1 text-[10px] font-medium text-emerald-400">{item.label.split(' ')[0]}</span>
             </Link>
           );
         }

@@ -47,9 +47,9 @@ export const NAV_ITEMS = [
 ] as const;
 
 export const MOBILE_NAV_ITEMS = [
-  NAV_ITEMS[0],
-  NAV_ITEMS[3],
-  NAV_ITEMS[4],
-  NAV_ITEMS[6],
-  NAV_ITEMS[7],
+  NAV_ITEMS[0], // Dashboard
+  NAV_ITEMS[4], // Diagnóstico IA
+  NAV_ITEMS[3], // Servicios (centro, resaltado — el más usado)
+  NAV_ITEMS[6], // Consultas
+  NAV_ITEMS[7], // Citas
 ] as const;
