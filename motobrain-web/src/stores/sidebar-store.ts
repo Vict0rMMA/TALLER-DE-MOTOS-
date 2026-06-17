@@ -18,6 +18,12 @@ export const useSidebarStore = create<SidebarState>()(
       setOpen: (isOpen) => set({ isOpen }),
       toggleCollapsed: () => set((s) => ({ isCollapsed: !s.isCollapsed })),
     }),
-    { name: 'motobrain-sidebar' },
+    {
+      name: 'motobrain-sidebar',
+      // Solo persistir la preferencia del sidebar de escritorio.
+      // 'isOpen' es estado efímero de UI; persistirlo desincroniza la
+      // hidratación SSR y deja el menú móvil sin abrir.
+      partialize: (state) => ({ isCollapsed: state.isCollapsed }),
+    },
   ),
 );

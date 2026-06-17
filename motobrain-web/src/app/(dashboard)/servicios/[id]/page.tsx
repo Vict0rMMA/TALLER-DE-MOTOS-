@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api-client';
-import { ArrowLeft, CheckCircle, Receipt, MessageCircle, Send, CheckCheck, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Receipt, MessageCircle, Send, CheckCheck, XCircle, Clock, RefreshCw, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ServiceStatusBadge } from '@/components/services/ServiceStatusBadge';
@@ -25,6 +25,20 @@ const PAYMENT_OPTIONS = [
 ];
 
 const WARRANTY_OPTIONS = ['Sin garantía', '1 mes', '3 meses', '6 meses', '12 meses'];
+
+// Botones de acción con color semántico (borde + tinte + texto)
+const ACTION_BTN = 'inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all active:scale-95 disabled:opacity-40';
+const ACTION_EMERALD = 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15';
+const ACTION_AMBER = 'border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15';
+const ACTION_ROSE = 'border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/15';
+const ACTION_SKY = 'border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/15';
+const ACTION_NEUTRAL = 'border-border bg-bg-secondary/40 text-text-secondary hover:bg-bg-hover hover:text-text-primary';
+
+const STATUS_BTN: Record<string, string> = {
+  open: ACTION_EMERALD,
+  in_progress: ACTION_SKY,
+  cancelled: ACTION_ROSE,
+};
 
 export default function ServicioDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -182,10 +196,13 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
       {service.status !== 'closed' && service.status !== 'cancelled' && (
         <div className="glass-card p-5 space-y-5">
           <div className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-              Cambiar estado
-            </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-3.5 w-3.5 text-sky-400" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                Cambiar estado
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
               {SERVICE_STATUSES.filter((s) => s.id !== service.status && s.id !== 'closed').map((s) => (
                 <button
                   key={s.id}
@@ -196,9 +213,9 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
                     )
                   }
                   disabled={updateStatus.isPending}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+                  className={`${ACTION_BTN} ${STATUS_BTN[s.id] ?? ACTION_NEUTRAL}`}
                 >
-                  → {s.label}
+                  {s.label}
                 </button>
               ))}
             </div>
@@ -300,34 +317,37 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
 
       {service.status !== 'cancelled' && (
         <div className="glass-card p-5 space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
-            <MessageCircle className="h-3.5 w-3.5" /> Notificar al cliente
-          </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+              Notificar al cliente
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
             {service.status === 'closed' && (
               <button
                 onClick={() => handleNotify('service_completed')}
                 disabled={sendNotif.isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent/10 border border-accent/30 px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent/20 disabled:opacity-40 transition-colors"
+                className={`${ACTION_BTN} ${ACTION_EMERALD}`}
               >
-                <Send className="h-3.5 w-3.5" /> Moto lista para recoger
+                <Send className="h-4 w-4" strokeWidth={1.75} /> Moto lista para recoger
               </button>
             )}
             {service.status !== 'closed' && (
               <button
                 onClick={() => handleNotify('service_update')}
                 disabled={sendNotif.isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+                className={`${ACTION_BTN} ${ACTION_EMERALD}`}
               >
-                <Send className="h-3.5 w-3.5" /> Enviar actualización
+                <Send className="h-4 w-4" strokeWidth={1.75} /> Enviar actualización
               </button>
             )}
             <button
               onClick={() => handleNotify('payment_ready')}
               disabled={sendNotif.isPending}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+              className={`${ACTION_BTN} ${ACTION_AMBER}`}
             >
-              <Send className="h-3.5 w-3.5" /> Aviso de pago
+              <DollarSign className="h-4 w-4" strokeWidth={1.75} /> Aviso de pago
             </button>
           </div>
 
