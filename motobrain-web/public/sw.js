@@ -1,4 +1,4 @@
-const CACHE = 'motobrain-v2';
+const CACHE = 'motobrain-v3';
 const SHELL = [
   '/',
   '/portal',

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -13,8 +14,8 @@ import {
   LogOut,
   MessageSquare,
   Calendar,
+  X,
 } from 'lucide-react';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { BrandLogo } from './BrandLogo';
 import { useSidebarStore } from '@/stores/sidebar-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -38,7 +39,8 @@ const TOOLS = [
 
 export function MobileSidebar() {
   const pathname = usePathname();
-  const { isOpen, setOpen } = useSidebarStore();
+  const isOpen = useSidebarStore((s) => s.isOpen);
+  const setOpen = useSidebarStore((s) => s.setOpen);
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
   const { data: badges } = useNavBadges(0);
@@ -46,31 +48,72 @@ export function MobileSidebar() {
   const pendingConsultations = badges?.consultations ?? 0;
   const pendingAppointments = badges?.appointments ?? 0;
 
-  const initials = user?.name
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() ?? 'MB';
+  const initials =
+    user?.name
+      ?.split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() ?? 'MB';
+
+  // Bloquear el scroll del fondo cuando el menú está abierto
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  const close = () => setOpen(false);
+  const roleLabel =
+    user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '');
 
   return (
-    <Sheet open={isOpen} onOpenChange={setOpen}>
-      <SheetContent side="left" className="sidebar-premium flex h-[100dvh] w-[min(100vw-2rem,300px)] flex-col gap-0 border-r border-border p-0">
+    <div className="md:hidden">
+      {/* Overlay */}
+      <div
+        className={cn(
+          'fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300',
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+        onClick={close}
+        aria-hidden
+      />
+
+      {/* Drawer */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!isOpen}
+        className={cn(
+          'sidebar-premium fixed left-0 top-0 z-[61] flex h-[100dvh] w-[min(86vw,300px)] flex-col border-r border-border transition-transform duration-300 ease-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
         <div className="sidebar-logo-block">
           <BrandLogo variant="sidebar" />
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Cerrar menú"
+            className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
+
         <nav className="sidebar-nav-block overflow-y-auto">
           <p className="sidebar-section-label">Principal</p>
           {PRINCIPAL.map((item) => {
             const Icon = item.icon;
             const active =
-              pathname === item.href ||
-              (item.href !== '/' && pathname.startsWith(item.href));
+              pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setOpen(false)}
+                onClick={close}
                 className={cn('sidebar-item', active && 'active')}
               >
                 <span className={cn('sidebar-icon-wrap shrink-0', active && 'sidebar-icon-wrap-active')}>
@@ -97,7 +140,7 @@ export function MobileSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setOpen(false)}
+                onClick={close}
                 className={cn('sidebar-item', active && 'active')}
               >
                 <span className={cn('sidebar-icon-wrap shrink-0', active && 'sidebar-icon-wrap-active')}>
@@ -112,11 +155,8 @@ export function MobileSidebar() {
           })}
           <Link
             href="/configuracion"
-            onClick={() => setOpen(false)}
-            className={cn(
-              'sidebar-item',
-              pathname.startsWith('/configuracion') && 'active',
-            )}
+            onClick={close}
+            className={cn('sidebar-item', pathname.startsWith('/configuracion') && 'active')}
           >
             <span
               className={cn(
@@ -129,14 +169,13 @@ export function MobileSidebar() {
             <span>Configuración</span>
           </Link>
         </nav>
+
         <div className="sidebar-footer-block mt-auto space-y-2.5">
           <div className="flex items-center gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] px-3 py-2.5">
             <span className="sidebar-avatar">{initials}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-text-primary">{user?.name ?? 'Usuario'}</p>
-              <p className="truncate text-xs text-text-tertiary">
-                {user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '')}
-              </p>
+              <p className="truncate text-xs text-text-tertiary">{roleLabel}</p>
             </div>
           </div>
           <button
@@ -148,7 +187,7 @@ export function MobileSidebar() {
             Cerrar sesión
           </button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </aside>
+    </div>
   );
 }

@@ -7,11 +7,9 @@ import { useSidebarStore } from '@/stores/sidebar-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { BrandLogo } from './BrandLogo';
 import { NotificationPanel } from './NotificationPanel';
-import { useHydrated } from '@/hooks/use-hydrated';
 import { cn } from '@/lib/utils';
 
 export function TopBar() {
-  const hydrated = useHydrated();
   const setOpen = useSidebarStore((s) => s.setOpen);
   const user = useAuthStore((s) => s.user);
 
@@ -30,7 +28,6 @@ export function TopBar() {
           size="icon"
           className="shrink-0 md:hidden"
           onClick={() => setOpen(true)}
-          disabled={!hydrated}
           aria-label="Abrir menú"
         >
           <Menu className="h-5 w-5" />
