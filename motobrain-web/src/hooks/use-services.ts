@@ -115,6 +115,7 @@ export function useUpdateServiceStatus(id: string) {
 
 export interface CloseServicePayload {
   laborCost?: number;
+  mechanicId?: string;
   paymentMethod?: string;
   paymentReference?: string;
   warranty?: string;

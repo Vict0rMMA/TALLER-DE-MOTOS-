@@ -5,6 +5,7 @@ type Input = {
   id: string;
   workshopId: string;
   laborCost?: number;
+  mechanicId?: string;
   paymentMethod?: string;
   paymentReference?: string;
   warranty?: string;
@@ -27,6 +28,7 @@ export class CloseService {
       data.laborCost = input.laborCost;
       data.totalCost = input.laborCost + productsTotal;
     }
+    if (input.mechanicId !== undefined) data.mechanicId = input.mechanicId;
     if (input.paymentMethod !== undefined) data.paymentMethod = input.paymentMethod;
     if (input.paymentReference !== undefined) data.paymentReference = input.paymentReference;
     if (input.warranty !== undefined) data.warranty = input.warranty;

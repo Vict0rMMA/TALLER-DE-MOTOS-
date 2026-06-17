@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { api } from '@/lib/api-client';
 import { ArrowLeft, CheckCircle, Receipt, MessageCircle, Send, CheckCheck, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -38,6 +40,19 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
   const [warranty, setWarranty] = useState('');
   const [notes, setNotes] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [mechanicId, setMechanicId] = useState('');
+
+  // Mecánicos del taller para asignar quién hizo el trabajo (solo lo trae el dueño)
+  const { data: workshopUsers = [] } = useQuery({
+    queryKey: ['workshop-users'],
+    queryFn: () => api.get<{ id: string; name: string; role: string; active: boolean }[]>('/auth/users'),
+    staleTime: 5 * 60_000,
+  });
+
+  // Preseleccionar el mecánico ya asignado al servicio
+  useEffect(() => {
+    if (service?.mechanicId) setMechanicId(service.mechanicId);
+  }, [service?.mechanicId]);
 
   if (isLoading) {
     return (
@@ -194,6 +209,21 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
               Cerrar y facturar
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
+              {workshopUsers.length > 0 && (
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-text-secondary">Mecánico que realizó el trabajo</label>
+                  <select
+                    value={mechanicId}
+                    onChange={(e) => setMechanicId(e.target.value)}
+                    className={closeInputCls}
+                  >
+                    <option value="">Sin asignar</option>
+                    {workshopUsers.filter((u) => u.active).map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-text-secondary">Método de pago</label>
                 <select
@@ -210,16 +240,18 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-text-secondary">Garantía</label>
-                <select
+                <input
                   value={warranty}
                   onChange={(e) => setWarranty(e.target.value)}
                   className={closeInputCls}
-                >
-                  <option value="">Seleccionar…</option>
+                  placeholder="Ej: 3 meses, 5.000 km…"
+                  list="warranty-options"
+                />
+                <datalist id="warranty-options">
                   {WARRANTY_OPTIONS.map((w) => (
-                    <option key={w} value={w}>{w}</option>
+                    <option key={w} value={w} />
                   ))}
-                </select>
+                </datalist>
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -243,8 +275,9 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
               onClick={() =>
                 closeService.mutate(
                   {
+                    mechanicId: mechanicId || undefined,
                     paymentMethod: paymentMethod || undefined,
-                    warranty: warranty || undefined,
+                    warranty: warranty.trim() || undefined,
                     notes: notes.trim() || undefined,
                     discount: discount > 0 ? discount : undefined,
                   },

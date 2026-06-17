@@ -8,6 +8,10 @@ export class CloseServiceDto {
   @IsOptional()
   laborCost?: number;
 
+  @IsString()
+  @IsOptional()
+  mechanicId?: string;
+
   // --- Factura ---
   @IsString()
   @IsIn(['efectivo', 'transferencia'])
