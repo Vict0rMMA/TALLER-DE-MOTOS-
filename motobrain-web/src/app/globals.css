@@ -531,7 +531,7 @@
 }
 
 .sidebar-footer-block {
-  padding: 12px 10px 14px;
+  padding: 12px 10px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   margin-top: auto;
   flex-shrink: 0;
@@ -675,40 +675,85 @@
 }
 
 .dashboard-quick-link {
+  --qa: var(--accent);
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--bg-card);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dashboard-quick-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--qa) 13%, transparent), transparent 58%);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
 }
 
 .dashboard-quick-link:hover {
-  border-color: var(--border-accent);
-  background: rgba(16, 185, 129, 0.06);
-  color: var(--text-primary);
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--qa) 34%, transparent);
+  box-shadow: var(--shadow-md);
+}
+
+.dashboard-quick-link:hover::before {
+  opacity: 1;
 }
 
 .dashboard-quick-link-icon {
+  position: relative;
   display: flex;
-  height: 2rem;
-  width: 2rem;
-  shrink: 0;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  color: var(--text-tertiary);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--qa) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--qa) 22%, transparent);
+  color: var(--qa);
+  transition: transform 0.18s ease;
 }
 
 .dashboard-quick-link:hover .dashboard-quick-link-icon {
-  color: var(--accent);
-  background: var(--accent-muted);
+  transform: scale(1.06);
+}
+
+.dashboard-quick-link-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.dashboard-quick-link-desc {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  margin-top: 2px;
+  color: var(--text-tertiary);
+}
+
+.dashboard-quick-link-arrow {
+  position: relative;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+
+.dashboard-quick-link:hover .dashboard-quick-link-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--qa);
 }
 
 .btn-primary {

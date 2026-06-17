@@ -183,20 +183,31 @@ export function DashboardOverview() {
         )}
       </div>
 
-      <div className="dashboard-quick-grid">
-        {[
-          { href: '/clientes/nuevo', icon: Users, label: 'Nuevo cliente' },
-          { href: '/diagnostico', icon: Brain, label: 'Diagnóstico' },
-          { href: '/analitica', icon: BarChart3, label: 'Analítica' },
-        ].map(({ href, icon: Icon, label }) => (
-          <Link key={href} href={href} className="dashboard-quick-link group">
-            <span className="dashboard-quick-link-icon">
-              <Icon className="h-4 w-4" strokeWidth={1.75} />
-            </span>
-            <span className="min-w-0 flex-1 truncate">{label}</span>
-            <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-text-tertiary opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
-          </Link>
-        ))}
+      <div className="space-y-3">
+        <p className="text-xs font-medium uppercase tracking-wider text-text-tertiary">Accesos rápidos</p>
+        <div className="dashboard-quick-grid">
+          {[
+            { href: '/clientes/nuevo', icon: Users, label: 'Nuevo cliente', desc: 'Registrar un cliente', color: '#10b981' },
+            { href: '/diagnostico', icon: Brain, label: 'Diagnóstico', desc: 'Asistente con IA', color: '#8b5cf6' },
+            { href: '/analitica', icon: BarChart3, label: 'Analítica', desc: 'Reportes y métricas', color: '#38bdf8' },
+          ].map(({ href, icon: Icon, label, desc, color }) => (
+            <Link
+              key={href}
+              href={href}
+              className="dashboard-quick-link group"
+              style={{ '--qa': color } as React.CSSProperties}
+            >
+              <span className="dashboard-quick-link-icon">
+                <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="dashboard-quick-link-title block truncate">{label}</span>
+                <span className="dashboard-quick-link-desc block truncate">{desc}</span>
+              </span>
+              <ArrowRight className="dashboard-quick-link-arrow h-4 w-4" />
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

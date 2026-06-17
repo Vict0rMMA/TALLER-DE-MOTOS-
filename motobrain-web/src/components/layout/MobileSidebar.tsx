@@ -55,7 +55,7 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
-      <SheetContent side="left" className="sidebar-premium flex h-full w-[min(100vw-2rem,280px)] flex-col border-r border-border p-0">
+      <SheetContent side="left" className="sidebar-premium flex h-[100dvh] w-[min(100vw-2rem,280px)] flex-col border-r border-border p-0">
         <div className="sidebar-logo-block">
           <BrandLogo variant="sidebar" />
         </div>
