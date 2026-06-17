@@ -6,18 +6,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Building2, Users, LogOut, Plus, Eye, EyeOff, Check, AlertCircle, MessageCircle, Wifi, WifiOff, RefreshCw, RotateCcw, Trash2, Pencil, Phone, MapPin, X, KeyRound, Copy, RefreshCcw } from 'lucide-react';
+import { User, Building2, Users, LogOut, Plus, Eye, EyeOff, Check, AlertCircle, Trash2, Pencil, Phone, MapPin, X, KeyRound, Copy, RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api-client';
-import {
-  useWhatsAppStatus,
-  restartWhatsAppClient,
-  requestWhatsAppPairingCode,
-  cancelWhatsAppPairingCode,
-} from '@/hooks/use-notifications';
+import { cn } from '@/lib/utils';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Propietario',
@@ -103,7 +98,7 @@ function WorkshopSection() {
     <div className="glass-card p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 text-accent ring-1 ring-accent/15">
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <h2 className="font-semibold text-text-primary">Mi taller</h2>
@@ -299,405 +294,16 @@ function AddUserForm({ workshopId, onSuccess }: { workshopId: string; onSuccess:
   );
 }
 
-type WhatsAppDisabledReason = 'env_disabled' | 'vercel_serverless';
-
-function WhatsAppDisabledPanel({ reason }: { reason: WhatsAppDisabledReason }) {
-  if (reason === 'vercel_serverless') {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
-          <WifiOff className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-warning">No compatible con Vercel</p>
-            <p className="text-xs text-text-tertiary mt-1 leading-relaxed">
-              El bot necesita un proceso persistente con Chrome. Despliega la API en Railway, Render, Fly.io o un VPS con{' '}
-              <code className="rounded bg-bg-elevated px-1 py-0.5 text-[11px]">ENABLE_WHATSAPP=true</code>.
-              El panel puede seguir en Vercel usando <code className="rounded bg-bg-elevated px-1 py-0.5 text-[11px]">NEXT_PUBLIC_API_URL</code>.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-3 rounded-lg border border-border bg-bg-elevated px-4 py-3">
-        <WifiOff className="h-5 w-5 text-text-tertiary flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-text-secondary">WhatsApp desactivado en la API</p>
-          <p className="text-xs text-text-tertiary mt-1">
-            El panel está bien; falta activar el bot en el servidor donde corre <strong>npm run dev</strong> (puerto 4000).
-          </p>
-        </div>
-      </div>
-
-      <ol className="space-y-2.5 rounded-lg border border-border/80 bg-bg-elevated/50 px-4 py-3 text-sm text-text-secondary list-none">
-        <li className="flex gap-2.5">
-          <span className="font-bold text-accent min-w-[18px]">1.</span>
-          <span>
-            En la raíz del proyecto, archivo <code className="rounded bg-bg-primary px-1 text-[11px]">.env</code>:{' '}
-            <code className="rounded bg-bg-primary px-1 text-[11px]">ENABLE_WHATSAPP=true</code>
-          </span>
-        </li>
-        <li className="flex gap-2.5">
-          <span className="font-bold text-accent min-w-[18px]">2.</span>
-          <span>
-            Reinicia la API (terminal raíz): detén con Ctrl+C y ejecuta <code className="rounded bg-bg-primary px-1 text-[11px]">npm run dev</code>
-          </span>
-        </li>
-        <li className="flex gap-2.5">
-          <span className="font-bold text-accent min-w-[18px]">3.</span>
-          <span>Instala Google Chrome en Windows (o define <code className="rounded bg-bg-primary px-1 text-[11px]">CHROME_PATH</code> en <code className="rounded bg-bg-primary px-1 text-[11px]">.env</code>)</span>
-        </li>
-        <li className="flex gap-2.5">
-          <span className="font-bold text-accent min-w-[18px]">4.</span>
-          <span>Pulsa <strong>Actualizar</strong> aquí — en unos segundos aparecerá el código QR</span>
-        </li>
-      </ol>
-    </div>
-  );
-}
-
-function WhatsAppSection() {
-  const { data, isLoading, refetch, isFetching } = useWhatsAppStatus({ poll: true, pollMs: 5_000 });
-  const [restarting, setRestarting] = useState(false);
-  const [linkMode, setLinkMode] = useState<'qr' | 'code'>('code');
-  const [phone, setPhone] = useState('');
-  const [pairingLoading, setPairingLoading] = useState(false);
-  const [pairingError, setPairingError] = useState<string | null>(null);
-
-  async function handleRequestPairingCode() {
-    const trimmed = phone.replace(/\D/g, '');
-    if (trimmed.length < 10) {
-      setPairingError('Escribe el número de WhatsApp del taller (10 dígitos en Colombia).');
-      return;
-    }
-    setPairingLoading(true);
-    setPairingError(null);
-    try {
-      await requestWhatsAppPairingCode(phone);
-      toast.success('Código generado — introdúcelo en tu celular');
-      refetch();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'No se pudo generar el código';
-      setPairingError(msg);
-      toast.error(msg);
-    } finally {
-      setPairingLoading(false);
-    }
-  }
-
-  async function handleCancelPairing() {
-    setPairingLoading(true);
-    try {
-      await cancelWhatsAppPairingCode();
-      refetch();
-    } catch {
-    } finally {
-      setPairingLoading(false);
-    }
-  }
-
-  async function handleRestart(deleteSession: boolean) {
-    setRestarting(true);
-    try {
-      await restartWhatsAppClient(deleteSession);
-      setTimeout(() => refetch(), 3_000);
-    } catch {
-    } finally {
-      setTimeout(() => setRestarting(false), 3_000);
-    }
-  }
-
-  return (
-    <div className="glass-card p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
-            <MessageCircle className="h-4.5 w-4.5" />
-          </div>
-          <h2 className="font-semibold text-text-primary">WhatsApp</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching || restarting}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            Actualizar
-          </button>
-          {data?.enabled && !data?.isReady && (
-            <button
-              onClick={() => handleRestart(false)}
-              disabled={restarting}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary hover:border-blue-400 hover:text-blue-400 transition-colors disabled:opacity-50"
-              title="Reinicia el cliente sin borrar la sesión"
-            >
-              <RotateCcw className={`h-3.5 w-3.5 ${restarting ? 'animate-spin' : ''}`} />
-              Reiniciar
-            </button>
-          )}
-        </div>
-      </div>
-
-      {restarting && (
-        <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
-          <RotateCcw className="h-4 w-4 animate-spin text-blue-400 flex-shrink-0" />
-          <p className="text-sm text-blue-400">Reiniciando cliente WhatsApp… espera unos segundos y aparecerá el QR.</p>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="h-16 animate-pulse rounded-lg bg-bg-elevated" />
-      ) : data?.enabled === false ? (
-        <WhatsAppDisabledPanel
-          reason={data?.disabledReason ?? data?.unsupportedReason ?? 'env_disabled'}
-        />
-      ) : data?.isReady ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3">
-            <Wifi className="h-5 w-5 text-success flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-success">Conectado y activo</p>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                Los mensajes se envían automáticamente a clientes con opt-in activado.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => handleRestart(true)}
-            disabled={restarting}
-            className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-danger transition-colors disabled:opacity-50"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Desvincular y escanear de nuevo
-          </button>
-        </div>
-      ) : !data?.isReady ? (
-        <div className="space-y-4">
-          <div className="flex rounded-lg border border-border p-1 bg-bg-elevated">
-            <button
-              type="button"
-              onClick={() => setLinkMode('code')}
-              className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-                linkMode === 'code' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              Código (sin QR)
-            </button>
-            <button
-              type="button"
-              onClick={() => setLinkMode('qr')}
-              className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-                linkMode === 'qr' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              Código QR
-            </button>
-          </div>
-
-          {linkMode === 'code' ? (
-            <WhatsAppPairingCodePanel
-              data={data}
-              phone={phone}
-              onPhoneChange={setPhone}
-              onGenerate={handleRequestPairingCode}
-              onCancel={handleCancelPairing}
-              onSwitchToQr={() => {
-                setLinkMode('qr');
-                handleCancelPairing();
-              }}
-              loading={pairingLoading}
-              error={pairingError}
-            />
-          ) : data?.hasQr && data.qr ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
-            <WifiOff className="h-5 w-5 text-warning flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-warning">Escanea el código QR para vincular</p>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                El QR se renueva automáticamente cada ~20 segundos.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="rounded-2xl bg-white p-4 shadow-lg">
-              <img src={data.qr} alt="WhatsApp QR" width={256} height={256} className="block" />
-            </div>
-            <p className="max-w-sm rounded-lg border border-border bg-bg-elevated px-3 py-2 text-xs text-text-secondary text-center">
-              Si en el celular ves <strong className="text-text-primary">Chrome (macOS)</strong>, esa sesión es de tu PC en local.
-              Escanea <strong className="text-text-primary">este QR</strong> para vincular el servidor del taller (VPS).
-            </p>
-            <ol className="space-y-2 text-sm text-text-secondary max-w-xs">
-              <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">1.</span> Abre WhatsApp en tu teléfono</li>
-              <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">2.</span> Ve a <span className="font-medium text-text-primary mx-1">Dispositivos vinculados</span> (menú ⋮ o Configuración)</li>
-              <li className="flex gap-2.5"><span className="font-bold text-accent min-w-[16px]">3.</span> Toca <span className="font-medium text-text-primary mx-1">Vincular un dispositivo</span> y escanea el QR de esta pantalla</li>
-            </ol>
-            <button
-              onClick={() => handleRestart(true)}
-              disabled={restarting}
-              className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-danger transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Borrar sesión y generar QR nuevo
-            </button>
-          </div>
-        </div>
-          ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
-            <WifiOff className="h-5 w-5 text-warning flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-warning">No conectado — generando QR…</p>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                En el VPS puede tardar 2-5 minutos la primera vez. Si falla, en el servidor ejecuta{' '}
-                <code className="text-[10px]">bash scripts/vps-whatsapp-fix.sh</code>.
-              </p>
-            </div>
-          </div>
-          {data?.error && (
-            <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3">
-              <AlertCircle className="h-4 w-4 text-danger flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-medium text-danger">Error de conexión</p>
-                <p className="text-xs text-text-tertiary mt-0.5 font-mono">{data.error}</p>
-                <button
-                  onClick={() => handleRestart(true)}
-                  disabled={restarting}
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-danger hover:underline disabled:opacity-50"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Reiniciar y borrar sesión
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="h-2 w-full overflow-hidden rounded-full bg-bg-elevated">
-            <div className="h-full w-1/3 animate-pulse rounded-full bg-warning/40" />
-          </div>
-        </div>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function WhatsAppPairingCodePanel({
-  data,
-  phone,
-  onPhoneChange,
-  onGenerate,
-  onCancel,
-  onSwitchToQr,
-  loading,
-  error,
-}: {
-  data: { hasPairingCode?: boolean; pairingCode?: string | null; error?: string | null } | undefined;
-  phone: string;
-  onPhoneChange: (v: string) => void;
-  onGenerate: () => void;
-  onCancel: () => void;
-  onSwitchToQr: () => void;
-  loading: boolean;
-  error: string | null;
-}) {
-  const code = data?.pairingCode;
-  const displayCode = code ? code.replace(/(.{4})/g, '$1 ').trim() : null;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
-        <WifiOff className="h-5 w-5 text-warning flex-shrink-0" />
-        <div>
-          <p className="text-sm font-medium text-warning">Vincular con número de teléfono</p>
-          <p className="text-xs text-text-tertiary mt-0.5">
-            Sin escanear QR: generas un código aquí y lo escribes en el celular (caduca en ~3 min).
-          </p>
-        </div>
-      </div>
-
-      {displayCode ? (
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-xs text-text-secondary text-center">Introduce este código en tu WhatsApp:</p>
-          <p className="font-mono text-3xl font-bold tracking-[0.35em] text-accent select-all">{displayCode}</p>
-          <ol className="space-y-2 text-sm text-text-secondary max-w-sm">
-            <li className="flex gap-2.5">
-              <span className="font-bold text-accent min-w-[16px]">1.</span>
-              Abre WhatsApp en el teléfono del taller
-            </li>
-            <li className="flex gap-2.5">
-              <span className="font-bold text-accent min-w-[16px]">2.</span>
-              Menú → <span className="font-medium text-text-primary">Dispositivos vinculados</span>
-            </li>
-            <li className="flex gap-2.5">
-              <span className="font-bold text-accent min-w-[16px]">3.</span>
-              <span className="font-medium text-text-primary">Vincular un dispositivo</span> →{' '}
-              <span className="font-medium text-text-primary">Vincular con número de teléfono</span>
-            </li>
-            <li className="flex gap-2.5">
-              <span className="font-bold text-accent min-w-[16px]">4.</span>
-              Escribe el código de arriba (no es SMS; es el código de WhatsApp)
-            </li>
-          </ol>
-          <button
-            type="button"
-            onClick={onGenerate}
-            disabled={loading}
-            className="text-xs text-accent hover:underline disabled:opacity-50"
-          >
-            Generar código nuevo
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3 max-w-sm">
-          <label className="block text-xs font-medium text-text-secondary">
-            Número de WhatsApp del taller
-          </label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => onPhoneChange(e.target.value)}
-            placeholder="300 123 4567"
-            className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
-          />
-          <p className="text-[11px] text-text-tertiary">
-            Colombia: 10 dígitos sin +57. Debe ser la misma línea que usará el taller para enviar mensajes.
-          </p>
-          {(error || data?.error) && (
-            <p className="text-xs text-danger">{error ?? data?.error}</p>
-          )}
-          <button
-            type="button"
-            onClick={onGenerate}
-            disabled={loading}
-            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
-          >
-            {loading ? 'Generando…' : 'Generar código de vinculación'}
-          </button>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={onSwitchToQr}
-        className="text-xs text-text-tertiary hover:text-accent transition-colors"
-      >
-        Prefiero vincular con código QR
-      </button>
-    </div>
-  );
-}
-
 interface WorkshopUser { id: string; name: string; email: string; role: string; roleLabel: string; active: boolean; createdAt: string; }
 
 const ROLE_COLORS: Record<string, string> = {
-  owner: 'border-accent/30 bg-accent/10 text-accent',
-  mechanic: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+  owner: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+  mechanic: 'border-sky-500/30 bg-sky-500/10 text-sky-400',
+};
+
+const ROLE_AVATAR: Record<string, string> = {
+  owner: 'bg-gradient-to-br from-emerald-400/30 to-emerald-600/10 text-emerald-300 ring-emerald-500/30',
+  mechanic: 'bg-gradient-to-br from-sky-400/30 to-indigo-500/10 text-sky-300 ring-sky-500/30',
 };
 
 function InviteCodeCard() {
@@ -768,7 +374,7 @@ function UsersSection() {
     return (
       <div className="glass-card p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 text-accent ring-1 ring-accent/15">
             <Users className="h-4.5 w-4.5" />
           </div>
           <h2 className="font-semibold text-text-primary">Equipo del taller</h2>
@@ -782,7 +388,7 @@ function UsersSection() {
     <div className="glass-card p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 text-accent ring-1 ring-accent/15">
             <Users className="h-4.5 w-4.5" />
           </div>
           <h2 className="font-semibold text-text-primary">Equipo del taller</h2>
@@ -817,24 +423,47 @@ function UsersSection() {
           <button onClick={() => setShowForm(true)} className="mt-2 text-xs text-accent hover:underline">Agregar el primero →</button>
         </div>
       ) : (
-        <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+        <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border">
           {users.map((u) => (
-            <div key={u.id} className="flex items-center gap-3 px-4 py-3 bg-bg-secondary hover:bg-bg-elevated transition-colors">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-semibold text-accent">
-                {u.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            <div
+              key={u.id}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3.5 transition-colors',
+                u.active ? 'hover:bg-bg-elevated' : 'opacity-55',
+              )}
+            >
+              <div
+                className={cn(
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-1',
+                  ROLE_AVATAR[u.role] ?? 'bg-bg-elevated text-text-secondary ring-border',
+                )}
+              >
+                {u.name.trim().split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-text-primary truncate">{u.name}</p>
-                <p className="text-xs text-text-tertiary truncate">{u.email}</p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-text-primary">{u.name.trim()}</p>
+                  {!u.active && (
+                    <span className="shrink-0 rounded-full bg-bg-hover px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary">
+                      Inactivo
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs text-text-tertiary">{u.email}</p>
               </div>
-              <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${ROLE_COLORS[u.role] ?? 'border-border text-text-secondary'}`}>
+              <span
+                className={cn(
+                  'shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
+                  ROLE_COLORS[u.role] ?? 'border-border text-text-secondary',
+                )}
+              >
                 {u.roleLabel}
               </span>
-              {u.role !== 'owner' && (
+              {u.role !== 'owner' && u.active && (
                 <button
-                  onClick={() => { if (confirm(`¿Desactivar a ${u.name}?`)) deactivate.mutate(u.id); }}
+                  onClick={() => { if (confirm(`¿Desactivar a ${u.name.trim()}?`)) deactivate.mutate(u.id); }}
                   disabled={deactivate.isPending}
-                  className="shrink-0 rounded-lg p-1.5 text-text-tertiary hover:bg-danger/10 hover:text-danger transition-colors disabled:opacity-40"
+                  className="shrink-0 rounded-lg p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-40"
                   title="Desactivar usuario"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -875,7 +504,6 @@ export default function ConfiguracionPage() {
 
       <ProfileSection />
       <WorkshopSection />
-      <WhatsAppSection />
       <UsersSection />
     </div>
   );
