@@ -53,6 +53,7 @@ model Workshop {
   address    String?
   plan       String   @default("free")
   inviteCode String?  @unique
+  nextInvoiceNumber Int @default(1) // Próximo consecutivo de factura del taller
   createdAt  DateTime @default(now())
 
   users          User[]
@@ -169,6 +170,14 @@ model Service {
   closedAt            DateTime?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
+
+  // --- Factura ---
+  invoiceNumber       Int?          // Consecutivo de factura por taller (se asigna al cerrar)
+  paymentMethod       String?       // efectivo | transferencia | nequi | daviplata | tarjeta | otro
+  paymentReference    String?       // Ref. de transferencia/Nequi si aplica
+  warranty            String?       // "3 meses" | "sin garantía" | texto libre
+  notes               String?       // Notas adicionales del mecánico
+  discount            Decimal       @default(0) @db.Decimal(14, 2) // Descuento global en pesos
 
   workshop      Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   motorcycle    Motorcycle       @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)

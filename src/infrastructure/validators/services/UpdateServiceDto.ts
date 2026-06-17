@@ -36,4 +36,28 @@ export class UpdateServiceDto {
   @IsDateString()
   @IsOptional()
   nextMaintenanceDate?: string;
+
+  // --- Factura ---
+  @IsString()
+  @IsIn(['efectivo', 'transferencia', 'nequi', 'daviplata', 'tarjeta', 'otro'])
+  @IsOptional()
+  paymentMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentReference?: string;
+
+  @IsString()
+  @IsOptional()
+  warranty?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  @IsOptional()
+  discount?: number;
 }

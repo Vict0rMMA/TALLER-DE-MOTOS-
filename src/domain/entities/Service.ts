@@ -18,4 +18,11 @@ export type Service = {
   closedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  // Factura
+  invoiceNumber?: number;
+  paymentMethod?: string;
+  paymentReference?: string;
+  warranty?: string;
+  notes?: string;
+  discount?: number;
 };

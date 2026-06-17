@@ -113,10 +113,20 @@ export function useUpdateServiceStatus(id: string) {
   });
 }
 
+export interface CloseServicePayload {
+  laborCost?: number;
+  paymentMethod?: string;
+  paymentReference?: string;
+  warranty?: string;
+  notes?: string;
+  discount?: number;
+}
+
 export function useCloseService(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post<Service>(`/services/${id}/close`, {}),
+    mutationFn: (payload: CloseServicePayload = {}) =>
+      api.post<Service>(`/services/${id}/close`, payload),
     onSuccess: () => void refreshServices(qc),
   });
 }

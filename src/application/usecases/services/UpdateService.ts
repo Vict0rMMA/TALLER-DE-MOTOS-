@@ -5,7 +5,11 @@ import { Service } from '../../../domain/entities/Service';
 type Input = {
   id: string;
   workshopId: string;
-  data: Partial<Pick<Service, 'type' | 'description' | 'laborCost' | 'kmAtService' | 'nextMaintenanceKm' | 'nextMaintenanceDate' | 'status'>>;
+  data: Partial<Pick<Service,
+    | 'type' | 'description' | 'laborCost' | 'kmAtService' | 'nextMaintenanceKm'
+    | 'nextMaintenanceDate' | 'status'
+    | 'paymentMethod' | 'paymentReference' | 'warranty' | 'notes' | 'discount'
+  >>;
 };
 
 export class UpdateService {

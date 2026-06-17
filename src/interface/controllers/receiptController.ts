@@ -9,11 +9,11 @@ export const getReceipt = async (req: Request, res: Response, next: NextFunction
     const service = await prisma.service.findUnique({
       where: { id: serviceId },
       include: {
-        workshop: { select: { name: true, phone: true, address: true } },
+        workshop: { select: { name: true, nit: true, phone: true, address: true } },
         motorcycle: {
           select: {
             placa: true, brand: true, model: true, year: true, cc: true,
-            customer: { select: { name: true, phone: true } },
+            customer: { select: { name: true, phone: true, cedula: true, email: true } },
           },
         },
         mechanic: { select: { name: true } },
@@ -22,6 +22,15 @@ export const getReceipt = async (req: Request, res: Response, next: NextFunction
     });
 
     if (!service) return next(new DomainError('Recibo no encontrado', 404));
+
+    const laborCost = Number(service.laborCost);
+    const partsTotal = service.products.reduce(
+      (s, p) => s + Number(p.unitPrice) * p.quantity,
+      0,
+    );
+    const discount = Number(service.discount);
+    const subtotal = laborCost + partsTotal;
+    const total = subtotal - discount;
 
     res.json({
       id: service.id,
@@ -34,8 +43,18 @@ export const getReceipt = async (req: Request, res: Response, next: NextFunction
       kmAtService: service.kmAtService,
       nextMaintenanceKm: service.nextMaintenanceKm,
       nextMaintenanceDate: service.nextMaintenanceDate,
-      laborCost: Number(service.laborCost),
+      laborCost,
       totalCost: Number(service.totalCost),
+      // --- Factura ---
+      invoiceNumber: service.invoiceNumber,
+      paymentMethod: service.paymentMethod,
+      paymentReference: service.paymentReference,
+      warranty: service.warranty,
+      notes: service.notes,
+      partsTotal,
+      subtotal,
+      discount,
+      total,
       workshop: service.workshop,
       motorcycle: {
         placa: service.motorcycle.placa,

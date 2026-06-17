@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Wrench, Bike, User, Calendar, Package, CheckCircle2, Clock, Printer } from 'lucide-react';
+import { Wrench, Bike, User, Package, CheckCircle2, Clock, Printer, ShieldCheck, CreditCard, Download } from 'lucide-react';
 import { resolveApiBase } from '@/lib/api-base';
 
 interface ReceiptProduct { name: string; brand: string | null; quantity: number; unitPrice: number; subtotal: number; }
@@ -10,9 +10,18 @@ interface Receipt {
   photos: string[]; serviceDate: string; closedAt: string | null;
   kmAtService: number; nextMaintenanceKm: number | null; nextMaintenanceDate: string | null;
   laborCost: number; totalCost: number;
-  workshop: { name: string; phone: string | null; address: string | null };
+  invoiceNumber: number | null;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  warranty: string | null;
+  notes: string | null;
+  partsTotal?: number;
+  subtotal?: number;
+  discount?: number;
+  total?: number;
+  workshop: { name: string; nit: string | null; phone: string | null; address: string | null };
   motorcycle: { placa: string; brand: string; model: string; year: number | null; cc: number };
-  customer: { name: string; phone: string };
+  customer: { name: string; phone: string; cedula: string | null; email: string | null };
   mechanic: string | null;
   products: ReceiptProduct[];
 }
@@ -20,6 +29,11 @@ interface Receipt {
 const SERVICE_LABELS: Record<string, string> = {
   oil_change: 'Cambio de aceite', brakes: 'Frenos', chain_kit: 'Kit de arrastre',
   maintenance: 'Mantenimiento', other: 'Otro',
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+  efectivo: 'Efectivo', transferencia: 'Transferencia', nequi: 'Nequi',
+  daviplata: 'Daviplata', tarjeta: 'Tarjeta', otro: 'Otro',
 };
 
 function cop(n: number) {
@@ -61,7 +75,13 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
     );
   }
 
-  const partsTotal = receipt.products.reduce((s, p) => s + p.subtotal, 0);
+  const partsTotal = receipt.partsTotal ?? receipt.products.reduce((s, p) => s + p.subtotal, 0);
+  const subtotal = receipt.subtotal ?? partsTotal + receipt.laborCost;
+  const discount = receipt.discount ?? 0;
+  const total = receipt.total ?? subtotal - discount;
+  const invoiceLabel = receipt.invoiceNumber != null
+    ? `FACTURA #${String(receipt.invoiceNumber).padStart(4, '0')}`
+    : `ORDEN #${receipt.id.slice(-8).toUpperCase()}`;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white print:bg-white print:text-black">
@@ -75,6 +95,9 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
               </div>
               <span className="text-lg font-bold">{receipt.workshop.name}</span>
             </div>
+            {receipt.workshop.nit && (
+              <p className="mt-1 text-sm text-zinc-400 print:text-zinc-600">NIT: {receipt.workshop.nit}</p>
+            )}
             {receipt.workshop.address && (
               <p className="mt-1 text-sm text-zinc-400 print:text-zinc-600">{receipt.workshop.address}</p>
             )}
@@ -83,7 +106,7 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
             )}
           </div>
           <div className="text-right">
-            <p className="text-xs text-zinc-500 print:text-zinc-400">Orden #{receipt.id.slice(-8).toUpperCase()}</p>
+            <p className="text-sm font-bold tracking-wide text-emerald-400 print:text-emerald-700">{invoiceLabel}</p>
             <div className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
               receipt.status === 'closed'
                 ? 'bg-emerald-500/10 text-emerald-400 print:bg-emerald-100 print:text-emerald-700'
@@ -102,6 +125,9 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
               <User className="h-3.5 w-3.5" /> Cliente
             </div>
             <p className="font-semibold text-white print:text-black">{receipt.customer.name}</p>
+            {receipt.customer.cedula && (
+              <p className="text-sm text-zinc-400 print:text-zinc-600">C.C. {receipt.customer.cedula}</p>
+            )}
             <p className="text-sm text-zinc-400 print:text-zinc-600">{receipt.customer.phone}</p>
           </div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 print:border-zinc-200 print:bg-zinc-50">
@@ -165,28 +191,33 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
               <Package className="h-3.5 w-3.5 text-zinc-500" />
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Repuestos</p>
             </div>
+            <div className="grid grid-cols-[1fr_2.25rem_4.75rem_5.25rem] gap-2 border-b border-zinc-800/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 print:border-zinc-200">
+              <span>Repuesto</span>
+              <span className="text-center">Cant.</span>
+              <span className="text-right">Precio U.</span>
+              <span className="text-right">Subtotal</span>
+            </div>
             <div className="divide-y divide-zinc-800 print:divide-zinc-200">
               {receipt.products.map((p, i) => (
-                <div key={i} className="flex items-center justify-between px-5 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200 print:text-zinc-800">{p.name}</p>
-                    {p.brand && <p className="text-xs text-zinc-500">{p.brand}</p>}
+                <div key={i} className="grid grid-cols-[1fr_2.25rem_4.75rem_5.25rem] items-center gap-2 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-zinc-200 print:text-zinc-800">{p.name}</p>
+                    {p.brand && <p className="truncate text-xs text-zinc-500">{p.brand}</p>}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-white print:text-black">{cop(p.subtotal)}</p>
-                    <p className="text-xs text-zinc-500">{p.quantity} × {cop(p.unitPrice)}</p>
-                  </div>
+                  <p className="text-center text-sm text-zinc-300 print:text-zinc-700">{p.quantity}</p>
+                  <p className="text-right text-sm text-zinc-300 print:text-zinc-700">{cop(p.unitPrice)}</p>
+                  <p className="text-right text-sm font-semibold text-white print:text-black">{cop(p.subtotal)}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="mb-8 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 print:border-emerald-300 print:bg-emerald-50">
+        <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 print:border-emerald-300 print:bg-emerald-50">
           <div className="space-y-2 text-sm">
             {receipt.products.length > 0 && (
               <div className="flex justify-between text-zinc-400 print:text-zinc-600">
-                <span>Repuestos</span>
+                <span>Subtotal repuestos</span>
                 <span>{cop(partsTotal)}</span>
               </div>
             )}
@@ -194,12 +225,51 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
               <span>Mano de obra</span>
               <span>{cop(receipt.laborCost)}</span>
             </div>
-            <div className="flex justify-between border-t border-zinc-700 pt-2 text-base font-bold print:border-zinc-300">
-              <span className="text-white print:text-black">Total</span>
-              <span className="text-emerald-400 print:text-emerald-700">{cop(receipt.totalCost)}</span>
+            <div className="flex justify-between border-t border-zinc-700/70 pt-2 text-zinc-300 print:border-zinc-300 print:text-zinc-700">
+              <span>Subtotal</span>
+              <span>{cop(subtotal)}</span>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-amber-400 print:text-amber-700">
+                <span>Descuento</span>
+                <span>-{cop(discount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-zinc-700 pt-2 text-base font-bold print:border-zinc-300">
+              <span className="text-white print:text-black">TOTAL</span>
+              <span className="text-emerald-400 print:text-emerald-700">{cop(total)}</span>
+            </div>
+            {receipt.paymentMethod && (
+              <div className="flex items-center justify-between pt-1 text-zinc-400 print:text-zinc-600">
+                <span className="flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Método de pago</span>
+                <span className="font-medium text-zinc-200 print:text-zinc-700">{PAYMENT_LABELS[receipt.paymentMethod] ?? receipt.paymentMethod}</span>
+              </div>
+            )}
+            {receipt.paymentReference && (
+              <div className="flex justify-between text-zinc-500">
+                <span>Ref.</span>
+                <span className="font-mono">{receipt.paymentReference}</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {receipt.warranty && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4 print:border-emerald-300 print:bg-emerald-50">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400 print:text-emerald-700" strokeWidth={1.75} />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Garantía</p>
+              <p className="text-sm font-medium text-zinc-200 print:text-zinc-800">{receipt.warranty}</p>
+            </div>
+          </div>
+        )}
+
+        {receipt.notes && (
+          <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 print:border-zinc-200 print:bg-zinc-50">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-500">Notas</p>
+            <p className="whitespace-pre-line text-sm text-zinc-400 print:text-zinc-600">{receipt.notes}</p>
+          </div>
+        )}
 
         {receipt.photos.length > 0 && (
           <div className="mb-8">
@@ -215,15 +285,24 @@ export default function ReciboDePage({ params }: { params: { serviceId: string }
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-zinc-800 pt-6 print:border-zinc-200">
+        <div className="flex items-center justify-between gap-3 border-t border-zinc-800 pt-6 print:border-zinc-200">
           <p className="text-xs text-zinc-600">Generado por MotoBrain AI · {new Date().getFullYear()}</p>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="print:hidden inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:border-zinc-600 hover:text-zinc-300 transition-colors"
-          >
-            <Printer className="h-3.5 w-3.5" /> Imprimir
-          </button>
+          <div className="flex items-center gap-2 print:hidden">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-300"
+            >
+              <Printer className="h-3.5 w-3.5" /> Imprimir
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/15"
+            >
+              <Download className="h-3.5 w-3.5" /> Descargar PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>

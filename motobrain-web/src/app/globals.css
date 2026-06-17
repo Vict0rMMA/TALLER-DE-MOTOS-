@@ -2173,3 +2173,8 @@ main { animation: entrance-fade-up 0.35s cubic-bezier(0.22,1,0.36,1) both; }
   box-shadow: 0 2px 8px rgba(16,185,129,0.2);
   border: none;
 }
+
+/* Impresión de factura/recibo: márgenes y tamaño carta */
+@media print {
+  @page { margin: 1.5cm; size: letter; }
+}

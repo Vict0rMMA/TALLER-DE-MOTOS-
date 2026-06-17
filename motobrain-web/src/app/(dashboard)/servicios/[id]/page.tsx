@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle, Receipt, MessageCircle, Send, CheckCheck, XCircle, Clock } from 'lucide-react';
@@ -8,9 +9,24 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ServiceStatusBadge } from '@/components/services/ServiceStatusBadge';
 import { ServicePhotos } from '@/components/services/ServicePhotos';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
+import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { useService, useUpdateServiceStatus, useCloseService } from '@/hooks/use-services';
 import { useSendServiceNotification, useServiceNotifications } from '@/hooks/use-send-notification';
 import { SERVICE_TYPES, SERVICE_STATUSES } from '@/lib/constants';
+
+const closeInputCls =
+  'w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors';
+
+const PAYMENT_OPTIONS = [
+  { id: 'efectivo', label: 'Efectivo' },
+  { id: 'transferencia', label: 'Transferencia' },
+  { id: 'nequi', label: 'Nequi' },
+  { id: 'daviplata', label: 'Daviplata' },
+  { id: 'tarjeta', label: 'Tarjeta' },
+  { id: 'otro', label: 'Otro' },
+];
+
+const WARRANTY_OPTIONS = ['Sin garantía', '1 mes', '3 meses', '6 meses', '12 meses'];
 
 export default function ServicioDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -20,6 +36,13 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
   const closeService = useCloseService(id);
   const sendNotif = useSendServiceNotification(id);
   const { data: notifHistory } = useServiceNotifications(id);
+
+  // Datos de factura que se guardan al cerrar el servicio
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [warranty, setWarranty] = useState('');
+  const [notes, setNotes] = useState('');
+  const [discount, setDiscount] = useState(0);
 
   if (isLoading) {
     return (
@@ -147,39 +170,117 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
       </div>
 
       {service.status !== 'closed' && service.status !== 'cancelled' && (
-        <div className="glass-card p-5 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-            Cambiar estado
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {SERVICE_STATUSES.filter((s) => s.id !== service.status && s.id !== 'closed').map((s) => (
-              <button
-                key={s.id}
-                onClick={() =>
-                  updateStatus.mutate(
-                    { status: s.id as any },
-                    { onSuccess: () => toast.info(`Estado actualizado: ${s.label}`) },
-                  )
-                }
-                disabled={updateStatus.isPending}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
-              >
-                → {s.label}
-              </button>
-            ))}
+        <div className="glass-card p-5 space-y-5">
+          <div className="space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+              Cambiar estado
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {SERVICE_STATUSES.filter((s) => s.id !== service.status && s.id !== 'closed').map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() =>
+                    updateStatus.mutate(
+                      { status: s.id as any },
+                      { onSuccess: () => toast.info(`Estado actualizado: ${s.label}`) },
+                    )
+                  }
+                  disabled={updateStatus.isPending}
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+                >
+                  → {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-border pt-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+              Cerrar y facturar
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-text-secondary">Método de pago</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className={closeInputCls}
+                >
+                  <option value="">Seleccionar…</option>
+                  {PAYMENT_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {paymentMethod && paymentMethod !== 'efectivo' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-text-secondary">Referencia de pago</label>
+                  <input
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    className={closeInputCls}
+                    placeholder="N.º de transferencia / Nequi"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-text-secondary">Garantía</label>
+                <select
+                  value={warranty}
+                  onChange={(e) => setWarranty(e.target.value)}
+                  className={closeInputCls}
+                >
+                  <option value="">Seleccionar…</option>
+                  {WARRANTY_OPTIONS.map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-text-secondary">Descuento (COP)</label>
+                <CurrencyInput value={discount} onChange={setDiscount} placeholder="0" />
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <label className="text-sm font-medium text-text-secondary">Notas</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  className={closeInputCls}
+                  placeholder="Notas adicionales para la factura…"
+                />
+              </div>
+            </div>
+
             <button
               onClick={() =>
-                closeService.mutate(undefined, {
-                  onSuccess: () =>
-                    toast.success('Servicio cerrado', {
-                      description: 'Se notificó al cliente por email.',
-                      duration: 6_000,
-                    }),
-                  onError: (e) => toast.error('Error al cerrar', { description: (e as Error).message }),
-                })
+                closeService.mutate(
+                  {
+                    paymentMethod: paymentMethod || undefined,
+                    paymentReference:
+                      paymentMethod && paymentMethod !== 'efectivo'
+                        ? paymentReference.trim() || undefined
+                        : undefined,
+                    warranty: warranty || undefined,
+                    notes: notes.trim() || undefined,
+                    discount: discount > 0 ? discount : undefined,
+                  },
+                  {
+                    onSuccess: () =>
+                      toast.success('Servicio cerrado', {
+                        description: 'Se generó la factura y se notificó al cliente.',
+                        duration: 6_000,
+                      }),
+                    onError: (e) => toast.error('Error al cerrar', { description: (e as Error).message }),
+                  },
+                )
               }
               disabled={closeService.isPending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-success/10 border border-success/30 px-3 py-1.5 text-sm font-medium text-success hover:bg-success/20 disabled:opacity-40 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-success/10 border border-success/30 px-4 py-2 text-sm font-medium text-success hover:bg-success/20 disabled:opacity-40 transition-colors"
             >
               <CheckCircle className="h-4 w-4" /> Cerrar servicio
             </button>

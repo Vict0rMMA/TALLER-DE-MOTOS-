@@ -54,10 +54,28 @@ export class PrismaServiceRepository implements ServiceRepository {
     return this.toDomain(r);
   }
 
-  async close(id: string, _workshopId: string, closedAt: Date): Promise<Service> {
-    const r = await (prisma as any).service.update({
-      where: { id },
-      data: { status: 'closed', closedAt },
+  async close(id: string, workshopId: string, closedAt: Date): Promise<Service> {
+    // Asigna el consecutivo de factura del taller de forma atómica (una sola
+    // transacción) para garantizar números únicos por taller. Solo numera la
+    // primera vez (guard por si invoiceNumber ya existiera).
+    const r = await (prisma as any).$transaction(async (tx: any) => {
+      const current = await tx.service.findUnique({
+        where: { id },
+        select: { invoiceNumber: true },
+      });
+      let invoiceNumber: number | null = current?.invoiceNumber ?? null;
+      if (invoiceNumber == null) {
+        const ws = await tx.workshop.update({
+          where: { id: workshopId },
+          data: { nextInvoiceNumber: { increment: 1 } },
+          select: { nextInvoiceNumber: true },
+        });
+        invoiceNumber = ws.nextInvoiceNumber - 1;
+      }
+      return tx.service.update({
+        where: { id },
+        data: { status: 'closed', closedAt, invoiceNumber },
+      });
     });
     return this.toDomain(r);
   }
@@ -84,6 +102,12 @@ export class PrismaServiceRepository implements ServiceRepository {
       closedAt: r.closedAt ?? undefined,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
+      invoiceNumber: r.invoiceNumber ?? undefined,
+      paymentMethod: r.paymentMethod ?? undefined,
+      paymentReference: r.paymentReference ?? undefined,
+      warranty: r.warranty ?? undefined,
+      notes: r.notes ?? undefined,
+      discount: r.discount != null ? Number(r.discount) : undefined,
     };
   }
 }
