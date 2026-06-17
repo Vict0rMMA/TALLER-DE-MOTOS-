@@ -240,18 +240,16 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-text-secondary">Garantía</label>
-                <input
+                <select
                   value={warranty}
                   onChange={(e) => setWarranty(e.target.value)}
                   className={closeInputCls}
-                  placeholder="Ej: 3 meses, 5.000 km…"
-                  list="warranty-options"
-                />
-                <datalist id="warranty-options">
+                >
+                  <option value="">Seleccionar…</option>
                   {WARRANTY_OPTIONS.map((w) => (
-                    <option key={w} value={w} />
+                    <option key={w} value={w}>{w}</option>
                   ))}
-                </datalist>
+                </select>
               </div>
 
               <div className="flex flex-col gap-1.5">

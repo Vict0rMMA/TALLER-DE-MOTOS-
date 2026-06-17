@@ -2201,6 +2201,24 @@ main { animation: entrance-fade-up 0.35s cubic-bezier(0.22,1,0.36,1) both; }
   outline-offset: 2px;
 }
 
+/* ── Notificaciones (sonner) ─────────────────────────────── */
+[data-sonner-toaster] {
+  --width: 360px;
+}
+[data-sonner-toast] {
+  backdrop-filter: blur(8px);
+  font-family: inherit;
+}
+/* Éxito en esmeralda de marca (en vez del verde genérico) */
+[data-sonner-toast][data-type='success'] {
+  --success-bg: color-mix(in srgb, #10b981 15%, #0c1311);
+  --success-border: rgba(16, 185, 129, 0.4);
+  --success-text: #6ee7b7;
+}
+[data-sonner-toast] [data-icon] {
+  margin-right: 2px;
+}
+
 @media (max-width: 767px) {
   .mobile-nav-bar {
     background: rgba(12,12,16,0.85);

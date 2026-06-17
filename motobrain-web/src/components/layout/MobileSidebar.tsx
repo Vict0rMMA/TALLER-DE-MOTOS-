@@ -55,7 +55,7 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
-      <SheetContent side="left" className="sidebar-premium flex h-[100dvh] w-[min(100vw-2rem,280px)] flex-col border-r border-border p-0">
+      <SheetContent side="left" className="sidebar-premium flex h-[100dvh] w-[min(100vw-2rem,300px)] flex-col gap-0 border-r border-border p-0">
         <div className="sidebar-logo-block">
           <BrandLogo variant="sidebar" />
         </div>
@@ -129,24 +129,24 @@ export function MobileSidebar() {
             <span>Configuración</span>
           </Link>
         </nav>
-        <div className="sidebar-footer-block mt-auto">
-          <div className="sidebar-user-card">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="sidebar-avatar">{initials}</span>
-              <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-text-primary">{user?.name ?? 'Usuario'}</p>
-              <p className="truncate text-xs capitalize text-text-tertiary">{user?.role}</p>
-              </div>
+        <div className="sidebar-footer-block mt-auto space-y-2.5">
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] px-3 py-2.5">
+            <span className="sidebar-avatar">{initials}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-text-primary">{user?.name ?? 'Usuario'}</p>
+              <p className="truncate text-xs text-text-tertiary">
+                {user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '')}
+              </p>
             </div>
-            <button
-              type="button"
-              className="sidebar-footer-btn sidebar-footer-btn-inline"
-              onClick={logout}
-              title="Cerrar sesión"
-            >
-              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger transition-colors hover:bg-danger/15 active:scale-[.99]"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={2} />
+            Cerrar sesión
+          </button>
         </div>
       </SheetContent>
     </Sheet>

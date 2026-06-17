@@ -33,10 +33,16 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           <ServiceWorkerRegister />
           <Toaster
             theme="dark"
-            position="top-right"
+            position="top-center"
+            richColors
+            closeButton
+            gap={10}
             toastOptions={{
               classNames: {
-                toast: 'glass-card border-border',
+                toast: 'rounded-xl border shadow-lg',
+                title: 'text-sm font-semibold',
+                description: 'text-xs opacity-90',
+                closeButton: 'border-border',
               },
             }}
           />
