@@ -162,19 +162,17 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
     const motoLabel = motorcycle.brand
       ? `${motorcycle.placa} · ${motorcycle.brand}${motorcycle.model ? ` ${motorcycle.model}` : ''}`
       : motorcycle.placa;
-    const addressLine = service.workshop?.address?.trim()
-      ? `*Recoger en:* ${service.workshop.address.trim()}\n`
-      : '';
     const waMessage =
       `🏍️ *${shop}*\n` +
-      `━━━━━━━━━━━━━━━\n` +
-      `✅ *Tu moto ya está lista*\n\n` +
+      `\n` +
+      `🔧 *Actualización de tu servicio*\n` +
+      `\n` +
       `*Cliente:* ${customer.name}\n` +
       `*Moto:* ${motoLabel}\n` +
       `*Servicio:* ${typeLabel}\n` +
       `*Total:* $${total} COP\n` +
-      addressLine +
-      `\nPuedes pasar a recogerla cuando quieras. Cualquier duda, respóndenos por aquí. 🙌`;
+      `\n` +
+      `¡Gracias por confiar en nosotros! 🙏`;
 
     const emailHtml = buildServiceEmailHtml({
       customerName: customer.name,
