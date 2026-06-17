@@ -20,10 +20,6 @@ const closeInputCls =
 const PAYMENT_OPTIONS = [
   { id: 'efectivo', label: 'Efectivo' },
   { id: 'transferencia', label: 'Transferencia' },
-  { id: 'nequi', label: 'Nequi' },
-  { id: 'daviplata', label: 'Daviplata' },
-  { id: 'tarjeta', label: 'Tarjeta' },
-  { id: 'otro', label: 'Otro' },
 ];
 
 const WARRANTY_OPTIONS = ['Sin garantía', '1 mes', '3 meses', '6 meses', '12 meses'];

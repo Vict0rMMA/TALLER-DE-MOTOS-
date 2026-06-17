@@ -10,7 +10,7 @@ export class CloseServiceDto {
 
   // --- Factura ---
   @IsString()
-  @IsIn(['efectivo', 'transferencia', 'nequi', 'daviplata', 'tarjeta', 'otro'])
+  @IsIn(['efectivo', 'transferencia'])
   @IsOptional()
   paymentMethod?: string;
 
