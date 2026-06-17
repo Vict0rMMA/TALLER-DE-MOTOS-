@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface SidebarState {
   isOpen: boolean;
@@ -20,9 +20,7 @@ export const useSidebarStore = create<SidebarState>()(
     }),
     {
       name: 'motobrain-sidebar',
-      // Solo persistir la preferencia del sidebar de escritorio.
-      // 'isOpen' es estado efímero de UI; persistirlo desincroniza la
-      // hidratación SSR y deja el menú móvil sin abrir.
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ isCollapsed: state.isCollapsed }),
     },
   ),

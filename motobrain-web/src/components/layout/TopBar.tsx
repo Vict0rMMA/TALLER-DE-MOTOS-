@@ -7,10 +7,12 @@ import { useSidebarStore } from '@/stores/sidebar-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { BrandLogo } from './BrandLogo';
 import { NotificationPanel } from './NotificationPanel';
+import { useHydrated } from '@/hooks/use-hydrated';
 import { cn } from '@/lib/utils';
 
 export function TopBar() {
-  const toggle = useSidebarStore((s) => s.toggle);
+  const hydrated = useHydrated();
+  const setOpen = useSidebarStore((s) => s.setOpen);
   const user = useAuthStore((s) => s.user);
 
   const initials = user?.name
@@ -23,7 +25,14 @@ export function TopBar() {
   return (
     <header className="topbar-premium sticky top-0 z-30 flex items-center justify-between gap-3 px-4 md:px-6">
       <div className="flex items-center gap-2 md:gap-3">
-        <Button variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={toggle}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 md:hidden"
+          onClick={() => setOpen(true)}
+          disabled={!hydrated}
+          aria-label="Abrir menú"
+        >
           <Menu className="h-5 w-5" />
         </Button>
         <BrandLogo className="shrink-0 md:hidden" />
