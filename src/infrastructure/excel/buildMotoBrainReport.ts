@@ -118,16 +118,10 @@ function buildBanner(
   ws.getCell('B3').alignment = xcenter();
 
   ws.getRow(5).height = 22;
-  ws.mergeCells(`B5:${colLetter(Math.floor(lastDataCol / 2) + 1)}5`);
-  ws.getCell('B5').value = `Generado: ${meta.generatedAt}`;
+  ws.mergeCells(`B5:${L}5`);
+  ws.getCell('B5').value = `Generado: ${meta.generatedAt}    ·    Período (${meta.months} meses): ${meta.periodLabel}`;
   ws.getCell('B5').font = xfont(9, { color: C.MUTED });
   ws.getCell('B5').alignment = xleft(1);
-
-  ws.mergeCells(`${colLetter(Math.floor(lastDataCol / 2) + 2)}5:${L}5`);
-  ws.getCell(`${colLetter(Math.floor(lastDataCol / 2) + 2)}5`).value =
-    `Período (${meta.months} meses): ${meta.periodLabel}`;
-  ws.getCell(`${colLetter(Math.floor(lastDataCol / 2) + 2)}5`).font = xfont(9, { color: C.MUTED });
-  ws.getCell(`${colLetter(Math.floor(lastDataCol / 2) + 2)}5`).alignment = xright();
 
   ws.getRow(6).height = 12;
 }
@@ -135,7 +129,7 @@ function buildBanner(
 function buildKpiStrip(
   ws: ExcelJS.Worksheet,
   row: number,
-  cards: { label: string; value: string; accent: string; from: number; to: number }[],
+  cards: { label: string; value: string | number; numFmt?: string; accent: string; from: number; to: number }[],
 ) {
   ws.getRow(row).height = 16;
   ws.getRow(row + 1).height = 36;
@@ -157,6 +151,7 @@ function buildKpiStrip(
 
     const val = ws.getCell(`${cs}${row + 1}`);
     val.value = card.value;
+    if (typeof card.value === 'number' && card.numFmt) val.numFmt = card.numFmt;
     val.font = xfont(18, { bold: true, color: card.accent });
     val.fill = xfill(C.BG_WHITE);
     val.alignment = xcenter();
@@ -206,15 +201,9 @@ function buildResumenSheet(
   buildBanner(ws, 4, 'RESUMEN EJECUTIVO', meta, C.NAVY);
 
   buildKpiStrip(ws, 7, [
-    { label: 'CLIENTES', value: String(kpis.totalCustomers), accent: C.TEAL, from: 2, to: 2 },
-    { label: 'SERVICIOS (MES)', value: String(kpis.closedThisMonth), accent: C.EMERALD, from: 3, to: 3 },
-    {
-      label: 'INGRESOS (MES)',
-      value: `$${kpis.revenueThisMonth.toLocaleString('es-CO')}`,
-      accent: C.AMBER,
-      from: 4,
-      to: 4,
-    },
+    { label: 'CLIENTES', value: kpis.totalCustomers, numFmt: '#,##0', accent: C.TEAL, from: 2, to: 2 },
+    { label: 'SERVICIOS (MES)', value: kpis.closedThisMonth, numFmt: '#,##0', accent: C.EMERALD, from: 3, to: 3 },
+    { label: 'INGRESOS (MES)', value: kpis.revenueThisMonth, numFmt: '"$"#,##0', accent: C.AMBER, from: 4, to: 4 },
   ]);
 
   const totalRev = revenue.reduce((s, r) => s + r.revenue, 0);
@@ -230,25 +219,27 @@ function buildResumenSheet(
   ws.getCell('B12').font = xfont(11, { bold: true, color: C.NAVY });
   ws.getCell('B12').border = { bottom: { style: 'medium', color: { argb: `FF${C.EMERALD}` } } };
 
-  const lines: [string, string][] = [
-    ['Ingresos acumulados', `$${totalRev.toLocaleString('es-CO')}`],
-    ['Servicios cerrados', String(totalSrv)],
-    ['Promedio por servicio', totalSrv > 0 ? `$${Math.round(totalRev / totalSrv).toLocaleString('es-CO')}` : '—'],
-    ['Mejor mes', best.revenue > 0 ? `${best.monthLabel} ($${best.revenue.toLocaleString('es-CO')})` : '—'],
-    ['Repuestos en ranking', String(topProds.length)],
-    ['Alertas stock bajo', String(kpis.lowStockCount)],
+  const lines: { label: string; value: string | number; numFmt?: string }[] = [
+    { label: 'Ingresos acumulados', value: totalRev, numFmt: '"$"#,##0' },
+    { label: 'Servicios cerrados', value: totalSrv, numFmt: '#,##0' },
+    { label: 'Promedio por servicio', value: totalSrv > 0 ? Math.round(totalRev / totalSrv) : '—', numFmt: '"$"#,##0' },
+    { label: 'Mejor mes', value: best.revenue > 0 ? `${best.monthLabel} ($${best.revenue.toLocaleString('es-CO')})` : '—' },
+    { label: 'Repuestos en ranking', value: topProds.length, numFmt: '#,##0' },
+    { label: 'Alertas stock bajo', value: kpis.lowStockCount, numFmt: '#,##0' },
   ];
 
   let r = 14;
-  for (const [label, value] of lines) {
+  for (const { label, value, numFmt } of lines) {
     ws.getRow(r).height = 24;
     ws.getCell(r, 2).value = label;
     ws.getCell(r, 2).font = xfont(10, { color: C.MUTED });
     ws.getCell(r, 2).alignment = xleft(1);
     ws.mergeCells(`C${r}:D${r}`);
-    ws.getCell(r, 3).value = value;
-    ws.getCell(r, 3).font = xfont(10, { bold: true, color: C.BODY });
-    ws.getCell(r, 3).alignment = xright();
+    const vcell = ws.getCell(r, 3);
+    vcell.value = value;
+    if (typeof value === 'number' && numFmt) vcell.numFmt = numFmt;
+    vcell.font = xfont(10, { bold: true, color: C.BODY });
+    vcell.alignment = xright();
     r++;
   }
 
@@ -284,21 +275,9 @@ function buildIngresosSheet(wb: ExcelJS.Workbook, meta: ReportMeta, data: Revenu
   );
 
   buildKpiStrip(ws, 7, [
-    { label: 'SERVICIOS', value: String(totalServices), accent: C.TEAL, from: 2, to: 3 },
-    {
-      label: 'INGRESOS TOTALES',
-      value: `$${totalRevenue.toLocaleString('es-CO')}`,
-      accent: C.EMERALD,
-      from: 4,
-      to: 4,
-    },
-    {
-      label: 'PROM / SERVICIO',
-      value: `$${avgPerService.toLocaleString('es-CO')}`,
-      accent: C.AMBER,
-      from: 5,
-      to: 5,
-    },
+    { label: 'SERVICIOS', value: totalServices, numFmt: '#,##0', accent: C.TEAL, from: 2, to: 3 },
+    { label: 'INGRESOS TOTALES', value: totalRevenue, numFmt: '"$"#,##0', accent: C.EMERALD, from: 4, to: 4 },
+    { label: 'PROM / SERVICIO', value: avgPerService, numFmt: '"$"#,##0', accent: C.AMBER, from: 5, to: 5 },
   ]);
 
   ws.getRow(12).height = 12;
@@ -425,15 +404,9 @@ function buildTopRepuestosSheet(wb: ExcelJS.Workbook, meta: ReportMeta, topProds
   const totalProdRev = topProds.reduce((s, p) => s + p.revenue, 0);
 
   buildKpiStrip(ws, 7, [
-    { label: 'EN RANKING', value: String(topProds.length), accent: C.TEAL, from: 2, to: 2 },
-    { label: 'UNIDADES', value: String(totalUnits), accent: C.EMERALD, from: 3, to: 4 },
-    {
-      label: 'INGRESOS',
-      value: `$${totalProdRev.toLocaleString('es-CO')}`,
-      accent: C.AMBER,
-      from: 5,
-      to: 5,
-    },
+    { label: 'EN RANKING', value: topProds.length, numFmt: '#,##0', accent: C.TEAL, from: 2, to: 2 },
+    { label: 'UNIDADES', value: totalUnits, numFmt: '#,##0', accent: C.EMERALD, from: 3, to: 4 },
+    { label: 'INGRESOS', value: totalProdRev, numFmt: '"$"#,##0', accent: C.AMBER, from: 5, to: 5 },
   ]);
 
   ws.getRow(12).height = 12;
