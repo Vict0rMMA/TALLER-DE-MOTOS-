@@ -206,12 +206,20 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
             </p>
           )}
 
-          {fields.map((field, index) => (
+          {fields.map((field, index) => {
+            const productReg = register(`products.${index}.productId`);
+            return (
             <div key={field.id} className="flex gap-2 items-start">
               <div className="flex-1 grid grid-cols-3 gap-2">
                 <div className="col-span-3 sm:col-span-1">
                   <select
-                    {...register(`products.${index}.productId`)}
+                    {...productReg}
+                    onChange={(e) => {
+                      productReg.onChange(e);
+                      const prod = products.find((p) => p.id === e.target.value);
+                      // Autocompleta el precio de venta del repuesto (editable)
+                      if (prod) setValue(`products.${index}.unitPrice`, prod.price ?? 0);
+                    }}
                     className={inputCls}
                   >
                     <option value="">Producto…</option>
@@ -245,7 +253,8 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
-          ))}
+            );
+          })}
 
           <div className="flex justify-between pt-2">
             <button
