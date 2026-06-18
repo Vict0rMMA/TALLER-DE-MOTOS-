@@ -10,7 +10,7 @@ export const customerSchema = z.object({
     .refine(isValidColombiaMobileE164, {
       message: 'Ingresa un celular colombiano de 10 dígitos (ej. 300 123 4567)',
     }),
-  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  email: z.string().min(1, 'Email requerido').email('Email inválido'),
   optInWhatsapp: z.boolean().default(false),
 });
 

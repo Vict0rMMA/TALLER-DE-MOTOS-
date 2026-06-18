@@ -80,12 +80,12 @@ export function CustomerForm({
             )}
           />
         </Field>
-        <Field label="Email" error={errors.email?.message}>
+        <Field label="Email *" error={errors.email?.message}>
           <input
             {...register('email')}
             type="email"
             className={inputCls}
-            placeholder="cliente@email.com (opcional)"
+            placeholder="cliente@email.com"
           />
         </Field>
       </div>
