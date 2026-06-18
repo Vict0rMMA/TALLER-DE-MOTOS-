@@ -4,11 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ColombiaFlag } from '@/components/ui/ColombiaFlag';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bike, Wrench, Calendar, DollarSign, Plus, ChevronRight,
   ClipboardList, MessageCircle, Heart, Sparkles, ArrowRight,
-  Clock, CheckCircle2, X,
 } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
@@ -19,7 +18,6 @@ import {
   type PortalWorkshop,
   PortalStatusBadge,
   formatCop,
-  formatPortalDate,
 } from '@/components/portal/portal-shared';
 import { formatServiceLabel } from '@/lib/utils';
 import { PortalAddMotoSheet } from '@/components/portal/PortalAddMotoSheet';
@@ -73,21 +71,8 @@ const SERVICE_STEPS = ['open', 'in_progress', 'closed'];
 export default function PortalDashboard() {
   const { customer } = usePortalAuthStore();
   const { openAI } = usePortalAI();
-  const qc = useQueryClient();
   const [addMotoOpen, setAddMotoOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [historyLimit, setHistoryLimit] = useState(5);
-  const [apptLimit, setApptLimit] = useState(5);
-
-  const cancelAppt = useMutation({
-    mutationFn: (id: string) => portalApi.patch(`/appointments/${id}/cancel`, {}),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['portal-dashboard'] });
-      setCancellingId(null);
-    },
-    onError: () => setCancellingId(null),
-  });
 
   const { data: dash, isLoading } = useQuery<PortalDashboardData>({
     queryKey: ['portal-dashboard'],
@@ -98,7 +83,6 @@ export default function PortalDashboard() {
   const services = dash?.services ?? [];
   const appointments = dash?.appointments ?? [];
   const activeServices = services.filter((s) => s.status === 'open' || s.status === 'in_progress');
-  const historyServices = services.filter((s) => s.status === 'closed' || s.status === 'cancelled');
   const totalSpent = services.filter((s) => s.status === 'closed').reduce((sum, s) => sum + (s.totalCost ?? 0), 0);
   const activePlacas = new Set(activeServices.map((s) => s.motorcycle.placa));
   const nextAppointment = appointments.find(
@@ -184,11 +168,9 @@ export default function PortalDashboard() {
         <section id="servicios" className="scroll-mt-24 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-white">En el taller ahora</h2>
-            {activeServices.length > 2 && (
-              <Link href="#servicios" className="flex items-center gap-1 text-xs font-medium text-emerald-400">
-                Ver todos <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            )}
+            <Link href="/portal/servicios" className="flex items-center gap-1 text-xs font-medium text-emerald-400">
+              Ver todos <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
           {isLoading ? (
             <div className="space-y-3">
@@ -350,129 +332,6 @@ export default function PortalDashboard() {
           </button>
         )}
       </section>
-
-      {/* ── HISTORIAL ─────────────────────────────────────── */}
-      {historyServices.length > 0 && (
-        <section id="historial" className="scroll-mt-24 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Historial de servicios</h2>
-            <span className="text-xs text-zinc-500">{historyServices.length} en total</span>
-          </div>
-          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
-            {historyServices.slice(0, historyLimit).map((s, i) => (
-              <Link
-                key={s.id}
-                href={`/portal/servicios/${s.id}`}
-                className={`flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-zinc-800/60 active:bg-zinc-800 ${i !== 0 ? 'border-t border-zinc-800/80' : ''}`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400/70" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-white">{formatServiceLabel(s.type)}</p>
-                    <p className="text-[11px] text-zinc-500">
-                      {s.motorcycle.placa} · {formatPortalDate(s.closedAt ?? s.serviceDate)}
-                    </p>
-                  </div>
-                </div>
-                <p className="shrink-0 text-sm font-semibold tabular-nums text-white">
-                  {formatCop(s.totalCost)}
-                </p>
-              </Link>
-            ))}
-            {historyServices.length > 5 && (
-              <button
-                type="button"
-                onClick={() => setHistoryLimit((n) => (n >= historyServices.length ? 5 : n + 5))}
-                className="flex w-full items-center justify-center border-t border-zinc-800/80 px-4 py-3 text-xs font-medium text-emerald-400 transition-colors hover:bg-zinc-800/40"
-              >
-                {historyLimit >= historyServices.length
-                  ? 'Ver menos'
-                  : `Ver ${Math.min(5, historyServices.length - historyLimit)} más`}
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ── CITAS ─────────────────────────────────────────── */}
-      {appointments.length > 0 && (
-        <section id="citas" className="scroll-mt-24 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Mis citas</h2>
-            <span className="text-xs text-zinc-500">{appointments.length} en total</span>
-          </div>
-          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
-            {appointments.slice(0, apptLimit).map((a, i) => (
-              <div key={a.id} className={`flex items-start gap-3 px-4 py-3.5 ${i !== 0 ? 'border-t border-zinc-800/80' : ''}`}>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800 mt-0.5">
-                  <Clock className="h-4 w-4 text-sky-400/70" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">
-                    {a.motorcycle ? `${a.motorcycle.placa} · ${a.motorcycle.brand}` : 'Revisión general'}
-                  </p>
-                  <p className="text-[11px] text-zinc-500">{fmtApptWhen(a)}</p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                    a.status === 'confirmed'
-                      ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
-                      : a.status === 'cancelled'
-                        ? 'border-zinc-700/50 bg-zinc-800/50 text-zinc-500'
-                        : 'border-amber-500/25 bg-amber-500/10 text-amber-400'
-                  }`}>
-                    {APPT_STATUS[a.status]}
-                  </span>
-                  {(a.status === 'pending' || a.status === 'confirmed') && (
-                    cancellingId === a.id
-                      ? (
-                        <div className="flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => { setCancellingId(null); }}
-                            className="rounded-lg border border-zinc-700 px-2 py-0.5 text-[10px] text-zinc-400 hover:text-zinc-200"
-                          >
-                            No
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => cancelAppt.mutate(a.id)}
-                            disabled={cancelAppt.isPending}
-                            className="rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
-                          >
-                            {cancelAppt.isPending ? '...' : 'Sí, cancelar'}
-                          </button>
-                        </div>
-                      )
-                      : (
-                        <button
-                          type="button"
-                          onClick={() => setCancellingId(a.id)}
-                          className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-red-400 transition-colors"
-                        >
-                          <X className="h-3 w-3" /> Cancelar
-                        </button>
-                      )
-                  )}
-                </div>
-              </div>
-            ))}
-            {appointments.length > 5 && (
-              <button
-                type="button"
-                onClick={() => setApptLimit((n) => (n >= appointments.length ? 5 : n + 5))}
-                className="flex w-full items-center justify-center border-t border-zinc-800/80 px-4 py-3 text-xs font-medium text-emerald-400 transition-colors hover:bg-zinc-800/40"
-              >
-                {apptLimit >= appointments.length
-                  ? 'Ver menos'
-                  : `Ver ${Math.min(5, appointments.length - apptLimit)} más`}
-              </button>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* ── SIN SERVICIOS ACTIVOS ─────────────────────────── */}
       {!isLoading && activeServices.length === 0 && (

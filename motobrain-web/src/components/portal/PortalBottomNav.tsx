@@ -19,22 +19,11 @@ export function PortalBottomNav() {
     router.replace('/login?tab=cliente');
   }
 
-  // Scroll suave a una sección del portal. Si no está en /portal (ej. detalle
-  // de servicio), navega a /portal con el hash y el navegador hace el scroll.
-  function goToSection(id: string) {
-    const el = typeof document !== 'undefined' ? document.getElementById(id) : null;
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      router.push(`/portal#${id}`);
-    }
-  }
-
   const tabs = [
     { href: '/portal', icon: Home, label: 'Inicio' },
-    { anchor: 'servicios', icon: Wrench, label: 'Servicios' },
+    { href: '/portal/servicios', icon: Wrench, label: 'Servicios' },
     null,
-    { anchor: 'citas', icon: Calendar, label: 'Citas' },
+    { href: '/portal/citas', icon: Calendar, label: 'Citas' },
     { action: handleLogout, icon: LogOut, label: 'Salir' },
   ] as const;
 
@@ -57,7 +46,9 @@ export function PortalBottomNav() {
           }
 
           const Icon = tab.icon;
-          const isActive = 'href' in tab ? pathname === tab.href : false;
+          const isActive = 'href' in tab
+            ? (tab.href === '/portal' ? pathname === '/portal' : pathname.startsWith(tab.href))
+            : false;
 
           const inner = (
             <>
@@ -81,14 +72,6 @@ export function PortalBottomNav() {
           if ('action' in tab) {
             return (
               <button key={i} type="button" onClick={tab.action} className={btnCls}>
-                {inner}
-              </button>
-            );
-          }
-
-          if ('anchor' in tab) {
-            return (
-              <button key={i} type="button" onClick={() => goToSection(tab.anchor)} className={btnCls}>
                 {inner}
               </button>
             );
