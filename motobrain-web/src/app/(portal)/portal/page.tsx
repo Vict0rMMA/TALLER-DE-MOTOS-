@@ -77,6 +77,8 @@ export default function PortalDashboard() {
   const [addMotoOpen, setAddMotoOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [historyLimit, setHistoryLimit] = useState(5);
+  const [apptLimit, setApptLimit] = useState(5);
 
   const cancelAppt = useMutation({
     mutationFn: (id: string) => portalApi.patch(`/appointments/${id}/cancel`, {}),
@@ -352,9 +354,12 @@ export default function PortalDashboard() {
       {/* ── HISTORIAL ─────────────────────────────────────── */}
       {historyServices.length > 0 && (
         <section id="historial" className="scroll-mt-24 space-y-3">
-          <h2 className="text-base font-semibold text-white">Historial de servicios</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-white">Historial de servicios</h2>
+            <span className="text-xs text-zinc-500">{historyServices.length} en total</span>
+          </div>
           <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
-            {historyServices.slice(0, 5).map((s, i) => (
+            {historyServices.slice(0, historyLimit).map((s, i) => (
               <Link
                 key={s.id}
                 href={`/portal/servicios/${s.id}`}
@@ -376,6 +381,17 @@ export default function PortalDashboard() {
                 </p>
               </Link>
             ))}
+            {historyServices.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setHistoryLimit((n) => (n >= historyServices.length ? 5 : n + 5))}
+                className="flex w-full items-center justify-center border-t border-zinc-800/80 px-4 py-3 text-xs font-medium text-emerald-400 transition-colors hover:bg-zinc-800/40"
+              >
+                {historyLimit >= historyServices.length
+                  ? 'Ver menos'
+                  : `Ver ${Math.min(5, historyServices.length - historyLimit)} más`}
+              </button>
+            )}
           </div>
         </section>
       )}
@@ -383,9 +399,12 @@ export default function PortalDashboard() {
       {/* ── CITAS ─────────────────────────────────────────── */}
       {appointments.length > 0 && (
         <section id="citas" className="scroll-mt-24 space-y-3">
-          <h2 className="text-base font-semibold text-white">Mis citas</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-white">Mis citas</h2>
+            <span className="text-xs text-zinc-500">{appointments.length} en total</span>
+          </div>
           <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
-            {appointments.slice(0, 5).map((a, i) => (
+            {appointments.slice(0, apptLimit).map((a, i) => (
               <div key={a.id} className={`flex items-start gap-3 px-4 py-3.5 ${i !== 0 ? 'border-t border-zinc-800/80' : ''}`}>
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800 mt-0.5">
                   <Clock className="h-4 w-4 text-sky-400/70" strokeWidth={1.75} />
@@ -440,6 +459,17 @@ export default function PortalDashboard() {
                 </div>
               </div>
             ))}
+            {appointments.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setApptLimit((n) => (n >= appointments.length ? 5 : n + 5))}
+                className="flex w-full items-center justify-center border-t border-zinc-800/80 px-4 py-3 text-xs font-medium text-emerald-400 transition-colors hover:bg-zinc-800/40"
+              >
+                {apptLimit >= appointments.length
+                  ? 'Ver menos'
+                  : `Ver ${Math.min(5, appointments.length - apptLimit)} más`}
+              </button>
+            )}
           </div>
         </section>
       )}
