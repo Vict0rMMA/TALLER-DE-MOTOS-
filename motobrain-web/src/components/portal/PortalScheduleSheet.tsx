@@ -83,7 +83,7 @@ export function PortalScheduleSheet({ open, onOpenChange, motorcycles }: PortalS
           </button>
         </div>
 
-        <div className="overflow-y-auto p-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+        <div className="overflow-y-auto overscroll-contain p-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         {success ? (
           <div className="space-y-4 py-2 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" />

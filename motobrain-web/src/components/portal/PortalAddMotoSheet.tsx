@@ -67,7 +67,7 @@ export function PortalAddMotoSheet({ open, onOpenChange }: PortalAddMotoSheetPro
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="overflow-y-auto p-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+        <div className="overflow-y-auto overscroll-contain p-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block space-y-1.5">
             <span className="text-xs font-medium text-zinc-400">Placa *</span>
