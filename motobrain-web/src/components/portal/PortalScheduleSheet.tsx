@@ -64,15 +64,15 @@ export function PortalScheduleSheet({ open, onOpenChange, motorcycles }: PortalS
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
       <button
         type="button"
         className="absolute inset-0 bg-black/70"
         aria-label="Cerrar"
         onClick={handleClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-t-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-xl sm:rounded-2xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-2xl border border-zinc-800 bg-zinc-950 shadow-xl sm:rounded-2xl">
+        <div className="flex items-center justify-between p-5 pb-0">
           <h2 className="text-lg font-semibold text-white">Agendar revisión</h2>
           <button
             type="button"
@@ -83,6 +83,7 @@ export function PortalScheduleSheet({ open, onOpenChange, motorcycles }: PortalS
           </button>
         </div>
 
+        <div className="overflow-y-auto p-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         {success ? (
           <div className="space-y-4 py-2 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" />
@@ -143,6 +144,7 @@ export function PortalScheduleSheet({ open, onOpenChange, motorcycles }: PortalS
             </button>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

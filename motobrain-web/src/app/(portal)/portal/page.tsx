@@ -152,7 +152,7 @@ export default function PortalDashboard() {
             { label: 'IA', icon: Sparkles, action: () => openAI(), accent: true },
             { label: 'WhatsApp', icon: MessageCircle, href: workshopPhone ? whatsappUrl(workshopPhone) : undefined, external: true, accent: false },
           ].map(({ label, icon: Icon, action, href, external, accent }) => {
-            const cls = `flex flex-col items-center gap-2 rounded-2xl border p-3 transition-all active:scale-95 ${
+            const cls = `flex flex-col items-center gap-2 rounded-2xl border p-3 transition-all active:scale-95 touch-manipulation ${
               accent
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15'
                 : 'border-zinc-800 bg-zinc-900/70 text-zinc-300 hover:border-zinc-700 hover:text-white'
@@ -274,14 +274,14 @@ export default function PortalDashboard() {
         </div>
 
         {dash?.motorcycles && dash?.motorcycles.length > 0 ? (
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory [-webkit-overflow-scrolling:touch]">
             {dash?.motorcycles.map((m) => {
               const inShop = activePlacas.has(m.placa);
               const last = latestServiceForPlaca(m.placa);
               return (
                 <div
                   key={m.id}
-                  className="relative w-52 shrink-0 snap-start overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/80"
+                  className="relative flex w-52 shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/80"
                 >
                   {inShop && (
                     <div className="absolute right-2 top-2 z-10 rounded-full border border-amber-500/30 bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
@@ -305,14 +305,14 @@ export default function PortalDashboard() {
                       <MotoBrandPlaceholder brand={m.brand} />
                     )}
                   </div>
-                  <div className="p-3">
+                  <div className="flex flex-1 flex-col p-3">
                     <p className="font-mono text-sm font-bold tracking-wider text-white">{m.placa}</p>
                     <p className="mt-0.5 truncate text-xs text-zinc-400">{m.brand} {m.model}</p>
                     <p className="mt-0.5 text-[10px] text-zinc-600">{m.cc}cc{m.year ? ` · ${m.year}` : ''}</p>
                     {last && (
                       <Link
                         href={`/portal/servicios/${last.id}`}
-                        className="mt-2.5 flex items-center justify-between rounded-lg bg-zinc-800/70 px-2.5 py-1.5 text-[11px] font-medium text-zinc-300 transition-colors hover:bg-zinc-700/80"
+                        className="mt-auto flex items-center justify-between rounded-lg bg-zinc-800/70 px-2.5 py-1.5 pt-1.5 text-[11px] font-medium text-zinc-300 transition-colors hover:bg-zinc-700/80"
                       >
                         Último servicio <ArrowRight className="h-3 w-3" />
                       </Link>

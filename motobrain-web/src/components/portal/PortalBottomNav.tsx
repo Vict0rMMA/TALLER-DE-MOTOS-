@@ -19,13 +19,24 @@ export function PortalBottomNav() {
     router.replace('/login?tab=cliente');
   }
 
+  // Scroll suave a una sección del portal. Si no está en /portal (ej. detalle
+  // de servicio), navega a /portal con el hash y el navegador hace el scroll.
+  function goToSection(id: string) {
+    const el = typeof document !== 'undefined' ? document.getElementById(id) : null;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      router.push(`/portal#${id}`);
+    }
+  }
+
   const tabs = [
     { href: '/portal', icon: Home, label: 'Inicio' },
-    { href: '/portal#servicios', icon: Wrench, label: 'Servicios' },
+    { anchor: 'servicios', icon: Wrench, label: 'Servicios' },
     null,
-    { href: '/portal#citas', icon: Calendar, label: 'Citas' },
-    { href: null, icon: LogOut, label: 'Salir', action: handleLogout },
-  ];
+    { anchor: 'citas', icon: Calendar, label: 'Citas' },
+    { action: handleLogout, icon: LogOut, label: 'Salir' },
+  ] as const;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-md lg:hidden">
@@ -46,9 +57,7 @@ export function PortalBottomNav() {
           }
 
           const Icon = tab.icon;
-          const isActive = tab.href && !tab.href.includes('#')
-            ? pathname === tab.href
-            : false;
+          const isActive = 'href' in tab ? pathname === tab.href : false;
 
           const inner = (
             <>
@@ -67,25 +76,26 @@ export function PortalBottomNav() {
             </>
           );
 
-          if (tab.action) {
+          const btnCls = 'flex flex-col items-center gap-0.5 px-3 py-1 touch-manipulation active:scale-95 transition-transform';
+
+          if ('action' in tab) {
             return (
-              <button
-                key={i}
-                type="button"
-                onClick={tab.action}
-                className="flex flex-col items-center gap-0.5 px-3 py-1"
-              >
+              <button key={i} type="button" onClick={tab.action} className={btnCls}>
+                {inner}
+              </button>
+            );
+          }
+
+          if ('anchor' in tab) {
+            return (
+              <button key={i} type="button" onClick={() => goToSection(tab.anchor)} className={btnCls}>
                 {inner}
               </button>
             );
           }
 
           return (
-            <Link
-              key={i}
-              href={tab.href!}
-              className="flex flex-col items-center gap-0.5 px-3 py-1"
-            >
+            <Link key={i} href={tab.href} className={btnCls}>
               {inner}
             </Link>
           );
