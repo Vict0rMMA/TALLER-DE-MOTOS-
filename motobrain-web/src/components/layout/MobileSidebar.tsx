@@ -74,16 +74,16 @@ export function MobileSidebar() {
   const roleLabel =
     user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '');
 
-  if (!mounted) return null;
+  // El menú solo existe en el DOM cuando está abierto: cerrado = nada que
+  // pueda afectar el layout del fondo.
+  if (!mounted || !isOpen) return null;
 
   return createPortal(
     <div className="md:hidden">
       {/* Overlay */}
       <div
-        className={cn(
-          'fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300',
-          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+        style={{ animation: 'mb-fade-in 0.2s ease-out' }}
         onClick={close}
         aria-hidden
       />
@@ -92,11 +92,8 @@ export function MobileSidebar() {
       <aside
         role="dialog"
         aria-modal="true"
-        aria-hidden={!isOpen}
-        className={cn(
-          'sidebar-premium fixed left-0 top-0 z-[61] flex h-[100dvh] w-[min(86vw,300px)] flex-col border-r border-border transition-transform duration-300 ease-out',
-          isOpen ? 'translate-x-0' : '-translate-x-full',
-        )}
+        className="sidebar-premium fixed left-0 top-0 z-[61] flex h-[100dvh] w-[min(86vw,300px)] flex-col border-r border-border"
+        style={{ animation: 'mb-slide-in 0.25s ease-out' }}
       >
         <div className="sidebar-logo-block">
           <BrandLogo variant="sidebar" />
