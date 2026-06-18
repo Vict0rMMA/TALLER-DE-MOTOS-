@@ -79,6 +79,7 @@ export function useServices(filters: ServiceFilters = {}) {
     queryFn: () => api.get<ApiListResponse<Service>>(`/services?${params.toString()}`),
     staleTime: 2 * 60_000,
     gcTime: 10 * 60_000,
+    placeholderData: (prev) => prev,
   });
 }
 
@@ -109,7 +110,22 @@ export function useUpdateServiceStatus(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { status: string }) => api.put<Service>(`/services/${id}`, data),
-    onSuccess: () => void refreshServices(qc),
+    // Reflejo instantáneo: actualiza el estado en caché antes de la respuesta.
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: [...SERVICES_KEY, id] });
+      const prev = qc.getQueryData<Service>([...SERVICES_KEY, id]);
+      if (prev) {
+        qc.setQueryData<Service>([...SERVICES_KEY, id], {
+          ...prev,
+          status: data.status as Service['status'],
+        });
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData([...SERVICES_KEY, id], ctx.prev);
+    },
+    onSettled: () => void refreshServices(qc),
   });
 }
 
