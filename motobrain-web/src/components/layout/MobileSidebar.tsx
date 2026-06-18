@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -57,10 +56,6 @@ export function MobileSidebar() {
       .slice(0, 2)
       .toUpperCase() ?? 'MB';
 
-  // Renderizar solo en cliente (el drawer va por portal a document.body)
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   // Bloquear el scroll del fondo cuando el menú está abierto
   useEffect(() => {
     if (!isOpen) return;
@@ -74,25 +69,25 @@ export function MobileSidebar() {
   const roleLabel =
     user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '');
 
-  // El menú solo existe en el DOM cuando está abierto: cerrado = nada que
-  // pueda afectar el layout del fondo.
-  if (!mounted || !isOpen) return null;
+  // Cerrado: no renderiza nada (no puede afectar el layout del fondo).
+  // Los elementos son `fixed`, así que NO participan del flex del layout.
+  if (!isOpen) return null;
 
-  return createPortal(
-    <div className="md:hidden">
+  return (
+    <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
         style={{ animation: 'mb-fade-in 0.2s ease-out' }}
         onClick={close}
         aria-hidden
       />
 
-      {/* Drawer */}
+      {/* Panel */}
       <aside
         role="dialog"
         aria-modal="true"
-        className="sidebar-premium fixed left-0 top-0 z-[61] flex h-[100dvh] w-[min(86vw,300px)] flex-col border-r border-border"
+        className="sidebar-premium fixed left-0 top-0 z-[61] flex h-[100dvh] w-[min(86vw,300px)] flex-col border-r border-border md:hidden"
         style={{ animation: 'mb-slide-in 0.25s ease-out' }}
       >
         <div className="sidebar-logo-block">
@@ -192,7 +187,6 @@ export function MobileSidebar() {
           </button>
         </div>
       </aside>
-    </div>,
-    document.body,
+    </>
   );
 }
