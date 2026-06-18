@@ -45,6 +45,22 @@ app.get('/api/v1', (_req, res) => {
   });
 });
 
+// Cron de recordatorios (lo invoca Vercel Cron; en VPS/local lo hace el setInterval de index.ts).
+// Si CRON_SECRET está configurado, exige el header Bearer que Vercel envía automáticamente.
+app.get('/api/v1/cron/reminders', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+    return res.status(401).json({ ok: false, error: 'No autorizado' });
+  }
+  try {
+    const { runReminderCron } = await import('./infrastructure/jobs/reminderCron');
+    await runReminderCron();
+    res.json({ ok: true, ran: 'reminders', at: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message });
+  }
+});
+
 app.use('/api/v1', apiRouter);
 
 app.use((req, _res, next) => {

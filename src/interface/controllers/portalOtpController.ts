@@ -4,9 +4,7 @@ import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 import { DomainError } from '../../domain/errors/DomainError';
 import { normalizePhoneDigits, phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
-
-interface OtpEntry { code: string; customerId: string; expiresAt: number }
-const otpStore = new Map<string, OtpEntry>();
+import { setOtp, getOtp, deleteOtp } from '../../infrastructure/redis/otpStore';
 
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -29,10 +27,7 @@ export const requestOtp = async (req: Request, res: Response, next: NextFunction
     }
 
     const code = generateCode();
-    const key = `${customer.id}`;
-    otpStore.set(key, { code, customerId: customer.id, expiresAt: Date.now() + 5 * 60_000 });
-
-    setTimeout(() => otpStore.delete(key), 5 * 60_000);
+    await setOtp(customer.id, code);
 
     try {
       const wa = getWhatsAppService();
@@ -52,15 +47,15 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
     const { customerId, code } = req.body as { customerId?: string; code?: string };
     if (!customerId || !code) return next(new DomainError('Datos incompletos', 400));
 
-    const entry = otpStore.get(customerId);
-    if (!entry || entry.expiresAt < Date.now()) {
+    const entry = await getOtp(customerId);
+    if (!entry) {
       return next(new DomainError('Código expirado. Solicita uno nuevo.', 401));
     }
     if (entry.code !== code.trim()) {
       return next(new DomainError('Código incorrecto', 401));
     }
 
-    otpStore.delete(customerId);
+    await deleteOtp(customerId);
 
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
