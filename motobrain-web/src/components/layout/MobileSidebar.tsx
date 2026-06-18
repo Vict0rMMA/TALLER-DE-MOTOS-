@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   LayoutDashboard,
   Package,
@@ -56,6 +57,10 @@ export function MobileSidebar() {
       .slice(0, 2)
       .toUpperCase() ?? 'MB';
 
+  // Renderizar solo en cliente (el drawer va por portal a document.body)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // Bloquear el scroll del fondo cuando el menú está abierto
   useEffect(() => {
     if (!isOpen) return;
@@ -69,7 +74,9 @@ export function MobileSidebar() {
   const roleLabel =
     user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '');
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="md:hidden">
       {/* Overlay */}
       <div
@@ -188,6 +195,7 @@ export function MobileSidebar() {
           </button>
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
