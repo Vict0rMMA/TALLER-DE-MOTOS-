@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaServiceRepository } from '../../infrastructure/repositories/PrismaServiceRepository';
-import { PrismaMotorcycleRepository } from '../../infrastructure/repositories/PrismaMotorcycleRepository';
-import { PrismaProductRepository } from '../../infrastructure/repositories/PrismaProductRepository';
 import { CreateService } from '../../application/usecases/services/CreateService';
 import { UpdateService } from '../../application/usecases/services/UpdateService';
 import { CloseService } from '../../application/usecases/services/CloseService';
@@ -17,8 +15,6 @@ import {
 import prisma from '../../infrastructure/prisma/client';
 
 const serviceRepo = new PrismaServiceRepository();
-const motorcycleRepo = new PrismaMotorcycleRepository();
-const productRepo = new PrismaProductRepository();
 
 function mapServiceRow(r: any) {
   return {
@@ -111,9 +107,10 @@ export const getUpcomingMaintenance = async (req: Request, res: Response, next: 
 
 export const createService = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await new CreateService(serviceRepo, motorcycleRepo, productRepo).execute({
+    const result = await new CreateService().execute({
       ...req.body,
       workshopId: req.workshopId!,
+      userId: req.userId!,
     });
     const row = await (prisma as any).service.findFirst({
       where: { id: result.id, workshopId: req.workshopId! },
