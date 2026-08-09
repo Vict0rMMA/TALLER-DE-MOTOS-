@@ -22,7 +22,8 @@ export class CreateCustomer {
     return this.customerRepo.create({
       ...input,
       optInWhatsapp: input.optInWhatsapp ?? true,
-      portalActive: false,
+      // La cédula es la contraseña del portal: sin ella el login lo rechazaría.
+      portalActive: !!input.cedula?.trim(),
     });
   }
 }

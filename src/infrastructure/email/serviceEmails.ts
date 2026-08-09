@@ -1,4 +1,5 @@
 import { sendEmail, isEmailConfigured } from './EmailService';
+import { wrap } from './emailLayout';
 import { generateReceiptPdf } from '../pdf/generateReceiptPdf';
 import prisma from '../prisma/client';
 
@@ -11,37 +12,6 @@ const SERVICE_LABELS: Record<string, string> = {
 
 function fmt(n: number) {
   return '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
-}
-
-function header(workshopName: string) {
-  return `
-    <div style="background:#00c77a;padding:24px 32px;text-align:center;border-radius:12px 12px 0 0">
-      <span style="font-size:20px;font-weight:700;color:#000">🔧 MotoBrain</span>
-      <p style="margin:4px 0 0;color:#003d25;font-size:12px">${workshopName}</p>
-    </div>`;
-}
-
-function footer(workshopName: string, phone?: string | null) {
-  return `
-    <div style="padding:16px 32px;border-top:1px solid #2a2a2a;text-align:center">
-      <p style="color:#555;font-size:11px;margin:0">Gracias por confiar en ${workshopName} 🙏</p>
-      ${phone ? `<p style="color:#555;font-size:11px;margin:4px 0 0">Tel: ${phone}</p>` : ''}
-    </div>`;
-}
-
-function wrap(content: string, workshopName: string, phone?: string | null) {
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
-  <body style="margin:0;padding:0;background:#0f0f0f;font-family:Arial,sans-serif">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:32px 0">
-      <tr><td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a">
-          <tr><td>${header(workshopName)}</td></tr>
-          <tr><td style="padding:28px 32px">${content}</td></tr>
-          <tr><td>${footer(workshopName, phone)}</td></tr>
-        </table>
-      </td></tr>
-    </table>
-  </body></html>`;
 }
 
 async function getServiceData(serviceId: string) {

@@ -6,6 +6,8 @@ import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 import { normalizeCedula } from '../../infrastructure/phone/cedula';
 import { uploadMotoPhoto } from '../../infrastructure/storage/supabaseStorage';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
+import { sendPortalWelcomeEmail } from '../../infrastructure/email/customerEmails';
+import { env } from '../../infrastructure/config/env';
 
 export const portalRegister = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -499,6 +501,8 @@ export const enablePortal = async (req: Request, res: Response, next: NextFuncti
       where: { id: customerId },
       data: { portalActive: true, passwordHash: null },
     });
+
+    sendPortalWelcomeEmail(customerId, env.PUBLIC_APP_URL).catch(() => {});
 
     res.json({ ok: true, message: 'Portal activado. El cliente entra con su celular y cédula.' });
   } catch (err) {

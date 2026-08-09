@@ -5,6 +5,8 @@ import { UpdateCustomer } from '../../application/usecases/customers/UpdateCusto
 import { GetCustomers } from '../../application/usecases/customers/GetCustomers';
 import { GetCustomerById } from '../../application/usecases/customers/GetCustomerById';
 import { SearchCustomers } from '../../application/usecases/customers/SearchCustomers';
+import { sendPortalWelcomeEmail } from '../../infrastructure/email/customerEmails';
+import { env } from '../../infrastructure/config/env';
 
 const customerRepo = new PrismaCustomerRepository();
 
@@ -48,6 +50,8 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
       ...req.body,
       workshopId: req.workshopId!,
     });
+    // No bloquea la respuesta: si el correo falla, el cliente ya quedó creado igual.
+    sendPortalWelcomeEmail(result.id, env.PUBLIC_APP_URL).catch(() => {});
     res.status(201).json(result);
   } catch (e) {
     next(e);
