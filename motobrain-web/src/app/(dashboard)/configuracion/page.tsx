@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,12 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { SearchSelect } from '@/components/ui/SearchSelect';
+
+const ROLE_OPTIONS = [
+  { value: 'mechanic', label: 'Mecánico' },
+  { value: 'owner', label: 'Propietario' },
+];
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Propietario',
@@ -187,6 +193,7 @@ function AddUserForm({ workshopId, onSuccess }: { workshopId: string; onSuccess:
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -252,13 +259,19 @@ function AddUserForm({ workshopId, onSuccess }: { workshopId: string; onSuccess:
         </div>
         <div>
           <label className="block text-xs text-text-tertiary mb-1.5">Rol *</label>
-          <select
-            {...register('role')}
-            className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none appearance-none"
-          >
-            <option value="mechanic">Mecánico</option>
-            <option value="owner">Propietario</option>
-          </select>
+          <Controller
+            control={control}
+            name="role"
+            render={({ field }) => (
+              <SearchSelect
+                id="user-role"
+                value={field.value ?? 'mechanic'}
+                onChange={field.onChange}
+                options={ROLE_OPTIONS}
+                placeholder="Seleccionar…"
+              />
+            )}
+          />
         </div>
       </div>
 

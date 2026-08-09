@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, X, CheckCircle2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api-client';
+import { SearchSelect } from '@/components/ui/SearchSelect';
 
 interface Motorcycle {
   id: string;
@@ -97,18 +98,18 @@ export function PortalScheduleSheet({ open, onOpenChange, motorcycles }: PortalS
             {motorcycles.length > 0 ? (
               <label className="block space-y-1.5">
                 <span className="text-xs font-medium text-zinc-400">Moto</span>
-                <select
+                <SearchSelect
+                  id="schedule-moto"
                   value={motoId}
-                  onChange={(e) => setMotoId(e.target.value)}
-                  className="portal-input w-full"
-                >
-                  <option value="">Selecciona una moto</option>
-                  {motorcycles.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.placa} — {m.brand} {m.model}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setMotoId}
+                  options={motorcycles.map((m) => ({
+                    value: m.id,
+                    label: m.placa,
+                    hint: `${m.brand} ${m.model}`,
+                  }))}
+                  placeholder="Selecciona una moto"
+                  emptyMessage="Ninguna moto coincide"
+                />
               </label>
             ) : (
               <p className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-sm text-amber-200/90">

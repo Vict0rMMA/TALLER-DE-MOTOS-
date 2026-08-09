@@ -15,6 +15,7 @@ import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { useService, useUpdateServiceStatus, useCloseService } from '@/hooks/use-services';
 import { useSendServiceNotification, useServiceNotifications } from '@/hooks/use-send-notification';
 import { SERVICE_TYPES, SERVICE_STATUSES } from '@/lib/constants';
+import { SearchSelect } from '@/components/ui/SearchSelect';
 
 const closeInputCls =
   'w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors';
@@ -25,6 +26,9 @@ const PAYMENT_OPTIONS = [
 ];
 
 const WARRANTY_OPTIONS = ['Sin garantía', '1 mes', '3 meses', '6 meses', '12 meses'];
+
+const PAYMENT_SELECT_OPTIONS = PAYMENT_OPTIONS.map((o) => ({ value: o.id, label: o.label }));
+const WARRANTY_SELECT_OPTIONS = WARRANTY_OPTIONS.map((w) => ({ value: w, label: w }));
 
 // Botones de acción con color semántico (borde + tinte + texto)
 const ACTION_BTN = 'inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all active:scale-95 disabled:opacity-40';
@@ -229,44 +233,40 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
               {workshopUsers.length > 0 && (
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
                   <label className="text-sm font-medium text-text-secondary">Mecánico que realizó el trabajo</label>
-                  <select
+                  <SearchSelect
+                    id="close-mechanic"
                     value={mechanicId}
-                    onChange={(e) => setMechanicId(e.target.value)}
-                    className={closeInputCls}
-                  >
-                    <option value="">Sin asignar</option>
-                    {workshopUsers.filter((u) => u.active).map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </select>
+                    onChange={setMechanicId}
+                    options={workshopUsers
+                      .filter((u) => u.active)
+                      .map((u) => ({ value: u.id, label: u.name }))}
+                    placeholder="Sin asignar"
+                    emptyMessage="Ningún mecánico coincide"
+                  />
                 </div>
               )}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-text-secondary">Método de pago</label>
-                <select
+                <SearchSelect
+                  id="close-payment"
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className={closeInputCls}
-                >
-                  <option value="">Seleccionar…</option>
-                  {PAYMENT_OPTIONS.map((o) => (
-                    <option key={o.id} value={o.id}>{o.label}</option>
-                  ))}
-                </select>
+                  onChange={setPaymentMethod}
+                  options={PAYMENT_SELECT_OPTIONS}
+                  placeholder="Seleccionar…"
+                  emptyMessage="Ningún método coincide"
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-text-secondary">Garantía</label>
-                <select
+                <SearchSelect
+                  id="close-warranty"
                   value={warranty}
-                  onChange={(e) => setWarranty(e.target.value)}
-                  className={closeInputCls}
-                >
-                  <option value="">Seleccionar…</option>
-                  {WARRANTY_OPTIONS.map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
+                  onChange={setWarranty}
+                  options={WARRANTY_SELECT_OPTIONS}
+                  placeholder="Seleccionar…"
+                  emptyMessage="Ninguna garantía coincide"
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">

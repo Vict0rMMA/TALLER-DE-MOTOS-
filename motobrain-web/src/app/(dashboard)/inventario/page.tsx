@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Filter, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Package, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/inventory/ProductTable';
 import { KPICard } from '@/components/dashboard/KPICard';
@@ -11,7 +11,10 @@ import { useDashboardKPIs } from '@/hooks/use-analytics';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
 import { useDebounce } from '@/hooks/use-debounce';
 import { QueryErrorBanner } from '@/components/shared/QueryErrorBanner';
+import { SearchSelect } from '@/components/ui/SearchSelect';
 import { cn } from '@/lib/utils';
+
+const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }));
 
 export default function InventarioPage() {
   const router = useRouter();
@@ -100,24 +103,18 @@ export default function InventarioPage() {
             className="filter-input w-full"
           />
         </div>
-        <div className="relative">
-          <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-          <select
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              setPage(1);
-            }}
-            className="filter-select appearance-none pr-8"
-          >
-            <option value="">Todas las categorías</option>
-            {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SearchSelect
+          id="inventory-category"
+          value={category}
+          onChange={(v) => {
+            setCategory(v);
+            setPage(1);
+          }}
+          options={CATEGORY_OPTIONS}
+          placeholder="Todas las categorías"
+          emptyMessage="Ninguna categoría coincide"
+          className="w-full sm:w-56"
+        />
         <button
           type="button"
           onClick={() => {

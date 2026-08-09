@@ -17,6 +17,7 @@ import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
 import { formatCop } from '@/components/portal/portal-shared';
 import { cn } from '@/lib/utils';
+import { SearchSelect } from '@/components/ui/SearchSelect';
 
 interface Motorcycle {
   id: string;
@@ -281,18 +282,19 @@ export function PortalAIChatSheet({ open, onOpenChange, initialMessage }: Portal
           </div>
 
           {me?.motorcycles && me.motorcycles.length > 1 && (
-            <select
+            <SearchSelect
+              id="chat-moto"
               value={motoId}
-              onChange={(e) => setMotoId(e.target.value)}
-              className="portal-input mt-3 text-sm"
-            >
-              <option value="">Todas mis motos</option>
-              {me.motorcycles.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.placa} · {m.brand} {m.model}
-                </option>
-              ))}
-            </select>
+              onChange={setMotoId}
+              options={me.motorcycles.map((m) => ({
+                value: m.id,
+                label: m.placa,
+                hint: `${m.brand} ${m.model}`,
+              }))}
+              placeholder="Todas mis motos"
+              emptyMessage="Ninguna moto coincide"
+              className="mt-3"
+            />
           )}
         </header>
 

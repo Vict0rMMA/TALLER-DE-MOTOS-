@@ -7,6 +7,9 @@ import { productSchema, type ProductInput } from '@/validators/product.schema';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
+import { SearchSelect } from '@/components/ui/SearchSelect';
+
+const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }));
 
 interface ProductFormProps {
   defaultValues?: Partial<ProductInput>;
@@ -99,14 +102,21 @@ export function ProductForm({
           <input {...register('brand')} className={inputCls} placeholder="Mobil, Castrol… (opcional)" />
         </Field>
         <Field label="Categoría *" error={errors.category?.message}>
-          <select {...register('category')} className={inputCls}>
-            <option value="">Seleccionar…</option>
-            {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="category"
+            render={({ field }) => (
+              <SearchSelect
+                id="product-category"
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                options={CATEGORY_OPTIONS}
+                placeholder="Seleccionar…"
+                emptyMessage="Ninguna categoría coincide"
+                aria-invalid={!!errors.category}
+              />
+            )}
+          />
         </Field>
       </div>
 

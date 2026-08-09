@@ -36,6 +36,13 @@ function normalize(text: string): string {
 
 const MAX_VISIBLE = 50;
 
+/**
+ * Debajo de esto no se levanta el teclado del celular al abrir: en una lista
+ * de 2 o 3 opciones taparía justo lo que hay que elegir. El foco se mantiene
+ * igual, así que las flechas y Enter siguen funcionando en computador.
+ */
+const MOBILE_KEYBOARD_FROM = 8;
+
 export function SearchSelect({
   id,
   value,
@@ -183,6 +190,9 @@ export function SearchSelect({
             onPaste={onPaste}
             placeholder={selectedLabel || placeholder}
             autoComplete="off"
+            inputMode={
+              options.length >= MOBILE_KEYBOARD_FROM || onSearchChange ? 'search' : 'none'
+            }
             className="min-w-0 flex-1 bg-transparent text-text-primary placeholder:text-text-tertiary focus:outline-none"
           />
           {loading && <span className="shrink-0 text-xs text-text-tertiary">Buscando…</span>}

@@ -12,6 +12,8 @@ import { useProducts } from '@/hooks/use-products';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { SearchSelect } from '@/components/ui/SearchSelect';
 
+const SERVICE_TYPE_OPTIONS = SERVICE_TYPES.map((t) => ({ value: t.id, label: t.label }));
+
 interface ServiceFormProps {
   onSubmit: (data: ServiceInput) => void;
   isLoading?: boolean;
@@ -193,14 +195,21 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
       {step === 2 && (
         <div className="space-y-4">
           <Field label="Tipo de servicio *" error={errors.type?.message}>
-            <select {...register('type')} className={inputCls}>
-              <option value="">Seleccionar…</option>
-              {SERVICE_TYPES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="type"
+              render={({ field }) => (
+                <SearchSelect
+                  id="service-type"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  options={SERVICE_TYPE_OPTIONS}
+                  placeholder="Seleccionar…"
+                  emptyMessage="Ningún tipo coincide"
+                  aria-invalid={!!errors.type}
+                />
+              )}
+            />
           </Field>
           <Field label="Descripción" error={errors.description?.message}>
             <textarea
