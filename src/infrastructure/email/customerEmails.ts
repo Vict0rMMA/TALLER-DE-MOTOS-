@@ -175,5 +175,11 @@ export async function sendPortalWelcomeEmail(customerId: string, publicAppUrl: s
     publicAppUrl,
   });
 
-  await sendEmail(customer.email, `Tu cuenta en ${workshopName} ya está lista`, html);
+  // El nombre en el asunto evita que Gmail agrupe los correos de clientes
+  // distintos en una sola conversacion y pliegue los repetidos con "...".
+  await sendEmail(
+    customer.email,
+    `${firstName(customer.name)}, tu cuenta en ${workshopName} ya está lista`,
+    html,
+  );
 }
