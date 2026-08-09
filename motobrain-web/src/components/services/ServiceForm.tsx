@@ -2,7 +2,7 @@
 
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { serviceSchema, type ServiceInput } from '@/validators/service.schema';
 import { SERVICE_TYPES } from '@/lib/constants';
@@ -10,6 +10,7 @@ import { useCustomers } from '@/hooks/use-customers';
 import { useMotorcyclesByCustomer } from '@/hooks/use-motorcycles';
 import { useProducts } from '@/hooks/use-products';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
+import { SearchSelect } from '@/components/ui/SearchSelect';
 
 interface ServiceFormProps {
   onSubmit: (data: ServiceInput) => void;
@@ -55,13 +56,43 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
   const { fields, append, remove } = useFieldArray({ control, name: 'products' });
 
   const selectedCustomerId = watch('customerId');
-  const { data: customersData } = useCustomers({ limit: 100 });
+
+  // Lo que se escribe en cada buscador viaja al servidor: así se encuentran
+  // clientes y repuestos más allá de los primeros que trae la primera página.
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [productQuery, setProductQuery] = useState('');
+
+  const { data: customersData, isFetching: loadingCustomers } = useCustomers({
+    limit: 50,
+    search: customerQuery || undefined,
+  });
   const { data: motorcyclesData } = useMotorcyclesByCustomer(selectedCustomerId);
-  const { data: productsData } = useProducts({ limit: 100 });
+  const { data: productsData, isFetching: loadingProducts } = useProducts({
+    limit: 50,
+    search: productQuery || undefined,
+  });
 
   const customers = customersData?.data ?? [];
   const motorcycles = motorcyclesData?.data ?? [];
   const products = productsData?.data ?? [];
+
+  const customerOptions = useMemo(
+    () => customers.map((c) => ({ value: c.id, label: c.name, hint: c.cedula ?? undefined })),
+    [customers],
+  );
+  const motorcycleOptions = useMemo(
+    () => motorcycles.map((m) => ({ value: m.id, label: m.placa, hint: `${m.brand} ${m.model}` })),
+    [motorcycles],
+  );
+  const productOptions = useMemo(
+    () =>
+      products.map((p) => ({
+        value: p.id,
+        label: p.name,
+        hint: `Stock ${p.stock}${p.brand ? ` · ${p.brand}` : ''}`,
+      })),
+    [products],
+  );
 
   function nextStep(e: React.MouseEvent) {
     e.preventDefault();
@@ -92,30 +123,50 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
       {step === 1 && (
         <div className="space-y-4">
           <Field label="Cliente *" error={errors.customerId?.message}>
-            <select {...register('customerId')} className={inputCls}>
-              <option value="">Seleccionar cliente…</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} — {c.cedula}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="customerId"
+              render={({ field }) => (
+                <SearchSelect
+                  id="service-customer"
+                  value={field.value ?? ''}
+                  onChange={(v) => {
+                    field.onChange(v);
+                    setValue('motorcycleId', '');
+                  }}
+                  options={customerOptions}
+                  onSearchChange={setCustomerQuery}
+                  loading={loadingCustomers}
+                  placeholder="Busca por nombre o cédula…"
+                  emptyMessage="Ningún cliente coincide"
+                  aria-invalid={!!errors.customerId}
+                />
+              )}
+            />
           </Field>
           <Field label="Motocicleta *" error={errors.motorcycleId?.message}>
-            <select {...register('motorcycleId')} className={inputCls} disabled={!selectedCustomerId}>
-              <option value="">
-                {selectedCustomerId
-                  ? motorcycles.length === 0
-                    ? 'Este cliente no tiene motos registradas'
-                    : 'Seleccionar moto…'
-                  : 'Primero selecciona un cliente'}
-              </option>
-              {motorcycles.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.placa} — {m.brand} {m.model}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="motorcycleId"
+              render={({ field }) => (
+                <SearchSelect
+                  id="service-motorcycle"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  options={motorcycleOptions}
+                  disabled={!selectedCustomerId}
+                  placeholder={
+                    selectedCustomerId
+                      ? motorcycles.length === 0
+                        ? 'Este cliente no tiene motos registradas'
+                        : 'Busca por placa…'
+                      : 'Primero selecciona un cliente'
+                  }
+                  emptyMessage="Ninguna moto coincide"
+                  aria-invalid={!!errors.motorcycleId}
+                />
+              )}
+            />
             {selectedCustomerId && motorcycles.length === 0 && (
               <a
                 href={`/clientes/${selectedCustomerId}`}
@@ -207,28 +258,31 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
           )}
 
           {fields.map((field, index) => {
-            const productReg = register(`products.${index}.productId`);
             return (
             <div key={field.id} className="flex gap-2 items-start">
               <div className="flex-1 grid grid-cols-3 gap-2">
                 <div className="col-span-3 sm:col-span-1">
-                  <select
-                    {...productReg}
-                    onChange={(e) => {
-                      productReg.onChange(e);
-                      const prod = products.find((p) => p.id === e.target.value);
-                      // Autocompleta el precio de venta del repuesto (editable)
-                      if (prod) setValue(`products.${index}.unitPrice`, prod.price ?? 0);
-                    }}
-                    className={inputCls}
-                  >
-                    <option value="">Producto…</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (stock: {p.stock})
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    control={control}
+                    name={`products.${index}.productId`}
+                    render={({ field: productField }) => (
+                      <SearchSelect
+                        id={`service-product-${index}`}
+                        value={productField.value ?? ''}
+                        onChange={(v) => {
+                          productField.onChange(v);
+                          const prod = products.find((p) => p.id === v);
+                          // Autocompleta el precio de venta del repuesto (editable)
+                          if (prod) setValue(`products.${index}.unitPrice`, prod.price ?? 0);
+                        }}
+                        options={productOptions}
+                        onSearchChange={setProductQuery}
+                        loading={loadingProducts}
+                        placeholder="Busca el repuesto…"
+                        emptyMessage="Ningún repuesto coincide"
+                      />
+                    )}
+                  />
                 </div>
                 <input
                   {...register(`products.${index}.quantity`)}

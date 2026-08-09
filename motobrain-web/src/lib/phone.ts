@@ -1,11 +1,17 @@
-/** Extrae los 10 dígitos locales de un teléfono colombiano guardado o escrito a mano. */
+/**
+ * Extrae los 10 dígitos locales de un teléfono colombiano guardado o escrito a mano.
+ *
+ * Solo quita el indicativo 57 cuando viene marcado como tal: con `+` delante, o
+ * completo a 12 dígitos. Un 57 al principio de algo a medio escribir son dígitos
+ * que tecleó el usuario, no el país — quitarlos duplicaba lo que se veía en pantalla.
+ */
 export function extractColombiaLocalPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
-  if (digits.startsWith('57') && digits.length >= 12) {
+  if (phone.trim().startsWith('+') && digits.startsWith('57')) {
     return digits.slice(2, 12);
   }
-  if (digits.length >= 10) {
-    return digits.slice(-10);
+  if (digits.length === 12 && digits.startsWith('57')) {
+    return digits.slice(2, 12);
   }
   return digits.slice(0, 10);
 }
