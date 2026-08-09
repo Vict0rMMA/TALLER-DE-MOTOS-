@@ -114,10 +114,16 @@ export function buildPortalWelcomeHtml(params: {
       </tr>
     </table>
 
-    <p style="margin:0 0 24px;font-size:13px;line-height:1.7;color:#737373">
-      ¿El botón no te abre? Copia este enlace en tu navegador:<br>
-      <a href="${loginUrl}" class="mb-link" style="color:#00c77a;text-decoration:none">${loginUrl}</a>
-    </p>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 26px;background:#0e1a15;border:1px solid #1d4c3b;border-radius:8px">
+      <tr>
+        <td style="padding:14px 18px">
+          <p style="margin:0 0 5px;font-size:13px;line-height:1.5;color:#8a8a8a">
+            ¿El botón no te abre? Copia este enlace en tu navegador:
+          </p>
+          <a href="${loginUrl}" class="mb-link" style="font-size:14px;font-weight:600;color:#00c77a;text-decoration:none;word-break:break-all">${loginUrl}</a>
+        </td>
+      </tr>
+    </table>
 
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 26px">
       <tr>
