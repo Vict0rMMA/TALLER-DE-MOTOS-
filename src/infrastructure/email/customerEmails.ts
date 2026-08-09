@@ -39,7 +39,6 @@ export function buildPortalWelcomeHtml(params: {
     workshopName,
     workshopPhone,
     workshopAddress,
-    preheader: `Entra con tu celular ${displayPhone(phone)} y tu cédula.`,
     content: `
     <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">Hola ${firstName(customerName)},</p>
     <h1 style="margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">Tu cuenta ya está lista</h1>

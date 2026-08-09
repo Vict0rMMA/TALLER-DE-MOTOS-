@@ -10,9 +10,8 @@ export function letter(params: {
   workshopName: string;
   workshopPhone?: string | null;
   workshopAddress?: string | null;
-  preheader?: string;
 }): string {
-  const { content, workshopName, workshopPhone, workshopAddress, preheader } = params;
+  const { content, workshopName, workshopPhone, workshopAddress } = params;
   const font =
     "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
@@ -24,20 +23,8 @@ export function letter(params: {
   <meta name="color-scheme" content="dark">
   <meta name="supported-color-schemes" content="dark">
   <style>
-    /* Mejoras progresivas: Gmail y Outlook las descartan y el correo
-       sigue viéndose bien con los estilos en línea. */
-    @keyframes mbGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(0,199,122,0.35); }
-      50%      { box-shadow: 0 0 0 10px rgba(0,199,122,0); }
-    }
-    .mb-btn {
-      box-shadow: 0 2px 14px rgba(0,199,122,0.22);
-      animation: mbGlow 2.6s ease-out infinite;
-      transition: background-color .15s ease;
-    }
-    .mb-btn:hover { background-color: #00b06c !important; }
-    .mb-link:hover { text-decoration: underline !important; }
-    @media (prefers-reduced-motion: reduce) { .mb-btn { animation: none; } }
+    /* Solo ajustes de ancho. Nada oculto ni animado: Gmail en el celular
+       marcaba esas partes con "..." y partia el correo en pedazos. */
     @media only screen and (max-width: 600px) {
       .mb-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
       .mb-pad { padding-left: 22px !important; padding-right: 22px !important; }
@@ -45,11 +32,6 @@ export function letter(params: {
   </style>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:${font};-webkit-font-smoothing:antialiased">
-  ${
-    preheader
-      ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${preheader}</div>`
-      : ''
-  }
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0a0a">
     <tr>
       <td align="center" style="padding:40px 16px">
