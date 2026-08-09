@@ -1,12 +1,18 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import type { Customer } from '@/types/entities';
 import type { ApiListResponse } from '@/types/api.types';
 import type { CustomerInput } from '@/validators/customer.schema';
 
 export const CUSTOMERS_KEY = ['customers'] as const;
+
+/** Refresca la lista de clientes y los KPIs del dashboard que los cuentan. */
+async function refreshCustomers(qc: QueryClient) {
+  await qc.invalidateQueries({ queryKey: CUSTOMERS_KEY, refetchType: 'all' });
+  void qc.invalidateQueries({ queryKey: ['analytics'], refetchType: 'all' });
+}
 
 interface CustomerFilters {
   page?: number;
@@ -40,7 +46,7 @@ export function useCreateCustomer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CustomerInput) => api.post<Customer>('/customers', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
+    onSuccess: () => refreshCustomers(qc),
   });
 }
 
@@ -48,7 +54,7 @@ export function useUpdateCustomer(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<CustomerInput>) => api.put<Customer>(`/customers/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
+    onSuccess: () => refreshCustomers(qc),
   });
 }
 
@@ -56,7 +62,7 @@ export function useDeleteCustomer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/customers/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
+    onSuccess: () => refreshCustomers(qc),
   });
 }
 

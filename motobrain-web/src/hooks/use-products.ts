@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Product } from '@/types/entities';
@@ -8,6 +8,17 @@ import type { ApiListResponse } from '@/types/api.types';
 import type { ProductInput } from '@/validators/product.schema';
 
 export const PRODUCTS_KEY = ['products'] as const;
+
+/**
+ * Tras crear, editar o borrar hay que refrescar dos cosas: la lista y las
+ * tarjetas de arriba (Productos totales, Stock bajo), que salen de analytics.
+ * `refetchType: 'all'` alcanza tambien a las consultas de pantallas que en ese
+ * momento no estan montadas — si no, al volver a inventario seguia el dato viejo.
+ */
+async function refreshProducts(qc: QueryClient) {
+  await qc.invalidateQueries({ queryKey: PRODUCTS_KEY, refetchType: 'all' });
+  void qc.invalidateQueries({ queryKey: ['analytics'], refetchType: 'all' });
+}
 
 const PRODUCTS_STALE = 2 * 60_000;
 const PRODUCTS_GC = 5 * 60_000;
@@ -97,7 +108,7 @@ export function useCreateProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: ProductInput) => api.post<Product>('/inventory', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+    onSuccess: () => refreshProducts(qc),
   });
 }
 
@@ -105,7 +116,7 @@ export function useUpdateProduct(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<ProductInput>) => api.put<Product>(`/inventory/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+    onSuccess: () => refreshProducts(qc),
   });
 }
 
@@ -113,6 +124,6 @@ export function useDeleteProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/inventory/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+    onSuccess: () => refreshProducts(qc),
   });
 }

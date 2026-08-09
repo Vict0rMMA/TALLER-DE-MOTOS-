@@ -28,7 +28,7 @@ function PortalAccessSection({
     mutationFn: () => api.put(`/portal/enable/${customerId}`, {}),
     onSuccess: () => {
       toast.success('Portal activado', { description: 'El cliente entra con su celular y cédula.' });
-      qc.invalidateQueries({ queryKey: ['customer', customerId] });
+      qc.invalidateQueries({ queryKey: ['customers'], refetchType: 'all' });
     },
     onError: (e) => toast.error('Error', { description: (e as Error).message }),
   });
@@ -37,7 +37,7 @@ function PortalAccessSection({
     mutationFn: () => api.delete(`/portal/disable/${customerId}`),
     onSuccess: () => {
       toast.success('Acceso desactivado');
-      qc.invalidateQueries({ queryKey: ['customer', customerId] });
+      qc.invalidateQueries({ queryKey: ['customers'], refetchType: 'all' });
     },
     onError: (e) => toast.error('Error', { description: (e as Error).message }),
   });
