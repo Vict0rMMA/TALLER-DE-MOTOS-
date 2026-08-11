@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useLogin } from '@/hooks/use-auth';
 import { portalApi } from '@/lib/portal-api-client';
-import { getApiMisconfigMessage, isApiMisconfigured } from '@/lib/api-base';
+import { getApiMisconfigMessage, isApiMisconfigured, resolveApiBase } from '@/lib/api-base';
 import { buildPortalLoginPayload, formatPortalLoginError } from '@/lib/portal-login';
 import { usePortalAuthStore, type PortalCustomer } from '@/stores/portal-auth-store';
 import { AuthMarketingPanel } from '@/components/auth/AuthMarketingPanel';
@@ -160,7 +160,10 @@ function LoginCard({
       setServerStatus('ok');
       return;
     }
-    fetch('/api/backend/health', { cache: 'no-store' })
+    // Se pregunta al backend que usa el resto de la app, no al proxy
+    // /api/backend: ese solo servia para este chequeo, devolvia 502 y hacia
+    // creer que el sistema estaba caido cuando funcionaba perfecto.
+    fetch(`${resolveApiBase()}/health`, { cache: 'no-store' })
       .then(async (r) => {
         if (!r.ok) {
           setServerStatus('down');
