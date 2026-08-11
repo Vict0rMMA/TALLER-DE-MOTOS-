@@ -83,6 +83,21 @@ function normalizeCedula(raw: string): string {
   return raw.replace(/[\s.\-]/g, '');
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Limpia espacios y caracteres invisibles que suele arrastrar un copiar/pegar. */
+function normalizeEmail(raw: string): string {
+  return raw.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim();
+}
+
+/** Mensaje de error del email, o cadena vacía si está bien. */
+function emailError(raw: string): string {
+  const email = normalizeEmail(raw);
+  if (!email) return 'El email es requerido';
+  if (!EMAIL_RE.test(email)) return 'Email inválido (ej: juan@gmail.com)';
+  return '';
+}
+
 function normalizeName(raw: string): string {
   // Colapsa espacios dobles, no permite solo números
   return raw.replace(/\s{2,}/g, ' ');
@@ -120,8 +135,8 @@ function PortalRegisterInner() {
     if (!cedula) errs.cedula = 'Ingresa tu número de cédula';
     else if (cedula.length < 4) errs.cedula = 'Cédula muy corta';
 
-    if (!s1.email.trim()) errs.email = 'El email es requerido';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim())) errs.email = 'Email inválido (ej: juan@gmail.com)';
+    const emailErr = emailError(s1.email);
+    if (emailErr) errs.email = emailErr;
 
     setS1Errors(errs);
     return Object.keys(errs).length === 0;
@@ -181,7 +196,7 @@ function PortalRegisterInner() {
         name: s1.name.trim(),
         phone: normalizePhone(s1.phone),
         cedula: normalizeCedula(s1.cedula),
-        email: s1.email.trim().toLowerCase(),
+        email: normalizeEmail(s1.email).toLowerCase(),
         moto: {
           placa: s2.placa.toUpperCase().replace(/[\s\-]/g, ''),
           brand: s2.brand,
@@ -300,7 +315,12 @@ function PortalRegisterInner() {
                     type="email"
                     placeholder="juan@email.com"
                     value={s1.email}
-                    onChange={(e) => { setS1((p) => ({ ...p, email: e.target.value })); setS1Errors((p) => ({ ...p, email: '' })); }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setS1((p) => ({ ...p, email: value }));
+                      // Solo mientras ya hay un error visible: se va apenas el correo sirve.
+                      setS1Errors((p) => (p.email ? { ...p, email: emailError(value) } : p));
+                    }}
                     className="auth-input"
                     autoComplete="email"
                   />

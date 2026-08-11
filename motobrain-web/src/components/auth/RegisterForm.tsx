@@ -81,8 +81,17 @@ export function RegisterForm() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-bg-primary pattern-grid flex flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+    // Mismo fondo que el login y el registro de clientes: era la unica
+    // pantalla de acceso que se quedo con el patron plano.
+    <div className="auth-shell relative min-h-[100dvh] overflow-hidden font-sans">
+      <div className="auth-bg-layer" aria-hidden />
+      <div className="auth-bg-vignette" aria-hidden />
+
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-emerald-500/8 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-48 w-48 rounded-full bg-cyan-500/6 blur-3xl" />
+
+      <div className="relative z-[1] flex min-h-[100dvh] flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
         <div className="flex flex-col items-center gap-3 mb-8">
           <BrandLogo className="justify-center" />
         </div>
@@ -245,6 +254,7 @@ export function RegisterForm() {
             ¿Ya tienes cuenta?{' '}
             <Link href="/login" className="text-accent hover:underline font-medium">Inicia sesión</Link>
           </p>
+        </div>
         </div>
       </div>
     </div>
