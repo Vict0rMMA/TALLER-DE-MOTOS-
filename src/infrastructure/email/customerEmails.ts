@@ -150,22 +150,52 @@ export function buildPortalWelcomeHtml(params: {
   });
 }
 
+export const PORTAL_WELCOME_TYPE = 'portal_welcome';
+
+export type WelcomeEmailResult =
+  | { ok: true }
+  | { ok: false; reason: 'sin_smtp' | 'sin_email' | 'sin_cedula' | 'portal_inactivo' | 'error'; detail?: string };
+
 /**
  * Da la bienvenida al portal: le dice al cliente que ya puede seguir el proceso
- * de su moto y con qué datos entra. Silencioso si falta email, cédula o SMTP.
+ * de su moto y con qué datos entra.
+ *
+ * Deja constancia en Notification para que el taller pueda ver desde la ficha
+ * si el correo salió, cuándo, y qué falló si no salió.
  */
-export async function sendPortalWelcomeEmail(customerId: string, publicAppUrl: string) {
-  if (!isEmailConfigured()) return;
-
+export async function sendPortalWelcomeEmail(
+  customerId: string,
+  publicAppUrl: string,
+): Promise<WelcomeEmailResult> {
   const customer = await (prisma as any).customer.findUnique({
     where: { id: customerId },
     include: { workshop: { select: { name: true, phone: true, address: true } } },
   });
-
-  // Sin correo no hay a dónde enviar; sin cédula el portal lo rechazaría al entrar.
-  if (!customer?.email?.trim() || !customer.cedula?.trim() || !customer.portalActive) return;
+  if (!customer) return { ok: false, reason: 'error', detail: 'Cliente no encontrado' };
 
   const workshopName = customer.workshop?.name ?? 'MotoBrain Taller';
+
+  async function record(status: string, message: string, errorMsg?: string) {
+    await (prisma as any).notification.create({
+      data: {
+        workshopId: customer.workshopId,
+        customerId: customer.id,
+        type: PORTAL_WELCOME_TYPE,
+        status,
+        phone: customer.email ?? customer.phone,
+        message,
+        errorMsg,
+      },
+    });
+  }
+
+  if (!isEmailConfigured()) return { ok: false, reason: 'sin_smtp' };
+  // Sin correo no hay a dónde enviar; sin cédula el portal lo rechazaría al entrar.
+  if (!customer.email?.trim()) return { ok: false, reason: 'sin_email' };
+  if (!customer.cedula?.trim()) return { ok: false, reason: 'sin_cedula' };
+  if (!customer.portalActive) return { ok: false, reason: 'portal_inactivo' };
+
+  const subject = `${firstName(customer.name)}, tu cuenta en ${workshopName} ya está lista`;
   const html = buildPortalWelcomeHtml({
     customerName: customer.name,
     phone: customer.phone,
@@ -175,11 +205,15 @@ export async function sendPortalWelcomeEmail(customerId: string, publicAppUrl: s
     publicAppUrl,
   });
 
-  // El nombre en el asunto evita que Gmail agrupe los correos de clientes
-  // distintos en una sola conversacion y pliegue los repetidos con "...".
-  await sendEmail(
-    customer.email,
-    `${firstName(customer.name)}, tu cuenta en ${workshopName} ya está lista`,
-    html,
-  );
+  try {
+    // El nombre en el asunto evita que Gmail agrupe los correos de clientes
+    // distintos en una sola conversacion y pliegue los repetidos con "...".
+    await sendEmail(customer.email, subject, html);
+    await record('sent', `Correo de acceso al portal enviado a ${customer.email}`);
+    return { ok: true };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'Error desconocido';
+    await record('failed', `No se pudo enviar el correo de acceso a ${customer.email}`, detail);
+    return { ok: false, reason: 'error', detail };
+  }
 }

@@ -6,7 +6,7 @@ import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 import { normalizeCedula } from '../../infrastructure/phone/cedula';
 import { uploadMotoPhoto } from '../../infrastructure/storage/supabaseStorage';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
-import { sendPortalWelcomeEmail } from '../../infrastructure/email/customerEmails';
+import { sendPortalWelcomeEmail, PORTAL_WELCOME_TYPE } from '../../infrastructure/email/customerEmails';
 import { env } from '../../infrastructure/config/env';
 
 export const portalRegister = async (req: Request, res: Response, next: NextFunction) => {
@@ -505,6 +505,52 @@ export const enablePortal = async (req: Request, res: Response, next: NextFuncti
     sendPortalWelcomeEmail(customerId, env.PUBLIC_APP_URL).catch(() => {});
 
     res.json({ ok: true, message: 'Portal activado. El cliente entra con su celular y cédula.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const WELCOME_EMAIL_ERRORS: Record<string, string> = {
+  sin_smtp: 'Falta configurar el correo del taller (GMAIL_USER y GMAIL_APP_PASSWORD).',
+  sin_email: 'El cliente no tiene correo registrado.',
+  sin_cedula: 'El cliente no tiene cédula, y es la contraseña del portal.',
+  portal_inactivo: 'Primero activa el portal del cliente.',
+};
+
+/** Último intento de envío del correo de acceso, para mostrarlo en la ficha. */
+export const getWelcomeEmailStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const customerId = String(req.params.customerId);
+    const last = await prisma.notification.findFirst({
+      where: { customerId, workshopId: req.workshopId, type: PORTAL_WELCOME_TYPE },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!last) return res.json({ status: 'never', sentAt: null, error: null });
+    res.json({ status: last.status, sentAt: last.createdAt, error: last.errorMsg });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Reenvía el correo de acceso al portal desde la ficha del cliente. */
+export const resendWelcomeEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const customerId = String(req.params.customerId);
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, workshopId: req.workshopId },
+    });
+    if (!customer) return next(new DomainError('Cliente no encontrado', 404));
+
+    const result = await sendPortalWelcomeEmail(customerId, env.PUBLIC_APP_URL);
+    if (!result.ok) {
+      const msg =
+        WELCOME_EMAIL_ERRORS[result.reason] ??
+        `No se pudo enviar el correo. ${result.detail ?? ''}`.trim();
+      return next(new DomainError(msg, 400));
+    }
+
+    res.json({ ok: true, sentAt: new Date().toISOString(), email: customer.email });
   } catch (err) {
     next(err);
   }

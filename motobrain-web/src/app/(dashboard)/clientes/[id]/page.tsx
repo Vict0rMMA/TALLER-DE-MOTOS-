@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Smartphone, ShieldCheck, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Smartphone, ShieldCheck, ShieldOff, Mail, MailCheck, MailX, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { MotorcycleCard, AddMotorcycleCard } from '@/components/customers/MotorcycleCard';
@@ -17,10 +17,12 @@ function PortalAccessSection({
   customerId,
   portalActive,
   hasCedula,
+  hasEmail,
 }: {
   customerId: string;
   portalActive: boolean;
   hasCedula: boolean;
+  hasEmail: boolean;
 }) {
   const qc = useQueryClient();
 
@@ -84,6 +86,86 @@ function PortalAccessSection({
           )}
           Activar portal
         </button>
+      )}
+
+      {portalActive && <WelcomeEmailStatus customerId={customerId} hasEmail={hasEmail} />}
+    </div>
+  );
+}
+
+/** Estado del correo de acceso: si salió, cuándo, y botón para reenviarlo. */
+function WelcomeEmailStatus({ customerId, hasEmail }: { customerId: string; hasEmail: boolean }) {
+  const qc = useQueryClient();
+  const statusKey = ['welcome-email', customerId];
+
+  const { data, isLoading } = useQuery<{
+    status: 'never' | 'sent' | 'failed';
+    sentAt: string | null;
+    error: string | null;
+  }>({
+    queryKey: statusKey,
+    queryFn: () => api.get(`/portal/welcome-email/${customerId}`),
+  });
+
+  const resend = useMutation({
+    mutationFn: () => api.post(`/portal/welcome-email/${customerId}`, {}),
+    onSuccess: () => {
+      toast.success('Correo enviado', { description: 'El cliente ya tiene sus datos de acceso.' });
+      qc.invalidateQueries({ queryKey: statusKey });
+    },
+    onError: (e) => toast.error('No se envió', { description: (e as Error).message }),
+  });
+
+  const sentAt = data?.sentAt
+    ? new Date(data.sentAt).toLocaleString('es-CO', {
+        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      })
+    : null;
+
+  return (
+    <div className="rounded-lg border border-border bg-bg-elevated/50 p-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        {isLoading ? (
+          <span className="text-xs text-text-tertiary">Consultando…</span>
+        ) : data?.status === 'sent' ? (
+          <>
+            <MailCheck className="h-4 w-4 shrink-0 text-success" />
+            <span className="text-xs text-text-secondary">
+              Correo de acceso enviado el <span className="text-text-primary">{sentAt}</span>
+            </span>
+          </>
+        ) : data?.status === 'failed' ? (
+          <>
+            <MailX className="h-4 w-4 shrink-0 text-danger" />
+            <span className="text-xs text-danger">Falló el {sentAt}</span>
+          </>
+        ) : (
+          <>
+            <Mail className="h-4 w-4 shrink-0 text-text-tertiary" />
+            <span className="text-xs text-text-tertiary">
+              {hasEmail
+                ? 'Todavía no se le ha enviado el correo de acceso'
+                : 'Sin correo registrado — agrégalo arriba para poder enviarlo'}
+            </span>
+          </>
+        )}
+
+        <button
+          onClick={() => resend.mutate()}
+          disabled={resend.isPending || !hasEmail}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+        >
+          {resend.isPending ? (
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <Send className="h-3 w-3" />
+          )}
+          {data?.status === 'sent' ? 'Reenviar' : 'Enviar correo'}
+        </button>
+      </div>
+
+      {data?.status === 'failed' && data.error && (
+        <p className="mt-1.5 text-[11px] text-text-tertiary">{data.error}</p>
       )}
     </div>
   );
@@ -169,6 +251,7 @@ export default function ClienteDetailPage({ params }: { params: { id: string } }
         customerId={id}
         portalActive={customer.portalActive ?? false}
         hasCedula={!!customer.cedula?.trim()}
+        hasEmail={!!customer.email?.trim()}
       />
 
       <div>

@@ -29,5 +29,7 @@ router.patch('/motorcycles/:id/photo', authenticateCustomer, ctrl.portalUpdateMo
 
 router.put('/enable/:customerId', authenticate, tenantMiddleware, ctrl.enablePortal);
 router.delete('/disable/:customerId', authenticate, tenantMiddleware, ctrl.disablePortal);
+router.get('/welcome-email/:customerId', authenticate, tenantMiddleware, ctrl.getWelcomeEmailStatus);
+router.post('/welcome-email/:customerId', authenticate, tenantMiddleware, ctrl.resendWelcomeEmail);
 
 export default router;
