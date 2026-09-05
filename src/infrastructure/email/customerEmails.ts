@@ -150,6 +150,48 @@ export function buildPortalWelcomeHtml(params: {
   });
 }
 
+/** Misma carta en texto plano. Va junto al HTML en cada envío. */
+export function buildPortalWelcomeText(params: {
+  customerName: string;
+  phone: string;
+  workshopName: string;
+  workshopPhone?: string | null;
+  publicAppUrl: string;
+}): string {
+  const { customerName, phone, workshopName, workshopPhone, publicAppUrl } = params;
+  return [
+    `Hola ${firstName(customerName)},`,
+    '',
+    'TU CUENTA YA ESTÁ LISTA',
+    '',
+    `Gracias por registrarte en ${workshopName}. Te dejamos todo listo para que`,
+    'estés pendiente de tu moto sin tener que llamar a preguntar.',
+    '',
+    'Desde tu cuenta puedes:',
+    '- Ver en qué va tu servicio, paso a paso',
+    '- Consultar todo lo que le hemos hecho a tu moto',
+    '- Agendar tu próxima cita cuando la necesites',
+    '- Preguntarle a nuestro asistente sobre tu moto',
+    '',
+    'CÓMO ENTRAR',
+    `1. Abre ${publicAppUrl}/login`,
+    '2. Elige la pestaña "Soy cliente"',
+    '3. Digita estos dos datos:',
+    `     Celular:    ${displayPhone(phone)}`,
+    '     Contraseña: tu número de cédula (solo los números)',
+    '',
+    'Ábrela desde el celular y agrégala a la pantalla de inicio para entrar de una.',
+    'Tu cédula es tu clave: nunca te la vamos a pedir por teléfono ni por WhatsApp.',
+    '',
+    'Nos alegra tenerte con nosotros. Cualquier duda nos escribes.',
+    `Equipo de ${workshopName}`,
+    workshopPhone ? `Tel: ${workshopPhone}` : '',
+  ]
+    .filter((l) => l !== null)
+    .join('\n')
+    .trim();
+}
+
 export const PORTAL_WELCOME_TYPE = 'portal_welcome';
 
 export type WelcomeEmailResult =
@@ -208,7 +250,14 @@ export async function sendPortalWelcomeEmail(
   try {
     // El nombre en el asunto evita que Gmail agrupe los correos de clientes
     // distintos en una sola conversacion y pliegue los repetidos con "...".
-    await sendEmail(customer.email, subject, html);
+    const text = buildPortalWelcomeText({
+      customerName: customer.name,
+      phone: customer.phone,
+      workshopName,
+      workshopPhone: customer.workshop?.phone,
+      publicAppUrl,
+    });
+    await sendEmail(customer.email, subject, html, undefined, text);
     await record('sent', `Correo de acceso al portal enviado a ${customer.email}`);
     return { ok: true };
   } catch (err) {

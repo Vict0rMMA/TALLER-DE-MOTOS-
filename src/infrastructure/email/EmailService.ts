@@ -10,11 +10,32 @@ function createTransport() {
   });
 }
 
+/** Versión en texto de último recurso, por si no se pasa una escrita a mano. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<head[\s\S]*?<\/head>/gi, '')
+    .replace(/<\/(p|div|tr|h1|h2|h3|li)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#8226;/g, '-')
+    .replace(/\n{3,}/g, '\n\n')
+    .split('\n')
+    .map((l) => l.trim())
+    .join('\n')
+    .trim();
+}
+
 export async function sendEmail(
   to: string,
   subject: string,
   html: string,
   attachments?: { filename: string; content: Buffer; contentType: string }[],
+  /** Versión en texto plano. Su ausencia es de los motivos más citados para
+   *  marcar un correo como spam: los legítimos casi siempre llevan las dos. */
+  text?: string,
 ): Promise<void> {
   const transport = createTransport();
   if (!transport) throw new Error('GMAIL_USER o GMAIL_APP_PASSWORD no configurados');
@@ -23,6 +44,7 @@ export async function sendEmail(
     to,
     subject,
     html,
+    text: text?.trim() || htmlToText(html),
     attachments,
   });
 }
