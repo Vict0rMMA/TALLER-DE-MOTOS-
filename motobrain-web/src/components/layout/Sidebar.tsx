@@ -9,6 +9,7 @@ import {
   Wrench,
   Brain,
   BarChart3,
+  Receipt,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +37,7 @@ const TOOLS_ALL = [
   { href: '/consultas', label: 'Consultas', icon: MessageSquare, ownerOnly: false, consultaBadge: true },
   { href: '/citas', label: 'Citas', icon: Calendar, ownerOnly: false, appointmentBadge: true },
   { href: '/analitica', label: 'Analítica', icon: BarChart3, ownerOnly: true },
+  { href: '/facturas', label: 'Facturas', icon: Receipt, ownerOnly: true },
 ] as const;
 
 const ROLE_LABELS: Record<string, string> = {

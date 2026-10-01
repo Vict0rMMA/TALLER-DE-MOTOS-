@@ -45,6 +45,67 @@ function mapServiceRow(r: any) {
   };
 }
 
+export const listInvoices = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const q = req.query as Record<string, string>;
+    const page = Math.max(1, Number(q.page ?? 1));
+    const limit = Math.min(100, Number(q.limit ?? 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      workshopId: req.workshopId!,
+      status: 'closed',
+      invoiceNumber: { not: null },
+    };
+    if (q.from || q.to) {
+      where.closedAt = {};
+      if (q.from) where.closedAt.gte = new Date(q.from);
+      if (q.to) where.closedAt.lte = new Date(`${q.to}T23:59:59.999`);
+    }
+    if (q.q) {
+      where.motorcycle = {
+        OR: [
+          { placa: { contains: q.q, mode: 'insensitive' } },
+          { customer: { name: { contains: q.q, mode: 'insensitive' } } },
+        ],
+      };
+    }
+
+    const [rows, total, totalRevenue] = await Promise.all([
+      (prisma as any).service.findMany({
+        where,
+        orderBy: { invoiceNumber: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          motorcycle: { include: { customer: { select: { name: true } } } },
+          mechanic: { select: { name: true } },
+        },
+      }),
+      (prisma as any).service.count({ where }),
+      (prisma as any).service.aggregate({ where, _sum: { totalCost: true } }),
+    ]);
+
+    res.json({
+      data: rows.map((r: any) => ({
+        id: r.id,
+        invoiceNumber: r.invoiceNumber,
+        closedAt: r.closedAt,
+        customerName: r.motorcycle?.customer?.name ?? undefined,
+        placa: r.motorcycle?.placa ?? undefined,
+        mechanicName: r.mechanic?.name ?? undefined,
+        total: Number(r.totalCost ?? 0),
+        discount: Number(r.discount ?? 0),
+        paymentMethod: r.paymentMethod ?? undefined,
+      })),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      totalRevenue: Number(totalRevenue._sum.totalCost ?? 0),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
 export const listServices = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = req.query as Record<string, string>;

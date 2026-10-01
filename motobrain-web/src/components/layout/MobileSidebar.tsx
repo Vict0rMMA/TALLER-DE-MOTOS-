@@ -10,6 +10,7 @@ import {
   Wrench,
   Brain,
   BarChart3,
+  Receipt,
   Settings,
   LogOut,
   MessageSquare,
@@ -31,10 +32,11 @@ const PRINCIPAL = [
 ] as const;
 
 const TOOLS = [
-  { href: '/diagnostico', label: 'Diagnóstico', icon: Brain },
-  { href: '/consultas', label: 'Consultas', icon: MessageSquare, consultaBadge: true },
-  { href: '/citas', label: 'Citas', icon: Calendar, appointmentBadge: true },
-  { href: '/analitica', label: 'Analítica', icon: BarChart3 },
+  { href: '/diagnostico', label: 'Diagnóstico', icon: Brain, ownerOnly: false },
+  { href: '/consultas', label: 'Consultas', icon: MessageSquare, consultaBadge: true, ownerOnly: false },
+  { href: '/citas', label: 'Citas', icon: Calendar, appointmentBadge: true, ownerOnly: false },
+  { href: '/analitica', label: 'Analítica', icon: BarChart3, ownerOnly: true },
+  { href: '/facturas', label: 'Facturas', icon: Receipt, ownerOnly: true },
 ] as const;
 
 export function MobileSidebar() {
@@ -66,6 +68,8 @@ export function MobileSidebar() {
   }, [isOpen]);
 
   const close = () => setOpen(false);
+  const isOwner = user?.role === 'owner';
+  const visibleTools = TOOLS.filter((t) => !t.ownerOnly || isOwner);
   const roleLabel =
     user?.role === 'owner' ? 'Propietario' : user?.role === 'mechanic' ? 'Mecánico' : (user?.role ?? '');
 
@@ -126,7 +130,7 @@ export function MobileSidebar() {
             );
           })}
           <p className="sidebar-section-label">Herramientas</p>
-          {TOOLS.map((item) => {
+          {visibleTools.map((item) => {
             const Icon = item.icon;
             const active = pathname.startsWith(item.href);
             const badge =
