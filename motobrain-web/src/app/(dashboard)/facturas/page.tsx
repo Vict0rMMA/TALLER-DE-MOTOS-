@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Receipt, Search, FileText } from 'lucide-react';
+import { Receipt, Search, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { KPICard } from '@/components/dashboard/KPICard';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
 import { useInvoices } from '@/hooks/use-invoices';
 import { useAuthStore } from '@/stores/auth-store';
+import { formatCOP } from '@/lib/utils';
 
 const PAYMENT_LABELS: Record<string, string> = {
   efectivo: 'Efectivo',
@@ -17,6 +17,23 @@ const PAYMENT_LABELS: Record<string, string> = {
   tarjeta: 'Tarjeta',
   otro: 'Otro',
 };
+
+function InvoiceTag({ n }: { n: number }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-accent">
+      #{n}
+    </span>
+  );
+}
+
+function PaymentTag({ method }: { method?: string }) {
+  if (!method) return <span className="text-text-tertiary">—</span>;
+  return (
+    <span className="inline-flex items-center rounded-full bg-bg-elevated px-2.5 py-0.5 text-xs font-medium text-text-secondary">
+      {PAYMENT_LABELS[method] ?? method}
+    </span>
+  );
+}
 
 export default function FacturasPage() {
   const user = useAuthStore((s) => s.user);
@@ -30,6 +47,9 @@ export default function FacturasPage() {
   const invoices = data?.data ?? [];
   const pagination = data?.pagination;
   const totalRevenue = data?.totalRevenue ?? 0;
+  const totalCount = pagination?.total ?? 0;
+  const average = totalCount > 0 ? totalRevenue / totalCount : 0;
+  const hasFilters = Boolean(search || from || to);
 
   if (user && user.role !== 'owner') {
     return (
@@ -48,53 +68,75 @@ export default function FacturasPage() {
     setPage(1);
   }
 
+  function clearFilters() {
+    setQ('');
+    setSearch('');
+    setFrom('');
+    setTo('');
+    setPage(1);
+  }
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Facturas" description={`${pagination?.total ?? 0} facturas emitidas`} />
+      <PageHeader title="Facturas" description={`${totalCount} ${totalCount === 1 ? 'factura emitida' : 'facturas emitidas'}`} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-        <KPICard title="Facturas (filtro actual)" value={pagination?.total ?? 0} icon={FileText} variant="default" />
-        <KPICard title="Total facturado" value={<MoneyDisplay value={totalRevenue} responsive={false} />} icon={Receipt} variant="accent" />
-      </div>
-
-      <div className="glass-card flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:flex-wrap">
-        <div className="flex-1 min-w-[180px]">
-          <label className="mb-1 block text-xs font-medium text-text-tertiary">Cliente o placa</label>
-          <div className="flex gap-2">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && applySearch()}
-              placeholder="Buscar..."
-              className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
-            />
-            <button
-              onClick={applySearch}
-              className="shrink-0 rounded-lg border border-border px-3 py-2 text-text-secondary hover:border-accent hover:text-accent transition-colors"
-              title="Buscar"
-            >
-              <Search className="h-4 w-4" />
-            </button>
+      <div className="glass-card-glow relative overflow-hidden rounded-[14px] p-5 sm:p-6">
+        <Receipt className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 text-accent/[0.06]" strokeWidth={1} />
+        <div className="relative grid grid-cols-3 divide-x divide-border">
+          <div className="pr-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Facturas</p>
+            <p className="mt-1.5 text-2xl font-semibold tabular-nums text-text-primary sm:text-3xl">{totalCount}</p>
+          </div>
+          <div className="px-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Total facturado</p>
+            <p className="mt-1.5 truncate text-2xl font-semibold tabular-nums text-accent sm:text-3xl">
+              {formatCOP(totalRevenue)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Promedio</p>
+            <p className="mt-1.5 truncate text-2xl font-semibold tabular-nums text-text-primary sm:text-3xl">{formatCOP(average)}</p>
           </div>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-text-tertiary">Desde</label>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+            onBlur={applySearch}
+            placeholder="Buscar por cliente o placa"
+            className="w-full rounded-lg border border-border bg-bg-secondary py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-2">
           <input
             type="date"
             value={from}
+            aria-label="Desde"
             onChange={(e) => { setFrom(e.target.value); setPage(1); }}
-            className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
+            className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-secondary focus:border-accent focus:outline-none"
           />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-text-tertiary">Hasta</label>
+          <span className="text-xs text-text-tertiary">—</span>
           <input
             type="date"
             value={to}
+            aria-label="Hasta"
             onChange={(e) => { setTo(e.target.value); setPage(1); }}
-            className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
+            className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-secondary focus:border-accent focus:outline-none"
           />
         </div>
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-medium text-text-tertiary hover:text-text-primary transition-colors"
+          >
+            <X className="h-3.5 w-3.5" /> Limpiar
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -122,7 +164,7 @@ export default function FacturasPage() {
                     <p className="font-medium text-text-primary leading-snug">{inv.customerName ?? '—'}</p>
                     <p className="font-mono text-xs text-text-tertiary">{inv.placa ?? '—'}</p>
                   </div>
-                  <span className="font-mono text-xs font-semibold text-accent">#{inv.invoiceNumber}</span>
+                  <InvoiceTag n={inv.invoiceNumber} />
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                   <div>
@@ -133,7 +175,7 @@ export default function FacturasPage() {
                   </div>
                   <div>
                     <dt className="text-text-tertiary">Pago</dt>
-                    <dd className="text-text-secondary">{inv.paymentMethod ? (PAYMENT_LABELS[inv.paymentMethod] ?? inv.paymentMethod) : '—'}</dd>
+                    <dd><PaymentTag method={inv.paymentMethod} /></dd>
                   </div>
                   <div className="col-span-2">
                     <dt className="text-text-tertiary">Total</dt>
@@ -144,41 +186,36 @@ export default function FacturasPage() {
             ))}
           </div>
 
-          <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
+          <div className="hidden overflow-hidden rounded-xl border border-border md:block">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-bg-elevated">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-text-secondary">Factura</th>
-                  <th className="px-4 py-3 text-left font-medium text-text-secondary">Fecha</th>
-                  <th className="px-4 py-3 text-left font-medium text-text-secondary">Cliente / Moto</th>
-                  <th className="px-4 py-3 text-left font-medium text-text-secondary">Mecánico</th>
-                  <th className="px-4 py-3 text-left font-medium text-text-secondary">Pago</th>
-                  <th className="px-4 py-3 text-right font-medium text-text-secondary">Total</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Factura</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Fecha</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Cliente / Moto</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Mecánico</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Pago</th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {invoices.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    className="group cursor-pointer bg-bg-secondary transition-colors hover:bg-bg-elevated"
-                  >
-                    <td className="px-4 py-3">
-                      <Link href={`/recibo/${inv.id}`} className="font-mono text-accent group-hover:underline">
-                        #{inv.invoiceNumber}
+                  <tr key={inv.id} className="group bg-bg-secondary transition-colors hover:bg-bg-elevated">
+                    <td className="px-4 py-3.5">
+                      <Link href={`/recibo/${inv.id}`} className="inline-block transition-transform group-hover:scale-[1.03]">
+                        <InvoiceTag n={inv.invoiceNumber} />
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-text-tertiary">
+                    <td className="px-4 py-3.5 text-text-tertiary">
                       {new Date(inv.closedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <div className="font-medium text-text-primary">{inv.customerName ?? '—'}</div>
                       <div className="font-mono text-xs text-text-tertiary">{inv.placa ?? '—'}</div>
                     </td>
-                    <td className="px-4 py-3 text-text-secondary">{inv.mechanicName ?? '—'}</td>
-                    <td className="px-4 py-3 text-text-secondary">
-                      {inv.paymentMethod ? (PAYMENT_LABELS[inv.paymentMethod] ?? inv.paymentMethod) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right"><MoneyDisplay value={inv.total} /></td>
+                    <td className="px-4 py-3.5 text-text-secondary">{inv.mechanicName ?? '—'}</td>
+                    <td className="px-4 py-3.5"><PaymentTag method={inv.paymentMethod} /></td>
+                    <td className="px-4 py-3.5 text-right"><MoneyDisplay value={inv.total} /></td>
                   </tr>
                 ))}
               </tbody>
