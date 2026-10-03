@@ -3,11 +3,23 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { productSchema, type ProductInput } from '@/validators/product.schema';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { SearchSelect } from '@/components/ui/SearchSelect';
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+        {children}
+      </span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
 
 const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }));
 
@@ -70,6 +82,9 @@ export function ProductForm({
   });
 
   const compatibility = watch('compatibility');
+  const cost = watch('cost');
+  const price = watch('price');
+  const margin = price > 0 ? ((price - cost) / price) * 100 : 0;
 
   function addCompat() {
     const val = compatInput.trim();
@@ -87,7 +102,8 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <SectionLabel>Identificación</SectionLabel>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="SKU *" error={errors.sku?.message}>
           <input {...register('sku')} className={inputCls} placeholder="ACE-0W40-1L" />
@@ -120,6 +136,7 @@ export function ProductForm({
         </Field>
       </div>
 
+      <SectionLabel>Precio y stock</SectionLabel>
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
         <Field label="Costo (COP) *" error={errors.cost?.message}>
           <Controller
@@ -138,16 +155,23 @@ export function ProductForm({
               <CurrencyInput value={field.value} onChange={field.onChange} placeholder="0" />
             )}
           />
+          {price > 0 && (
+            <p className={cn('text-xs font-medium', margin >= 30 ? 'text-success' : margin >= 10 ? 'text-warning' : 'text-danger')}>
+              Margen: {margin.toFixed(0)}%
+            </p>
+          )}
         </Field>
         <Field label="Stock actual *" error={errors.stock?.message}>
           <input {...register('stock')} type="number" min="0" className={inputCls} />
         </Field>
         <Field label="Stock mínimo *" error={errors.stockMin?.message}>
           <input {...register('stockMin')} type="number" min="0" className={inputCls} />
+          <p className="text-xs text-text-tertiary">Te avisamos cuando el stock baje de aquí</p>
         </Field>
       </div>
 
-      <Field label="Compatibilidad (motos)" error={undefined}>
+      <SectionLabel>Compatibilidad</SectionLabel>
+      <Field label="Motos compatibles" error={undefined}>
         <div className="flex gap-2">
           <input
             value={compatInput}
@@ -159,9 +183,9 @@ export function ProductForm({
           <button
             type="button"
             onClick={addCompat}
-            className="rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
           >
-            +
+            <Plus className="h-3.5 w-3.5" /> Agregar
           </button>
         </div>
         {compatibility.length > 0 && (
