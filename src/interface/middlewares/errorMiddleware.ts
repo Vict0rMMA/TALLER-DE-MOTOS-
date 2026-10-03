@@ -15,7 +15,7 @@ export const errorHandler = (error: Error, _req: Request, res: Response, _next: 
     msg.includes('sb_secret');
   const userMessage = isStorage
     ? msg.includes('sb_secret') || msg.includes('service_role')
-      ? 'Fotos: en el VPS pon SUPABASE_SERVICE_KEY con la clave service_role (JWT eyJ…) de Supabase → Settings → API.'
+      ? 'Fotos: en el VPS pon SUPABASE_SERVICE_KEY con la Secret key (sb_secret_…) o service_role de Supabase → Settings → API Keys.'
       : 'Fotos: configura Supabase (bucket service-photos). Ejecuta npm run setup:storage en el VPS.'
     : process.env.NODE_ENV === 'production'
       ? 'Error interno del servidor'

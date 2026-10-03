@@ -70,11 +70,11 @@ if (!process.env.SUPABASE_URL?.trim()) {
 } else if (!supaKey) {
   console.log("✗ SUPABASE_SERVICE_KEY: falta — no se pueden subir fotos.");
   exit = 1;
-} else if (supaKey.startsWith("sb_") && !supaKey.startsWith("eyJ")) {
-  console.log("✗ SUPABASE_SERVICE_KEY: usa service_role (JWT eyJ…), no sb_secret.");
+} else if (supaKey.startsWith("sb_") && !supaKey.startsWith("sb_secret_")) {
+  console.log("✗ SUPABASE_SERVICE_KEY: usa la Secret key (sb_secret_…) o service_role (JWT eyJ…), no la publishable/anon.");
   exit = 1;
 } else {
-  console.log("· SUPABASE_SERVICE_KEY: formato OK (JWT)");
+  console.log("· SUPABASE_SERVICE_KEY: formato OK");
 }
 
 console.log("");

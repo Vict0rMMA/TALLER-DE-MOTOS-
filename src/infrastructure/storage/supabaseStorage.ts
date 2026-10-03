@@ -10,9 +10,11 @@ function assertStorageKey() {
       'SUPABASE_URL y SUPABASE_SERVICE_KEY requeridos en el .env del VPS para subir fotos',
     );
   }
-  if (key.startsWith('sb_') && !key.startsWith('eyJ')) {
+  // Supabase reemplazó la clave legacy service_role (JWT eyJ…) por sb_secret_…
+  // en proyectos nuevos. supabase-js >=2.49 acepta ambos formatos igual.
+  if (!key.startsWith('eyJ') && !key.startsWith('sb_secret_')) {
     throw new Error(
-      'SUPABASE_SERVICE_KEY inválida: usa la clave service_role (JWT eyJ…) en Supabase → Settings → API, no sb_secret.',
+      'SUPABASE_SERVICE_KEY inválida: usa la "Secret key" (sb_secret_…) o service_role (JWT eyJ…) de Supabase → Settings → API Keys.',
     );
   }
 }
