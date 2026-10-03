@@ -104,7 +104,6 @@ export function ServicePhotos({ serviceId, photos, readOnly = false }: ServicePh
                 className="object-cover cursor-pointer"
                 sizes="(max-width: 640px) 33vw, 25vw"
                 onClick={() => setLightbox(url)}
-                unoptimized
               />
               {!readOnly && (
                 <button
