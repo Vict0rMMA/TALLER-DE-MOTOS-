@@ -81,7 +81,10 @@ export default function FacturasPage() {
       <PageHeader title="Facturas" description={`${totalCount} ${totalCount === 1 ? 'factura emitida' : 'facturas emitidas'}`} />
 
       <div className="glass-card-glow relative overflow-hidden rounded-[14px] p-5 sm:p-6">
-        <Receipt className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 text-accent/[0.06]" strokeWidth={1} />
+        <Receipt
+          className="pointer-events-none absolute -right-3 -top-3 h-20 w-20 text-accent opacity-[0.07] sm:-right-4 sm:-top-4 sm:h-28 sm:w-28"
+          strokeWidth={1}
+        />
         <div className="relative grid grid-cols-3 divide-x divide-border">
           <div className="pr-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Facturas</p>

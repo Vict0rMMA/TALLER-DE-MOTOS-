@@ -3,7 +3,7 @@
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Check } from 'lucide-react';
 import { serviceSchema, type ServiceInput } from '@/validators/service.schema';
 import { SERVICE_TYPES } from '@/lib/constants';
 import { useCustomers } from '@/hooks/use-customers';
@@ -102,85 +102,110 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="flex gap-2">
-        {['Cliente y moto', 'Servicio', 'Repuestos'].map((label, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setStep(i + 1)}
-            className={`flex-1 rounded-lg py-2 text-xs font-semibold transition-colors ${
-              step === i + 1
-                ? 'bg-accent text-bg-primary'
-                : step > i + 1
-                ? 'bg-success/20 text-success'
-                : 'bg-bg-elevated text-text-tertiary'
-            }`}
-          >
-            {i + 1}. {label}
-          </button>
-        ))}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
+      <div className="flex items-start">
+        {['Cliente y moto', 'Servicio', 'Repuestos'].map((label, i) => {
+          const n = i + 1;
+          const done = step > n;
+          const active = step === n;
+          return (
+            <div key={n} className={i > 0 ? 'flex flex-1 items-start' : 'flex items-start'}>
+              {i > 0 && (
+                <div
+                  className={`mt-4 h-px flex-1 ${done || active ? 'bg-accent/50' : 'bg-border'}`}
+                  aria-hidden
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setStep(n)}
+                className="flex flex-col items-center gap-1.5 px-1"
+              >
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                    active
+                      ? 'bg-accent text-bg-primary ring-4 ring-accent/15'
+                      : done
+                      ? 'bg-success/15 text-success'
+                      : 'bg-bg-elevated text-text-tertiary'
+                  }`}
+                >
+                  {done ? <Check className="h-4 w-4" /> : n}
+                </span>
+                <span
+                  className={`whitespace-nowrap text-[11px] font-medium ${
+                    active ? 'text-text-primary' : 'text-text-tertiary'
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {step === 1 && (
-        <div className="space-y-4">
-          <Field label="Cliente *" error={errors.customerId?.message}>
-            <Controller
-              control={control}
-              name="customerId"
-              render={({ field }) => (
-                <SearchSelect
-                  id="service-customer"
-                  value={field.value ?? ''}
-                  onChange={(v) => {
-                    field.onChange(v);
-                    setValue('motorcycleId', '');
-                  }}
-                  options={customerOptions}
-                  onSearchChange={setCustomerQuery}
-                  loading={loadingCustomers}
-                  placeholder="Busca por nombre o cédula…"
-                  emptyMessage="Ningún cliente coincide"
-                  aria-invalid={!!errors.customerId}
-                />
+        <div className="mx-auto max-w-lg space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Cliente *" error={errors.customerId?.message}>
+              <Controller
+                control={control}
+                name="customerId"
+                render={({ field }) => (
+                  <SearchSelect
+                    id="service-customer"
+                    value={field.value ?? ''}
+                    onChange={(v) => {
+                      field.onChange(v);
+                      setValue('motorcycleId', '');
+                    }}
+                    options={customerOptions}
+                    onSearchChange={setCustomerQuery}
+                    loading={loadingCustomers}
+                    placeholder="Busca por nombre o cédula…"
+                    emptyMessage="Ningún cliente coincide"
+                    aria-invalid={!!errors.customerId}
+                  />
+                )}
+              />
+            </Field>
+            <Field label="Motocicleta *" error={errors.motorcycleId?.message}>
+              <Controller
+                control={control}
+                name="motorcycleId"
+                render={({ field }) => (
+                  <SearchSelect
+                    id="service-motorcycle"
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    options={motorcycleOptions}
+                    disabled={!selectedCustomerId}
+                    placeholder={
+                      selectedCustomerId
+                        ? motorcycles.length === 0
+                          ? 'Sin motos registradas'
+                          : 'Busca por placa…'
+                        : 'Primero elige un cliente'
+                    }
+                    emptyMessage="Ninguna moto coincide"
+                    aria-invalid={!!errors.motorcycleId}
+                  />
+                )}
+              />
+              {selectedCustomerId && motorcycles.length === 0 && (
+                <a
+                  href={`/clientes/${selectedCustomerId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
+                >
+                  + Ir al perfil del cliente para registrar una moto
+                </a>
               )}
-            />
-          </Field>
-          <Field label="Motocicleta *" error={errors.motorcycleId?.message}>
-            <Controller
-              control={control}
-              name="motorcycleId"
-              render={({ field }) => (
-                <SearchSelect
-                  id="service-motorcycle"
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  options={motorcycleOptions}
-                  disabled={!selectedCustomerId}
-                  placeholder={
-                    selectedCustomerId
-                      ? motorcycles.length === 0
-                        ? 'Este cliente no tiene motos registradas'
-                        : 'Busca por placa…'
-                      : 'Primero selecciona un cliente'
-                  }
-                  emptyMessage="Ninguna moto coincide"
-                  aria-invalid={!!errors.motorcycleId}
-                />
-              )}
-            />
-            {selectedCustomerId && motorcycles.length === 0 && (
-              <a
-                href={`/clientes/${selectedCustomerId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
-              >
-                + Ir al perfil del cliente para registrar una moto
-              </a>
-            )}
-          </Field>
-          <div className="flex justify-end">
+            </Field>
+          </div>
+          <div className="flex justify-end pt-1">
             <button
               type="button"
               onClick={() => setStep(2)}
@@ -193,7 +218,7 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
       )}
 
       {step === 2 && (
-        <div className="space-y-4">
+        <div className="mx-auto max-w-lg space-y-4">
           <Field label="Tipo de servicio *" error={errors.type?.message}>
             <Controller
               control={control}
