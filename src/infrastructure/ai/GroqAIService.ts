@@ -55,7 +55,7 @@ export class GroqAIService implements AIService {
         },
         urgency: parsed.urgency ?? 'medium',
         confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.7)),
-        model: 'groq-llama3.3',
+        model: 'groq-gpt-oss-120b',
       };
     } catch {
       throw new DomainError('La IA no pudo procesar la consulta. Intenta reformular la pregunta.', 502);
