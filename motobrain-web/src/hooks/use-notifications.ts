@@ -122,7 +122,7 @@ export function useNotifications(enabled = true) {
       id: 'low-stock',
       type: 'stock',
       title: `${kpis.lowStockCount} producto${kpis.lowStockCount > 1 ? 's' : ''} con stock bajo`,
-      body: 'Revisa el inventario y reabastecer antes de quedarte sin repuestos.',
+      body: 'Revisa el inventario y reabastece antes de quedarte sin repuestos.',
       severity: kpis.lowStockCount >= 5 ? 'error' : 'warning',
     });
   }

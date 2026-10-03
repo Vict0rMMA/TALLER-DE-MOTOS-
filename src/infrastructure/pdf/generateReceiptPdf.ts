@@ -19,10 +19,10 @@ interface ReceiptData {
 }
 
 const SERVICE_LABELS: Record<string, string> = {
-  oil_change: 'Cambio de aceite', brake_repair: 'Reparacion de frenos', brakes: 'Frenos',
+  oil_change: 'Cambio de aceite', brake_repair: 'Reparación de frenos', brakes: 'Frenos',
   general_service: 'Servicio general', chain_replacement: 'Cambio de cadena', chain_kit: 'Kit de cadena',
-  diagnosis: 'Diagnostico', maintenance: 'Mantenimiento', tire_change: 'Cambio de llanta',
-  electrical: 'Electrico', other: 'Otro',
+  diagnosis: 'Diagnóstico', maintenance: 'Mantenimiento', tire_change: 'Cambio de llanta',
+  electrical: 'Eléctrico', other: 'Otro',
 };
 
 function fmt(n: number) {
@@ -98,7 +98,7 @@ export async function generateReceiptPdf(data: ReceiptData): Promise<Buffer> {
     doc.fontSize(9).font('Helvetica-Bold').fillColor(GRAY).text('KM EN SERVICIO', 320, y1);
     doc.fontSize(12).font('Helvetica').fillColor(DARK).text(data.kmAtService.toLocaleString('es-CO') + ' km', 320, y1 + 13);
     if (data.nextMaintenanceKm) {
-      doc.fontSize(9).font('Helvetica-Bold').fillColor(GRAY).text('PROXIMO MANTENIMIENTO', 320, y1 + 30);
+      doc.fontSize(9).font('Helvetica-Bold').fillColor(GRAY).text('PRÓXIMO MANTENIMIENTO', 320, y1 + 30);
       doc.fontSize(10).font('Helvetica').fillColor(DARK).text(data.nextMaintenanceKm.toLocaleString('es-CO') + ' km', 320, y1 + 43);
     }
 
