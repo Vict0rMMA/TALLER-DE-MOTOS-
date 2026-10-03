@@ -12,7 +12,7 @@ import { usePortalAuthStore, type PortalCustomer } from '@/stores/portal-auth-st
 import { cn } from '@/lib/utils';
 
 const BRANDS = [
-  'AKT', 'Bajaj', 'Honda', 'Yamaha', 'Suzuki',
+  'AKT', 'Honda', 'Yamaha', 'Suzuki',
   'TVS', 'Hero', 'KTM', 'Kawasaki', 'Royal Enfield',
   'Auteco', 'Kymco', 'Otro',
 ];
