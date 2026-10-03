@@ -4,7 +4,7 @@ import { DomainError } from '../../domain/errors/DomainError';
 import { buildDiagnosisPrompt, ConversationTurn } from './prompts';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'openai/gpt-oss-120b';
 
 export class GroqAIService implements AIService {
   async diagnose(symptoms: string[], motorcycleInfo: string, history: ConversationTurn[] = []): Promise<DiagnosisOutput> {
