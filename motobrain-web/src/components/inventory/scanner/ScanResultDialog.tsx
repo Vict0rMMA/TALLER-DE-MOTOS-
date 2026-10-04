@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -30,6 +31,9 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
 
   const notFound = error instanceof ProductNotFoundError;
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     setQuantity(1);
   }, [code]);
@@ -52,7 +56,9 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
     router.push(`/inventario/nuevo?barcode=${encodeURIComponent(code)}`);
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 sm:items-center"
       onClick={onClose}
@@ -161,6 +167,7 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
           <div className="py-6 text-center text-sm text-danger">No se pudo conectar con el servidor.</div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

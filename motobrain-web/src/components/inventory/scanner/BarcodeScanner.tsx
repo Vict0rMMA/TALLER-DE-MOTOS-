@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, CameraOff, ShieldAlert, Keyboard } from 'lucide-react';
 import { useBarcodeScanner } from '@/hooks/use-barcode-scanner';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,8 @@ function vibrate() {
 
 export function BarcodeScanner({ active, onDetect, onClose, title, subtitle, children }: BarcodeScannerProps) {
   const [manualCode, setManualCode] = useState('');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handleDetect = (code: string) => {
     vibrate();
@@ -40,7 +43,9 @@ export function BarcodeScanner({ active, onDetect, onClose, title, subtitle, chi
     setManualCode('');
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex flex-col bg-black sm:inset-6 sm:rounded-2xl sm:border sm:border-border">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5">
         <div className="min-w-0">
@@ -130,6 +135,7 @@ export function BarcodeScanner({ active, onDetect, onClose, title, subtitle, chi
       </div>
 
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
