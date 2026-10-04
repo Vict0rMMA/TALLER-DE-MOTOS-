@@ -51,6 +51,18 @@ export class UpdateProductDto {
   @IsOptional()
   barcode?: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  supplier?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
   @IsBoolean()
   @IsOptional()
   active?: boolean;

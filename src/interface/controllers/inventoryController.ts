@@ -6,10 +6,17 @@ import { DeleteProduct } from '../../application/usecases/inventory/DeleteProduc
 import { GetProductById } from '../../application/usecases/inventory/GetProductById';
 import { GetLowStockProducts } from '../../application/usecases/inventory/GetLowStockProducts';
 import { RegisterStockMovement } from '../../application/usecases/inventory/RegisterStockMovement';
+import { FindProductByBarcode } from '../../application/usecases/inventory/FindProductByBarcode';
 import { toProductResponse } from '../../application/dtos/ProductDto';
+import { DomainError } from '../../domain/errors/DomainError';
 import prisma from '../../infrastructure/prisma/client';
 
 const productRepo = new PrismaProductRepository();
+const BARCODE_FORMAT = /^[a-zA-Z0-9]{4,64}$/;
+
+function isUniqueConstraintError(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { code?: string }).code === 'P2002';
+}
 
 function mapRow(r: any) {
   return toProductResponse({
@@ -25,6 +32,9 @@ function mapRow(r: any) {
     cost: Number(r.cost),
     price: Number(r.price),
     barcode: r.barcode ?? undefined,
+    imageUrl: r.imageUrl ?? undefined,
+    supplier: r.supplier ?? undefined,
+    description: r.description ?? undefined,
     active: r.active,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
@@ -86,11 +96,27 @@ export const getProduct = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const getProductByBarcode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const code = String(req.params.code);
+    if (!BARCODE_FORMAT.test(code)) {
+      return next(new DomainError('Código de barras inválido: debe ser alfanumérico, 4 a 64 caracteres', 400));
+    }
+    const result = await new FindProductByBarcode(productRepo).execute(code, req.workshopId!);
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+};
+
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await new CreateProduct(productRepo).execute({ ...req.body, workshopId: req.workshopId! });
     res.status(201).json(toProductResponse(result));
   } catch (e) {
+    if (isUniqueConstraintError(e)) {
+      return next(new DomainError('El SKU o el código de barras ya existe en este taller', 409));
+    }
     next(e);
   }
 };
@@ -104,6 +130,9 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
     });
     res.json(toProductResponse(result));
   } catch (e) {
+    if (isUniqueConstraintError(e)) {
+      return next(new DomainError('El SKU o el código de barras ya existe en este taller', 409));
+    }
     next(e);
   }
 };

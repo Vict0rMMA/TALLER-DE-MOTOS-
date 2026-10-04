@@ -172,18 +172,37 @@ export function ProductForm({
 
       <SectionLabel>Compatibilidad</SectionLabel>
       <Field label="Motos compatibles" error={undefined}>
+        {(() => {
+          const isUniversal = compatibility.length === 1 && compatibility[0] === 'Todas';
+          return (
+            <button
+              type="button"
+              onClick={() => setValue('compatibility', isUniversal ? [] : ['Todas'])}
+              className={cn(
+                'mb-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                isUniversal
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-border text-text-secondary hover:border-accent hover:text-accent',
+              )}
+            >
+              {isUniversal ? '✓ ' : ''}Sirve para todas las motos
+            </button>
+          );
+        })()}
         <div className="flex gap-2">
           <input
             value={compatInput}
             onChange={(e) => setCompatInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCompat())}
-            className={cn(inputCls, 'flex-1')}
+            disabled={compatibility.length === 1 && compatibility[0] === 'Todas'}
+            className={cn(inputCls, 'flex-1 disabled:opacity-40')}
             placeholder="Honda CB 125F — Enter para agregar"
           />
           <button
             type="button"
             onClick={addCompat}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
+            disabled={compatibility.length === 1 && compatibility[0] === 'Todas'}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-secondary"
           >
             <Plus className="h-3.5 w-3.5" /> Agregar
           </button>

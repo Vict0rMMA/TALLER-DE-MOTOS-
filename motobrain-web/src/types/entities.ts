@@ -22,6 +22,9 @@ export interface Product {
   stock: number;
   stockMin: number;
   barcode?: string;
+  imageUrl?: string;
+  supplier?: string;
+  description?: string;
   compatibility?: string[];
   active: boolean;
   isLowStock: boolean;

@@ -1,12 +1,32 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductForm } from '@/components/inventory/ProductForm';
 import { useCreateProduct } from '@/hooks/use-products';
 import type { ProductInput } from '@/validators/product.schema';
+
+function NuevoProductoForm({
+  onSubmit,
+  isLoading,
+}: {
+  onSubmit: (data: ProductInput) => void;
+  isLoading: boolean;
+}) {
+  const [barcodeFromUrl] = useQueryState('barcode');
+  return (
+    <ProductForm
+      defaultValues={barcodeFromUrl ? { barcode: barcodeFromUrl } : undefined}
+      onSubmit={onSubmit}
+      isLoading={isLoading}
+      submitLabel="Crear producto"
+    />
+  );
+}
 
 export default function NuevoProductoPage() {
   const router = useRouter();
@@ -42,11 +62,9 @@ export default function NuevoProductoPage() {
             {(createProduct.error as Error)?.message ?? 'Error al crear producto'}
           </div>
         )}
-        <ProductForm
-          onSubmit={handleSubmit}
-          isLoading={createProduct.isPending}
-          submitLabel="Crear producto"
-        />
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-bg-elevated" />}>
+          <NuevoProductoForm onSubmit={handleSubmit} isLoading={createProduct.isPending} />
+        </Suspense>
       </div>
     </div>
   );

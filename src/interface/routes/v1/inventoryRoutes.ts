@@ -12,6 +12,7 @@ router.use(authenticate, tenantMiddleware);
 
 router.get('/', ctrl.listProducts);
 router.get('/low-stock', ctrl.getLowStock);
+router.get('/barcode/:code', ctrl.getProductByBarcode);
 router.get('/:id', ctrl.getProduct);
 router.post('/', validateDto(CreateProductDto), ctrl.createProduct);
 router.put('/:id', validateDto(UpdateProductDto), ctrl.updateProduct);

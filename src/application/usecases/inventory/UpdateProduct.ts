@@ -6,7 +6,7 @@ import { Product } from '../../../domain/entities/Product';
 type Input = {
   id: string;
   workshopId: string;
-  data: Partial<Pick<Product, 'sku' | 'name' | 'brand' | 'category' | 'compatibility' | 'stock' | 'stockMin' | 'cost' | 'price' | 'barcode' | 'active'>>;
+  data: Partial<Pick<Product, 'sku' | 'name' | 'brand' | 'category' | 'compatibility' | 'stock' | 'stockMin' | 'cost' | 'price' | 'barcode' | 'imageUrl' | 'supplier' | 'description' | 'active'>>;
 };
 
 export class UpdateProduct {

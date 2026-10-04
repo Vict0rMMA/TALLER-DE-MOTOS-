@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsIn, IsOptional, Min } from 'class-validator';
+import { IsString, IsInt, IsIn, IsOptional, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { STOCK_MOVEMENT_TYPES, StockMovementType } from '../../../domain/entities/StockMovement';
 
@@ -9,8 +9,9 @@ export class StockMovementDto {
   @IsIn(STOCK_MOVEMENT_TYPES)
   type!: StockMovementType;
 
-  @IsNumber()
+  @IsInt()
   @Min(1)
+  @Max(10000)
   @Type(() => Number)
   quantity!: number;
 

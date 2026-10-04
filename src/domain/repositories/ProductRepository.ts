@@ -3,6 +3,7 @@ import { Product } from '../entities/Product';
 export interface ProductRepository {
   findById(id: string, workshopId: string): Promise<Product | null>;
   findBySku(sku: string, workshopId: string): Promise<Product | null>;
+  findByBarcode(barcode: string, workshopId: string): Promise<Product | null>;
   findByWorkshop(workshopId: string, category?: string): Promise<Product[]>;
   findLowStock(workshopId: string): Promise<Product[]>;
   create(data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product>;

@@ -127,3 +127,31 @@ export function useDeleteProduct() {
     onSuccess: () => refreshProducts(qc),
   });
 }
+
+export class ProductNotFoundError extends Error {}
+
+/** Busca un producto por codigo de barras dentro del taller. No cachea: cada
+ * escaneo debe reflejar el stock mas reciente. */
+export async function findProductByBarcode(code: string): Promise<Product> {
+  try {
+    return await api.get<Product>(`/inventory/barcode/${encodeURIComponent(code)}`);
+  } catch (e) {
+    if ((e as { status?: number }).status === 404) throw new ProductNotFoundError('Producto no encontrado');
+    throw e;
+  }
+}
+
+export interface StockMovementInput {
+  productId: string;
+  type: 'purchase' | 'sale' | 'adjustment' | 'return' | 'waste';
+  quantity: number;
+  reason?: string;
+}
+
+export function useRegisterStockMovement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: StockMovementInput) => api.post<Product>('/inventory/movements', data),
+    onSuccess: () => refreshProducts(qc),
+  });
+}

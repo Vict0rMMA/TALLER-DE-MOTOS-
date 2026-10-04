@@ -13,6 +13,11 @@ export class PrismaProductRepository implements ProductRepository {
     return r ? this.toDomain(r) : null;
   }
 
+  async findByBarcode(barcode: string, workshopId: string): Promise<Product | null> {
+    const r = await (prisma as any).product.findFirst({ where: { barcode, workshopId } });
+    return r ? this.toDomain(r) : null;
+  }
+
   async findByWorkshop(workshopId: string, category?: string): Promise<Product[]> {
     const rows = await (prisma as any).product.findMany({
       where: { workshopId, active: true, ...(category && { category }) },
@@ -72,6 +77,9 @@ export class PrismaProductRepository implements ProductRepository {
       cost: Number(r.cost),
       price: Number(r.price),
       barcode: r.barcode ?? undefined,
+      imageUrl: r.imageUrl ?? undefined,
+      supplier: r.supplier ?? undefined,
+      description: r.description ?? undefined,
       active: r.active,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,

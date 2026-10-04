@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Package, AlertTriangle, Camera, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/inventory/ProductTable';
 import { KPICard } from '@/components/dashboard/KPICard';
@@ -13,6 +13,20 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { QueryErrorBanner } from '@/components/shared/QueryErrorBanner';
 import { SearchSelect } from '@/components/ui/SearchSelect';
 import { cn } from '@/lib/utils';
+import dynamic from 'next/dynamic';
+
+const BarcodeScanner = dynamic(
+  () => import('@/components/inventory/scanner/BarcodeScanner').then((m) => m.BarcodeScanner),
+  { ssr: false },
+);
+const ScanResultDialog = dynamic(
+  () => import('@/components/inventory/scanner/ScanResultDialog').then((m) => m.ScanResultDialog),
+  { ssr: false },
+);
+const QuickScanPanel = dynamic(
+  () => import('@/components/inventory/scanner/QuickScanPanel').then((m) => m.QuickScanPanel),
+  { ssr: false },
+);
 
 const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }));
 
@@ -22,6 +36,9 @@ export default function InventarioPage() {
   const [category, setCategory] = useState('');
   const [lowStock, setLowStock] = useState(false);
   const [page, setPage] = useState(1);
+  const [scannerMode, setScannerMode] = useState<'single' | 'quick' | null>(null);
+  const [resultCode, setResultCode] = useState<string | null>(null);
+  const [quickCode, setQuickCode] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 450);
   const {
@@ -54,10 +71,26 @@ export default function InventarioPage() {
         title="Inventario"
         description={`${totalProducts} productos registrados`}
         actions={
-          <button type="button" onClick={() => router.push('/inventario/nuevo')} className="btn-accent inline-flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo producto
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setScannerMode('single')}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary hover:border-accent hover:text-accent transition-colors"
+            >
+              <Camera className="h-4 w-4" /> Escanear producto
+            </button>
+            <button
+              type="button"
+              onClick={() => setScannerMode('quick')}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary hover:border-accent hover:text-accent transition-colors"
+            >
+              <Zap className="h-4 w-4" /> Escaneo rápido
+            </button>
+            <button type="button" onClick={() => router.push('/inventario/nuevo')} className="btn-accent inline-flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo producto
+            </button>
+          </>
         }
       />
 
@@ -151,6 +184,40 @@ export default function InventarioPage() {
             Siguiente
           </button>
         </div>
+      )}
+
+      {scannerMode === 'single' && (
+        <BarcodeScanner
+          active={!resultCode}
+          onDetect={(code) => setResultCode(code)}
+          onClose={() => {
+            setScannerMode(null);
+            setResultCode(null);
+          }}
+          title="Escanear producto"
+          subtitle="Apunta la cámara al código de barras"
+        />
+      )}
+      {resultCode && (
+        <ScanResultDialog
+          code={resultCode}
+          onClose={() => {
+            setResultCode(null);
+            setScannerMode(null);
+          }}
+        />
+      )}
+
+      {scannerMode === 'quick' && (
+        <BarcodeScanner
+          active
+          onDetect={(code) => setQuickCode(code)}
+          onClose={() => setScannerMode(null)}
+          title="Escaneo rápido"
+          subtitle="La cámara no se cierra entre lecturas"
+        >
+          <QuickScanPanel scannedCode={quickCode} onConsumed={() => setQuickCode(null)} />
+        </BarcodeScanner>
       )}
     </div>
   );

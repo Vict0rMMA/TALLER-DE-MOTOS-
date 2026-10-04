@@ -24,20 +24,57 @@ export class RegisterStockMovement {
       throw new DomainError(`Stock insuficiente. Disponible: ${product.stock}`, 422);
     }
 
-    const updatedProduct = isOut
-      ? await this.productRepo.decrementStock(input.productId, input.quantity)
-      : await this.productRepo.incrementStock(input.productId, input.quantity);
+    const delta = isOut ? -input.quantity : input.quantity;
 
-    await (prisma as any).stockMovement.create({
-      data: {
-        productId: input.productId,
-        userId: input.userId,
-        type: input.type,
-        quantity: input.quantity,
-        reason: input.reason,
-      },
+    const result = await (prisma as any).$transaction(async (tx: any) => {
+      // Guard en el UPDATE para que dos movimientos simultaneos no dejen el
+      // stock en negativo (la validacion de arriba por si sola no alcanza).
+      const updateResult = await tx.product.updateMany({
+        where: {
+          id: input.productId,
+          workshopId: input.workshopId,
+          ...(isOut ? { stock: { gte: input.quantity } } : {}),
+        },
+        data: { stock: { increment: delta } },
+      });
+      if (updateResult.count !== 1) {
+        throw new DomainError('Stock insuficiente', 422);
+      }
+
+      const updated = await tx.product.findFirst({ where: { id: input.productId, workshopId: input.workshopId } });
+
+      await tx.stockMovement.create({
+        data: {
+          productId: input.productId,
+          userId: input.userId,
+          type: input.type,
+          quantity: input.quantity,
+          reason: input.reason,
+        },
+      });
+
+      return updated;
     });
 
-    return updatedProduct;
+    return {
+      id: result.id,
+      workshopId: result.workshopId,
+      sku: result.sku,
+      name: result.name,
+      brand: result.brand ?? undefined,
+      category: result.category,
+      compatibility: result.compatibility ?? [],
+      stock: result.stock,
+      stockMin: result.stockMin,
+      cost: Number(result.cost),
+      price: Number(result.price),
+      barcode: result.barcode ?? undefined,
+      imageUrl: result.imageUrl ?? undefined,
+      supplier: result.supplier ?? undefined,
+      description: result.description ?? undefined,
+      active: result.active,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
   }
 }

@@ -9,7 +9,10 @@ export const productSchema = z.object({
   price: z.coerce.number().min(0, 'Precio debe ser positivo'),
   stock: z.coerce.number().int().min(0, 'Stock no puede ser negativo'),
   stockMin: z.coerce.number().int().min(0, 'Stock mínimo no puede ser negativo'),
-  barcode: z.string().optional(),
+  barcode: z.string().trim().optional().transform((v) => (v ? v : undefined)),
+  imageUrl: z.string().optional(),
+  supplier: z.string().optional(),
+  description: z.string().optional(),
   compatibility: z.array(z.string()).default([]),
 });
 

@@ -14,6 +14,9 @@ type Input = {
   cost: number;
   price: number;
   barcode?: string;
+  imageUrl?: string;
+  supplier?: string;
+  description?: string;
 };
 
 export class CreateProduct {
@@ -23,8 +26,15 @@ export class CreateProduct {
     const existing = await this.productRepo.findBySku(input.sku, input.workshopId);
     if (existing) throw new DomainError(`SKU '${input.sku}' ya existe en este taller`, 409);
 
+    const barcode = input.barcode?.trim() || undefined;
+    if (barcode) {
+      const dup = await this.productRepo.findByBarcode(barcode, input.workshopId);
+      if (dup) throw new DomainError(`El código de barras '${barcode}' ya está registrado en este taller`, 409);
+    }
+
     const product = await this.productRepo.create({
       ...input,
+      barcode,
       compatibility: input.compatibility ?? [],
       active: true,
     });

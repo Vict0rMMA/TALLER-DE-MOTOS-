@@ -11,6 +11,9 @@ export type Product = {
   cost: number;
   price: number;
   barcode?: string;
+  imageUrl?: string;
+  supplier?: string;
+  description?: string;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
