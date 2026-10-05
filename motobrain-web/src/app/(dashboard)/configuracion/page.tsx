@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Building2, Users, LogOut, Plus, Eye, EyeOff, Check, AlertCircle, Trash2, Pencil, Phone, MapPin, X, KeyRound, Copy, RefreshCcw } from 'lucide-react';
+import { User, Building2, Users, LogOut, Plus, Eye, EyeOff, Check, AlertCircle, Trash2, Pencil, Phone, MapPin, X, KeyRound, Copy, RefreshCcw, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { SearchSelect } from '@/components/ui/SearchSelect';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const ROLE_OPTIONS = [
   { value: 'mechanic', label: 'Mecánico' },
@@ -339,6 +340,13 @@ function InviteCodeCard() {
     toast.success('Código copiado');
   }
 
+  function copyInviteLink() {
+    if (!data?.inviteCode) return;
+    const message = `Únete al taller en MotoBrain: https://taller-mts.vercel.app/register — elige "Soy mecánico" e ingresa el código ${data.inviteCode}`;
+    navigator.clipboard.writeText(message);
+    toast.success('Invitación copiada', { description: 'Ya la puedes pegar y enviar por WhatsApp' });
+  }
+
   return (
     <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -357,7 +365,25 @@ function InviteCodeCard() {
           <RefreshCcw className={`h-4 w-4 ${regenerate.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
-      <p className="text-[11px] text-text-tertiary">El nuevo usuario va a <strong className="text-text-secondary">taller-mts.vercel.app/register</strong> → "Soy mecánico" e ingresa este código.</p>
+      <p className="text-[11px] text-text-tertiary">
+        El nuevo usuario va a{' '}
+        <a
+          href="https://taller-mts.vercel.app/register"
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-accent underline underline-offset-2 hover:text-accent/80"
+        >
+          taller-mts.vercel.app/register
+        </a>{' '}
+        → "Soy mecánico" e ingresa este código.
+      </p>
+      <button
+        type="button"
+        onClick={copyInviteLink}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15 transition-colors"
+      >
+        <Link2 className="h-3.5 w-3.5" /> Copiar invitación para enviar por WhatsApp
+      </button>
     </div>
   );
 }
@@ -366,6 +392,7 @@ function UsersSection() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [pendingDeactivate, setPendingDeactivate] = useState<{ id: string; name: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['workshop-users'],
@@ -474,7 +501,7 @@ function UsersSection() {
               </span>
               {u.role !== 'owner' && u.active && (
                 <button
-                  onClick={() => { if (confirm(`¿Desactivar a ${u.name.trim()}?`)) deactivate.mutate(u.id); }}
+                  onClick={() => setPendingDeactivate({ id: u.id, name: u.name.trim() })}
                   disabled={deactivate.isPending}
                   className="shrink-0 rounded-lg p-1.5 text-text-tertiary transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-40"
                   title="Desactivar usuario"
@@ -486,6 +513,18 @@ function UsersSection() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDeactivate}
+        title={`¿Desactivar a ${pendingDeactivate?.name ?? ''}?`}
+        description="No va a poder iniciar sesión en el taller hasta que lo reactives."
+        confirmLabel="Desactivar"
+        onConfirm={() => {
+          if (pendingDeactivate) deactivate.mutate(pendingDeactivate.id);
+          setPendingDeactivate(null);
+        }}
+        onCancel={() => setPendingDeactivate(null)}
+      />
     </div>
   );
 }

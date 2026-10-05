@@ -7,7 +7,7 @@ interface BrandLogoProps {
   variant?: 'default' | 'sidebar';
 }
 
-function LogoMark({ size = 36 }: { size?: number }) {
+export function LogoMark({ size = 36 }: { size?: number }) {
   return (
     <svg
       width={size}

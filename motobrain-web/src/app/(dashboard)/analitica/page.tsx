@@ -89,7 +89,7 @@ function exportTopProducts(data: { productName: string; totalSold: number; reven
 export default function AnaliticaPage() {
   const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs();
   const { data: topProducts } = useTopProducts(8);
-  const { data: revenueData } = useRevenueByMonth(6);
+  const { data: revenueData } = useRevenueByMonth(1);
   const { token, user } = useAuthStore();
   const [exporting, setExporting] = useState(false);
 

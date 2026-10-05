@@ -6,6 +6,7 @@ import { ArrowLeft, Smartphone, ShieldCheck, ShieldOff, Mail, MailCheck, MailX, 
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { MotorcycleCard, AddMotorcycleCard } from '@/components/customers/MotorcycleCard';
 import { useCustomer, useUpdateCustomer } from '@/hooks/use-customers';
@@ -25,6 +26,7 @@ function PortalAccessSection({
   hasEmail: boolean;
 }) {
   const qc = useQueryClient();
+  const [confirmDisable, setConfirmDisable] = useState(false);
 
   const enable = useMutation({
     mutationFn: () => api.put(`/portal/enable/${customerId}`, {}),
@@ -66,13 +68,23 @@ function PortalAccessSection({
       </div>
 
       {portalActive ? (
-        <button
-          onClick={() => { if (confirm('¿Desactivar el acceso al portal?')) disable.mutate(); }}
-          disabled={disable.isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/5 transition-colors disabled:opacity-50"
-        >
-          <ShieldOff className="h-3.5 w-3.5" /> Desactivar acceso
-        </button>
+        <>
+          <button
+            onClick={() => setConfirmDisable(true)}
+            disabled={disable.isPending}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/5 transition-colors disabled:opacity-50"
+          >
+            <ShieldOff className="h-3.5 w-3.5" /> Desactivar acceso
+          </button>
+          <ConfirmDialog
+            open={confirmDisable}
+            title="¿Desactivar el acceso al portal?"
+            description="El cliente ya no va a poder entrar a /portal con su celular y cédula."
+            confirmLabel="Desactivar"
+            onConfirm={() => { disable.mutate(); setConfirmDisable(false); }}
+            onCancel={() => setConfirmDisable(false)}
+          />
+        </>
       ) : (
         <button
           onClick={() => enable.mutate()}
