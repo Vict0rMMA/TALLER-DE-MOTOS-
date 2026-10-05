@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
 import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { DomainError } from '../../domain/errors/DomainError';
-import { phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
 import { normalizeCedula } from '../../infrastructure/phone/cedula';
 import { uploadMotoPhoto } from '../../infrastructure/storage/supabaseStorage';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
@@ -98,24 +97,23 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
 
 export const portalLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { phone, password } = req.body as { phone?: string; password?: string };
-    if (!phone || !password) return next(new DomainError('Teléfono y cédula requeridos', 400));
+    const { placa, password } = req.body as { placa?: string; password?: string };
+    if (!placa?.trim() || !password) return next(new DomainError('Placa y cédula requeridas', 400));
 
-    const variants = phoneLookupVariants(phone);
-    if (!variants.length) return next(new DomainError('Ingresa un número de celular válido', 400));
-
-    const customer = await prisma.customer.findFirst({
-      where: { portalActive: true, phone: { in: variants } },
+    const motorcycle = await prisma.motorcycle.findFirst({
+      where: { placa: placa.trim().toUpperCase() },
+      include: { customer: true },
     });
 
-    if (!customer?.cedula) {
-      return next(new DomainError('Teléfono o cédula incorrectos', 401));
+    const customer = motorcycle?.customer;
+    if (!customer?.portalActive || !customer.cedula) {
+      return next(new DomainError('Placa o cédula incorrectos', 401));
     }
 
     const inputCedula = normalizeCedula(password);
     const storedCedula = normalizeCedula(customer.cedula);
     if (!inputCedula || inputCedula !== storedCedula) {
-      return next(new DomainError('Teléfono o cédula incorrectos', 401));
+      return next(new DomainError('Placa o cédula incorrectos', 401));
     }
 
     const token = signCustomerToken({

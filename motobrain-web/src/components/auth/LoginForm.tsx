@@ -23,7 +23,7 @@ function LoginFormInner() {
 
   const login = useLogin();
 
-  const [phone, setPhone] = useState('');
+  const [placa, setPlaca] = useState('');
   const [clientCedula, setClientCedula] = useState('');
   const [clientLoading, setClientLoading] = useState(false);
   const [clientError, setClientError] = useState('');
@@ -31,7 +31,7 @@ function LoginFormInner() {
 
   async function handleClientLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!phone.trim() || !clientCedula) return;
+    if (!placa.trim() || !clientCedula) return;
     if (isApiMisconfigured()) {
       setClientError(getApiMisconfigMessage());
       return;
@@ -41,13 +41,13 @@ function LoginFormInner() {
     try {
       const res = await portalApi.post<{ token: string; customer: PortalCustomer }>(
         '/login',
-        buildPortalLoginPayload(phone, clientCedula),
+        buildPortalLoginPayload(placa, clientCedula),
       );
       setAuth(res.customer, res.token);
       const from = searchParams.get('from') ?? '/portal';
       router.replace(from.startsWith('/portal') ? from : '/portal');
     } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Celular o cédula incorrectos';
+      const raw = err instanceof Error ? err.message : 'Placa o cédula incorrectos';
       setClientError(formatPortalLoginError(raw));
     } finally {
       setClientLoading(false);
@@ -56,7 +56,7 @@ function LoginFormInner() {
 
   const sharedProps = {
     tab, setTab, login,
-    phone, setPhone,
+    placa, setPlaca,
     clientCedula, setClientCedula,
     clientLoading, clientError, setClientError,
     handleClientLogin,
@@ -130,8 +130,8 @@ interface LoginCardProps {
   tab: 'taller' | 'cliente';
   setTab: (t: 'taller' | 'cliente') => void;
   login: ReturnType<typeof useLogin>;
-  phone: string;
-  setPhone: (v: string) => void;
+  placa: string;
+  setPlaca: (v: string) => void;
   clientCedula: string;
   setClientCedula: (v: string) => void;
   clientLoading: boolean;
@@ -142,7 +142,7 @@ interface LoginCardProps {
 
 function LoginCard({
   tab, setTab, login,
-  phone, setPhone,
+  placa, setPlaca,
   clientCedula, setClientCedula,
   clientLoading, clientError, setClientError,
   handleClientLogin,
@@ -310,16 +310,16 @@ function LoginCard({
       {tab === 'cliente' && (
         <form onSubmit={handleClientLogin} className="space-y-4">
           <div className="auth-field">
-            <label htmlFor="client-phone" className="auth-label">Celular</label>
+            <label htmlFor="client-placa" className="auth-label">Placa de la moto</label>
             <input
-              id="client-phone"
-              type="tel"
-              placeholder="3001234567"
-              autoComplete="tel"
-              value={phone}
-              onChange={(e) => { setPhone(e.target.value); setClientError(''); }}
-              className="auth-input"
-              inputMode="numeric"
+              id="client-placa"
+              type="text"
+              placeholder="ABC12D"
+              autoComplete="off"
+              autoCapitalize="characters"
+              value={placa}
+              onChange={(e) => { setPlaca(e.target.value.toUpperCase()); setClientError(''); }}
+              className="auth-input font-mono tracking-wider"
             />
           </div>
 
@@ -353,7 +353,7 @@ function LoginCard({
             </div>
           )}
 
-          <button type="submit" disabled={clientLoading || !phone.trim() || !clientCedula} className="auth-submit">
+          <button type="submit" disabled={clientLoading || !placa.trim() || !clientCedula} className="auth-submit">
             {clientLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
