@@ -6,6 +6,7 @@ export type Customer = {
   phone: string;
   email?: string;
   optInWhatsapp: boolean;
+  optInEmail: boolean;
   portalActive: boolean;
   active: boolean;
   createdAt: Date;
