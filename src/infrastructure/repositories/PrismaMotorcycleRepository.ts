@@ -3,8 +3,9 @@ import { Motorcycle } from '../../domain/entities/Motorcycle';
 import { MotorcycleRepository } from '../../domain/repositories/MotorcycleRepository';
 
 export class PrismaMotorcycleRepository implements MotorcycleRepository {
-  async findById(id: string): Promise<Motorcycle | null> {
-    const r = await (prisma as any).motorcycle.findUnique({ where: { id } });
+  async findById(id: string, workshopId: string): Promise<Motorcycle | null> {
+    // La moto no tiene workshopId propio: pertenece al taller a traves del cliente.
+    const r = await (prisma as any).motorcycle.findFirst({ where: { id, customer: { workshopId } } });
     return r ? this.toDomain(r) : null;
   }
 

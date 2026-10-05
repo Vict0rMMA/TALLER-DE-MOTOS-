@@ -56,6 +56,7 @@ export const getDiagnosisHistory = async (req: Request, res: Response, next: Nex
     res.json(
       await new GetDiagnosisHistory(diagnosisRepo, motorcycleRepo).execute(
         req.params.motorcycleId as string,
+        req.workshopId!,
       ),
     );
   } catch (e) {

@@ -8,8 +8,8 @@ export class GetMotorcycleHistory {
     private readonly serviceRepo: ServiceRepository,
   ) {}
 
-  async execute(motorcycleId: string) {
-    const motorcycle = await this.motorcycleRepo.findById(motorcycleId);
+  async execute(motorcycleId: string, workshopId: string) {
+    const motorcycle = await this.motorcycleRepo.findById(motorcycleId, workshopId);
     if (!motorcycle) throw new DomainError('Moto no encontrada', 404);
 
     const services = await this.serviceRepo.findByMotorcycle(motorcycleId);
