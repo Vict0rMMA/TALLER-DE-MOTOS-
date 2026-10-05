@@ -8,5 +8,6 @@ export interface CustomerRepository {
   search(workshopId: string, query: string): Promise<Customer[]>;
   create(data: Omit<Customer, 'id' | 'createdAt'>): Promise<Customer>;
   update(id: string, workshopId: string, data: Partial<Omit<Customer, 'id' | 'workshopId' | 'createdAt'>>): Promise<Customer>;
+  delete(id: string, workshopId: string): Promise<void>;
   count(workshopId: string): Promise<number>;
 }

@@ -13,5 +13,6 @@ router.get('/', ctrl.listCustomers);
 router.get('/:id', ctrl.getCustomer);
 router.post('/', validateDto(CreateCustomerDto), ctrl.createCustomer);
 router.put('/:id', validateDto(UpdateCustomerDto), ctrl.updateCustomer);
+router.delete('/:id', ctrl.deleteCustomer);
 
 export default router;

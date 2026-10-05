@@ -9,18 +9,18 @@ export class PrismaCustomerRepository implements CustomerRepository {
   }
 
   async findByCedula(cedula: string, workshopId: string): Promise<Customer | null> {
-    const r = await (prisma as any).customer.findFirst({ where: { cedula, workshopId } });
+    const r = await (prisma as any).customer.findFirst({ where: { cedula, workshopId, active: true } });
     return r ? this.toDomain(r) : null;
   }
 
   async findByPhone(phone: string, workshopId: string): Promise<Customer | null> {
-    const r = await (prisma as any).customer.findFirst({ where: { phone, workshopId } });
+    const r = await (prisma as any).customer.findFirst({ where: { phone, workshopId, active: true } });
     return r ? this.toDomain(r) : null;
   }
 
   async findByWorkshop(workshopId: string, page = 1, limit = 50): Promise<Customer[]> {
     const rows = await (prisma as any).customer.findMany({
-      where: { workshopId },
+      where: { workshopId, active: true },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -32,6 +32,7 @@ export class PrismaCustomerRepository implements CustomerRepository {
     const rows = await (prisma as any).customer.findMany({
       where: {
         workshopId,
+        active: true,
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { phone: { contains: query } },
@@ -53,8 +54,12 @@ export class PrismaCustomerRepository implements CustomerRepository {
     return this.toDomain(r);
   }
 
+  async delete(id: string, _workshopId: string): Promise<void> {
+    await (prisma as any).customer.update({ where: { id }, data: { active: false } });
+  }
+
   async count(workshopId: string): Promise<number> {
-    return (prisma as any).customer.count({ where: { workshopId } });
+    return (prisma as any).customer.count({ where: { workshopId, active: true } });
   }
 
   private toDomain(r: any): Customer {
@@ -67,6 +72,7 @@ export class PrismaCustomerRepository implements CustomerRepository {
       email: r.email ?? undefined,
       optInWhatsapp: r.optInWhatsapp,
       portalActive: r.portalActive ?? false,
+      active: r.active ?? true,
       createdAt: r.createdAt,
     };
   }

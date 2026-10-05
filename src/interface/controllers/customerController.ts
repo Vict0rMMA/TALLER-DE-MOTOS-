@@ -5,6 +5,7 @@ import { UpdateCustomer } from '../../application/usecases/customers/UpdateCusto
 import { GetCustomers } from '../../application/usecases/customers/GetCustomers';
 import { GetCustomerById } from '../../application/usecases/customers/GetCustomerById';
 import { SearchCustomers } from '../../application/usecases/customers/SearchCustomers';
+import { DeleteCustomer } from '../../application/usecases/customers/DeleteCustomer';
 import { sendPortalWelcomeEmail } from '../../infrastructure/email/customerEmails';
 import { env } from '../../infrastructure/config/env';
 
@@ -67,6 +68,15 @@ export const updateCustomer = async (req: Request, res: Response, next: NextFunc
         data: req.body,
       }),
     );
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const deleteCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await new DeleteCustomer(customerRepo).execute(String(req.params.id), req.workshopId!);
+    res.status(204).send();
   } catch (e) {
     next(e);
   }

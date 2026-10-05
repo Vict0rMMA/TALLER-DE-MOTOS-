@@ -92,6 +92,7 @@ model Customer {
   optInWhatsapp Boolean  @default(false)
   passwordHash  String?
   portalActive  Boolean  @default(false)
+  active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
   workshop      Workshop             @relation(fields: [workshopId], references: [id], onDelete: Cascade)
