@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { findProductByBarcode, ProductNotFoundError, useRegisterStockMovement } from '@/hooks/use-products';
@@ -33,11 +33,17 @@ export function QuickScanPanel({ scannedCode, onConsumed }: QuickScanPanelProps)
 
   // Dispara la busqueda cuando llega un codigo nuevo de la camara. Si ya hay
   // uno pendiente de confirmar, se ignoran lecturas nuevas hasta resolverlo.
-  if (scannedCode && !pending && scannedCode !== loadingCode) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!scannedCode || pending) return;
+    let cancelled = false;
     setLoadingCode(scannedCode);
     findProductByBarcode(scannedCode)
-      .then((product) => setPending({ code: scannedCode, product, quantity: 1 }))
+      .then((product) => {
+        if (!cancelled) setPending({ code: scannedCode, product, quantity: 1 });
+      })
       .catch((e) => {
+        if (cancelled) return;
         if (e instanceof ProductNotFoundError) {
           toast.error('Producto no encontrado', { description: scannedCode });
         } else {
@@ -45,10 +51,14 @@ export function QuickScanPanel({ scannedCode, onConsumed }: QuickScanPanelProps)
         }
       })
       .finally(() => {
+        if (cancelled) return;
         setLoadingCode(null);
         onConsumed();
       });
-  }
+    return () => {
+      cancelled = true;
+    };
+  }, [scannedCode]);
 
   async function confirmPending() {
     if (!pending) return;
@@ -88,16 +98,17 @@ export function QuickScanPanel({ scannedCode, onConsumed }: QuickScanPanelProps)
             min={1}
             max={10000}
             autoFocus
+            aria-label="Cantidad a agregar"
             value={pending.quantity}
             onChange={(e) => setPending((p) => (p ? { ...p, quantity: Math.min(10000, Math.max(1, Number(e.target.value) || 1)) } : p))}
             onKeyDown={(e) => e.key === 'Enter' && confirmPending()}
-            className="w-16 rounded-lg border border-border bg-bg-elevated px-2 py-1.5 text-center text-sm text-text-primary focus:border-accent focus:outline-none"
+            className="h-11 w-16 rounded-lg border border-border bg-bg-elevated px-2 text-center text-sm text-text-primary focus:border-accent focus:outline-none"
           />
           <button
             type="button"
             onClick={confirmPending}
             disabled={registerMovement.isPending}
-            className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-bg-primary hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="h-11 shrink-0 rounded-lg bg-accent px-4 text-xs font-semibold text-bg-primary hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             Agregar
           </button>
