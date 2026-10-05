@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
 import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { DomainError } from '../../domain/errors/DomainError';
-import { normalizeCedula } from '../../infrastructure/phone/cedula';
 import { uploadMotoPhoto } from '../../infrastructure/storage/supabaseStorage';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 import { sendPortalWelcomeEmail, PORTAL_WELCOME_TYPE } from '../../infrastructure/email/customerEmails';
@@ -97,8 +96,8 @@ export const portalRegister = async (req: Request, res: Response, next: NextFunc
 
 export const portalLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { placa, password } = req.body as { placa?: string; password?: string };
-    if (!placa?.trim() || !password) return next(new DomainError('Placa y cédula requeridas', 400));
+    const { placa } = req.body as { placa?: string };
+    if (!placa?.trim()) return next(new DomainError('Ingresa la placa de la moto', 400));
 
     const motorcycle = await prisma.motorcycle.findFirst({
       where: { placa: placa.trim().toUpperCase() },
@@ -106,14 +105,8 @@ export const portalLogin = async (req: Request, res: Response, next: NextFunctio
     });
 
     const customer = motorcycle?.customer;
-    if (!customer?.portalActive || !customer.cedula) {
-      return next(new DomainError('Placa o cédula incorrectos', 401));
-    }
-
-    const inputCedula = normalizeCedula(password);
-    const storedCedula = normalizeCedula(customer.cedula);
-    if (!inputCedula || inputCedula !== storedCedula) {
-      return next(new DomainError('Placa o cédula incorrectos', 401));
+    if (!customer?.portalActive) {
+      return next(new DomainError('Placa no encontrada o portal no activado. Contacta al taller.', 401));
     }
 
     const token = signCustomerToken({

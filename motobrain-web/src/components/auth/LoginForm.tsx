@@ -24,14 +24,13 @@ function LoginFormInner() {
   const login = useLogin();
 
   const [placa, setPlaca] = useState('');
-  const [clientCedula, setClientCedula] = useState('');
   const [clientLoading, setClientLoading] = useState(false);
   const [clientError, setClientError] = useState('');
   const { setAuth } = usePortalAuthStore();
 
   async function handleClientLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!placa.trim() || !clientCedula) return;
+    if (!placa.trim()) return;
     if (isApiMisconfigured()) {
       setClientError(getApiMisconfigMessage());
       return;
@@ -41,13 +40,13 @@ function LoginFormInner() {
     try {
       const res = await portalApi.post<{ token: string; customer: PortalCustomer }>(
         '/login',
-        buildPortalLoginPayload(placa, clientCedula),
+        buildPortalLoginPayload(placa),
       );
       setAuth(res.customer, res.token);
       const from = searchParams.get('from') ?? '/portal';
       router.replace(from.startsWith('/portal') ? from : '/portal');
     } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Placa o cédula incorrectos';
+      const raw = err instanceof Error ? err.message : 'Placa no encontrada';
       setClientError(formatPortalLoginError(raw));
     } finally {
       setClientLoading(false);
@@ -57,7 +56,6 @@ function LoginFormInner() {
   const sharedProps = {
     tab, setTab, login,
     placa, setPlaca,
-    clientCedula, setClientCedula,
     clientLoading, clientError, setClientError,
     handleClientLogin,
   };
@@ -132,8 +130,6 @@ interface LoginCardProps {
   login: ReturnType<typeof useLogin>;
   placa: string;
   setPlaca: (v: string) => void;
-  clientCedula: string;
-  setClientCedula: (v: string) => void;
   clientLoading: boolean;
   clientError: string;
   setClientError: (v: string) => void;
@@ -143,7 +139,6 @@ interface LoginCardProps {
 function LoginCard({
   tab, setTab, login,
   placa, setPlaca,
-  clientCedula, setClientCedula,
   clientLoading, clientError, setClientError,
   handleClientLogin,
 }: LoginCardProps) {
@@ -323,37 +318,13 @@ function LoginCard({
             />
           </div>
 
-          <div className="auth-field">
-            <label htmlFor="client-cedula" className="auth-label">Cédula</label>
-            <div className="relative">
-              <input
-                id="client-cedula"
-                type={showPw ? 'text' : 'password'}
-                placeholder="••••••••"
-                autoComplete="off"
-                value={clientCedula}
-                onChange={(e) => { setClientCedula(e.target.value); setClientError(''); }}
-                className="auth-input pr-12"
-                inputMode="numeric"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((s) => !s)}
-                className="auth-input-toggle"
-                aria-label={showPw ? 'Ocultar' : 'Mostrar'}
-              >
-                {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
-              </button>
-            </div>
-          </div>
-
           {clientError && (
             <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {clientError}
             </div>
           )}
 
-          <button type="submit" disabled={clientLoading || !placa.trim() || !clientCedula} className="auth-submit">
+          <button type="submit" disabled={clientLoading || !placa.trim()} className="auth-submit">
             {clientLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
