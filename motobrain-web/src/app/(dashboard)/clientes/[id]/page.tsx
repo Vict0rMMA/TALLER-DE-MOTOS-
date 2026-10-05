@@ -252,6 +252,7 @@ export default function ClienteDetailPage({ params }: { params: { id: string } }
             phone: customer.phone,
             email: customer.email ?? '',
             optInWhatsapp: customer.optInWhatsapp,
+            optInEmail: customer.optInEmail ?? true,
           }}
           onSubmit={handleSubmit}
           isLoading={updateCustomer.isPending}

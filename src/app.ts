@@ -5,6 +5,7 @@ import { json } from 'express';
 import apiRouter from './interface/routes';
 import { errorHandler } from './interface/middlewares/errorMiddleware';
 import { DomainError } from './domain/errors/DomainError';
+import { ensureSchema } from './infrastructure/prisma/ensureSchema';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -61,6 +62,9 @@ app.get('/api/v1/cron/reminders', async (req, res) => {
   }
 });
 
+app.use('/api/v1', (_req, _res, next) => {
+  ensureSchema().then(() => next(), () => next());
+});
 app.use('/api/v1', apiRouter);
 
 app.use((req, _res, next) => {

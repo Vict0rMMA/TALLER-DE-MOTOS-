@@ -8,6 +8,7 @@ type Input = {
   phone: string;
   email?: string;
   optInWhatsapp?: boolean;
+  optInEmail?: boolean;
 };
 
 export class CreateCustomer {
@@ -22,6 +23,7 @@ export class CreateCustomer {
     return this.customerRepo.create({
       ...input,
       optInWhatsapp: input.optInWhatsapp ?? true,
+      optInEmail: input.optInEmail ?? true,
       // La cédula es la contraseña del portal: sin ella el login lo rechazaría.
       portalActive: !!input.cedula?.trim(),
       active: true,

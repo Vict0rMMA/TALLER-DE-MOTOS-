@@ -12,6 +12,7 @@ export const customerSchema = z.object({
     }),
   email: z.string().min(1, 'Email requerido').email('Email inválido'),
   optInWhatsapp: z.boolean().default(false),
+  optInEmail: z.boolean().default(false),
 });
 
 export type CustomerInput = z.infer<typeof customerSchema>;

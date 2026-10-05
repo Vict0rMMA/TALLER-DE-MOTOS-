@@ -5,7 +5,7 @@ import { Customer } from '../../../domain/entities/Customer';
 type Input = {
   id: string;
   workshopId: string;
-  data: Partial<Pick<Customer, 'name' | 'cedula' | 'phone' | 'email' | 'optInWhatsapp'>>;
+  data: Partial<Pick<Customer, 'name' | 'cedula' | 'phone' | 'email' | 'optInWhatsapp' | 'optInEmail'>>;
 };
 
 export class UpdateCustomer {

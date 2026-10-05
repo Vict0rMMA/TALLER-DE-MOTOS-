@@ -71,6 +71,7 @@ export class PrismaCustomerRepository implements CustomerRepository {
       phone: r.phone,
       email: r.email ?? undefined,
       optInWhatsapp: r.optInWhatsapp,
+      optInEmail: r.optInEmail ?? true,
       portalActive: r.portalActive ?? false,
       active: r.active ?? true,
       createdAt: r.createdAt,
