@@ -16,13 +16,16 @@ const keyOf = (customerId: string) => `portal-otp:${customerId}`;
 export interface OtpEntry {
   code: string;
   customerId: string;
+  attempts: number;
 }
+
+export const MAX_OTP_ATTEMPTS = 5;
 
 // Fallback en memoria (solo dev/local sin Upstash)
 const mem = new Map<string, { entry: OtpEntry; expiresAt: number }>();
 
 export async function setOtp(customerId: string, code: string): Promise<void> {
-  const entry: OtpEntry = { code, customerId };
+  const entry: OtpEntry = { code, customerId, attempts: 0 };
   if (redis) {
     await redis.set(keyOf(customerId), entry, { ex: TTL_S });
   } else {
@@ -42,6 +45,26 @@ export async function getOtp(customerId: string): Promise<OtpEntry | null> {
     return null;
   }
   return m.entry;
+}
+
+/** Suma un intento fallido y devuelve el total. Bloquea (borra el codigo) al llegar al limite. */
+export async function registerFailedAttempt(customerId: string): Promise<number> {
+  const entry = await getOtp(customerId);
+  if (!entry) return MAX_OTP_ATTEMPTS;
+  const attempts = entry.attempts + 1;
+  if (attempts >= MAX_OTP_ATTEMPTS) {
+    await deleteOtp(customerId);
+    return attempts;
+  }
+  const updated: OtpEntry = { ...entry, attempts };
+  if (redis) {
+    const ttl = await redis.ttl(keyOf(customerId));
+    await redis.set(keyOf(customerId), updated, { ex: ttl > 0 ? ttl : TTL_S });
+  } else {
+    const m = mem.get(customerId);
+    if (m) m.entry = updated;
+  }
+  return attempts;
 }
 
 export async function deleteOtp(customerId: string): Promise<void> {

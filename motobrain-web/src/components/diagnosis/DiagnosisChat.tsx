@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Brain, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Send, User, Loader2, Brain, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import type { DiagnosisSession } from '@/types/entities';
 import { useDiagnose, useDiagnosisAIStatus, type ConversationTurn } from '@/hooks/use-diagnosis';
 import { ApiError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { LogoMark } from '@/components/layout/BrandLogo';
 
 interface DiagnosisChatProps {
   history: DiagnosisSession[];
@@ -54,9 +55,7 @@ function DiagnosisCard({ session }: { session: DiagnosisSession }) {
       </div>
 
       <div className="flex gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
-          <Bot className="h-4 w-4 text-accent" />
-        </div>
+        <LogoMark size={32} />
         <div className="max-w-[90%] space-y-3">
 
           {hasStructured && (
@@ -104,7 +103,7 @@ function DiagnosisCard({ session }: { session: DiagnosisSession }) {
             </div>
           )}
 
-          {d.estimatedCost && (
+          {d.estimatedCost && (d.estimatedCost.min > 0 || d.estimatedCost.max > 0) && (
             <p className="text-xs text-text-tertiary">
               Costo estimado: ${d.estimatedCost.min.toLocaleString('es-CO')} — $
               {d.estimatedCost.max.toLocaleString('es-CO')} COP
@@ -219,9 +218,7 @@ export function DiagnosisChat({ history }: DiagnosisChatProps) {
 
         {diagnose.isPending && (
           <div className="flex gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
-              <Bot className="h-4 w-4 text-accent" />
-            </div>
+            <LogoMark size={32} />
             <div className="rounded-2xl rounded-tl-sm bg-bg-elevated px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-text-secondary">
                 <Loader2 className="h-4 w-4 animate-spin text-accent" />

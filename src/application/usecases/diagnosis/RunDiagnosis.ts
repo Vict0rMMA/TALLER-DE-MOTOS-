@@ -22,7 +22,7 @@ export class RunDiagnosis {
     let motorcycleInfo = 'Motocicleta no especificada';
 
     if (input.motorcycleId) {
-      const moto = await this.motorcycleRepo.findById(input.motorcycleId);
+      const moto = await this.motorcycleRepo.findById(input.motorcycleId, input.workshopId);
       if (!moto) throw new DomainError('Moto no encontrada', 404);
       motorcycleInfo = `${moto.brand} ${moto.model} ${moto.cc ?? ''}cc (${moto.year ?? 'año desc.'}), ${moto.kmCurrent}km`;
     }

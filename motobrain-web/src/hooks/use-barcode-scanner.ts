@@ -27,6 +27,8 @@ export function useBarcodeScanner({ active, onDetect, debounceMs = 2000 }: UseBa
   const zxingControlsRef = useRef<{ stop: () => void } | null>(null);
   const lastCodeRef = useRef<{ code: string; at: number } | null>(null);
   const [status, setStatus] = useState<ScannerStatus>('idle');
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   const handleDetected = useCallback(
     (code: string) => {
@@ -46,7 +48,22 @@ export function useBarcodeScanner({ active, onDetect, debounceMs = 2000 }: UseBa
     zxingControlsRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setTorchSupported(false);
+    setTorchOn(false);
   }, []);
+
+  const toggleTorch = useCallback(async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const next = !torchOn;
+      // applyConstraints con "torch" no esta en los tipos de TS para MediaTrackConstraintSet.
+      await track.applyConstraints({ advanced: [{ torch: next } as unknown as MediaTrackConstraintSet] });
+      setTorchOn(next);
+    } catch {
+      // el dispositivo dijo soportarlo pero fallo al aplicarlo (pasa en algunos Android) — no rompemos el escaneo por esto
+    }
+  }, [torchOn]);
 
   useEffect(() => {
     if (!active) {
@@ -87,6 +104,10 @@ export function useBarcodeScanner({ active, onDetect, debounceMs = 2000 }: UseBa
         return;
       }
       streamRef.current = stream;
+
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track?.getCapabilities?.() as (MediaTrackCapabilities & { torch?: boolean }) | undefined;
+      setTorchSupported(Boolean(capabilities?.torch));
 
       const video = videoRef.current;
       if (!video) return;
@@ -137,5 +158,5 @@ export function useBarcodeScanner({ active, onDetect, debounceMs = 2000 }: UseBa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  return { videoRef, status, stop };
+  return { videoRef, status, stop, torchSupported, torchOn, toggleTorch };
 }

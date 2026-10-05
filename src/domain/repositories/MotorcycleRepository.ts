@@ -1,7 +1,7 @@
 import { Motorcycle } from '../entities/Motorcycle';
 
 export interface MotorcycleRepository {
-  findById(id: string): Promise<Motorcycle | null>;
+  findById(id: string, workshopId: string): Promise<Motorcycle | null>;
   findByPlaca(placa: string, customerId?: string): Promise<Motorcycle | null>;
   findByCustomer(customerId: string): Promise<Motorcycle[]>;
   create(data: Omit<Motorcycle, 'id' | 'createdAt'>): Promise<Motorcycle>;

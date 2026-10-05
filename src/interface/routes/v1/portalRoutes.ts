@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authenticateCustomer } from '../../middlewares/authMiddleware';
 import { tenantMiddleware } from '../../middlewares/tenantMiddleware';
+import { authRateLimit } from '../../middlewares/rateLimitMiddleware';
 import * as ctrl from '../../controllers/portalController';
 import * as consultCtrl from '../../controllers/consultationController';
 import * as apptCtrl from '../../controllers/appointmentController';
@@ -8,10 +9,10 @@ import * as otpCtrl from '../../controllers/portalOtpController';
 
 const router = Router();
 
-router.post('/login', ctrl.portalLogin);
-router.post('/register', ctrl.portalRegister);
-router.post('/auth/otp/request', otpCtrl.requestOtp);
-router.post('/auth/otp/verify', otpCtrl.verifyOtp);
+router.post('/login', authRateLimit, ctrl.portalLogin);
+router.post('/register', authRateLimit, ctrl.portalRegister);
+router.post('/auth/otp/request', authRateLimit, otpCtrl.requestOtp);
+router.post('/auth/otp/verify', authRateLimit, otpCtrl.verifyOtp);
 
 router.get('/dashboard', authenticateCustomer, ctrl.portalDashboard);
 router.get('/me', authenticateCustomer, ctrl.portalMe);

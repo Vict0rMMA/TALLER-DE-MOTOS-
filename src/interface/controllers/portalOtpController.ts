@@ -4,7 +4,7 @@ import { signCustomerToken } from '../../infrastructure/config/jwt';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
 import { DomainError } from '../../domain/errors/DomainError';
 import { normalizePhoneDigits, phoneLookupVariants } from '../../infrastructure/phone/phoneVariants';
-import { setOtp, getOtp, deleteOtp } from '../../infrastructure/redis/otpStore';
+import { setOtp, getOtp, deleteOtp, registerFailedAttempt, MAX_OTP_ATTEMPTS } from '../../infrastructure/redis/otpStore';
 
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -52,6 +52,10 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
       return next(new DomainError('Código expirado. Solicita uno nuevo.', 401));
     }
     if (entry.code !== code.trim()) {
+      const attempts = await registerFailedAttempt(customerId);
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        return next(new DomainError('Demasiados intentos. Solicita un código nuevo.', 429));
+      }
       return next(new DomainError('Código incorrecto', 401));
     }
 

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CameraOff, ShieldAlert, Keyboard } from 'lucide-react';
+import { X, CameraOff, ShieldAlert, Keyboard, Flashlight, FlashlightOff } from 'lucide-react';
 import { useBarcodeScanner } from '@/hooks/use-barcode-scanner';
+import { useKeyboardWedge } from '@/hooks/use-keyboard-wedge';
 import { cn } from '@/lib/utils';
 
 interface BarcodeScannerProps {
@@ -24,6 +25,27 @@ function vibrate() {
   }
 }
 
+/** Pitido corto sintetizado — no requiere ningun archivo de audio. */
+function beep() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 1400;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+    osc.onended = () => ctx.close();
+  } catch {
+    // Web Audio bloqueado o no soportado: no es critico, el vibrate ya dio feedback
+  }
+}
+
 export function BarcodeScanner({ active, onDetect, onClose, title, subtitle, children }: BarcodeScannerProps) {
   const [manualCode, setManualCode] = useState('');
   const [mounted, setMounted] = useState(false);
@@ -31,15 +53,27 @@ export function BarcodeScanner({ active, onDetect, onClose, title, subtitle, chi
 
   const handleDetect = (code: string) => {
     vibrate();
+    beep();
     onDetect(code);
   };
 
-  const { videoRef, status } = useBarcodeScanner({ active, onDetect: handleDetect });
+  const { videoRef, status, torchSupported, torchOn, toggleTorch } = useBarcodeScanner({ active, onDetect: handleDetect });
+
+  // Lector USB/Bluetooth: funciona aunque el foco no este en ningun input.
+  useKeyboardWedge({ active, onScan: handleDetect });
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   function submitManual() {
     const code = manualCode.trim();
     if (code.length < 4) return;
-    onDetect(code);
+    handleDetect(code);
     setManualCode('');
   }
 
@@ -52,14 +86,30 @@ export function BarcodeScanner({ active, onDetect, onClose, title, subtitle, chi
           <p className="truncate text-sm font-semibold text-white">{title}</p>
           {subtitle && <p className="truncate text-xs text-white/60">{subtitle}</p>}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Cerrar escáner"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {torchSupported && (
+            <button
+              type="button"
+              onClick={toggleTorch}
+              aria-label={torchOn ? 'Apagar linterna' : 'Encender linterna'}
+              aria-pressed={torchOn}
+              className={cn(
+                'flex h-11 w-11 items-center justify-center rounded-full transition-colors',
+                torchOn ? 'bg-accent text-bg-primary' : 'bg-white/10 text-white hover:bg-white/20',
+              )}
+            >
+              {torchOn ? <Flashlight className="h-5 w-5" /> : <FlashlightOff className="h-5 w-5" />}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar escáner"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div className="relative flex-1 overflow-hidden bg-black">

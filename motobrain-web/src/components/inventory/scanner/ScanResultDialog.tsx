@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Package, PackageX, Plus, Minus, Loader2 } from 'lucide-react';
+import { Package, PackageX, Plus, Minus, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { findProductByBarcode, ProductNotFoundError, useRegisterStockMovement } from '@/hooks/use-products';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
@@ -37,6 +37,14 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
   useEffect(() => {
     setQuantity(1);
   }, [code]);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   async function handleConfirm() {
     if (!product) return;
@@ -81,14 +89,14 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-border py-2.5 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
+                className="flex-1 rounded-lg border border-border py-3 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={goCreate}
-                className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-bg-primary hover:opacity-90 transition-opacity"
+                className="flex-1 rounded-lg bg-accent py-3 text-sm font-semibold text-bg-primary hover:opacity-90 transition-opacity"
               >
                 + Crear nuevo producto
               </button>
@@ -111,6 +119,15 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
                 <p className="font-mono text-xs text-text-tertiary">{product.sku} · {product.category}</p>
                 <p className="text-sm font-medium text-accent"><MoneyDisplay value={product.price} responsive={false} /></p>
               </div>
+              <button
+                type="button"
+                onClick={() => router.push(`/inventario/${product.id}`)}
+                title="Ver ficha completa del producto"
+                aria-label="Ver ficha completa del producto"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-text-tertiary hover:border-accent hover:text-accent transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
             </div>
 
             <div className="rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
@@ -123,7 +140,8 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-text-secondary hover:border-accent hover:text-accent transition-colors"
+                  aria-label="Restar una unidad"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-text-secondary hover:border-accent hover:text-accent transition-colors"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
@@ -131,14 +149,16 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
                   type="number"
                   min={1}
                   max={10000}
+                  aria-label="Cantidad a agregar"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.min(10000, Math.max(1, Number(e.target.value) || 1)))}
-                  className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-center text-sm text-text-primary focus:border-accent focus:outline-none"
+                  className="h-11 w-full rounded-lg border border-border bg-bg-elevated px-3 text-center text-sm text-text-primary focus:border-accent focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.min(10000, q + 1))}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-text-secondary hover:border-accent hover:text-accent transition-colors"
+                  aria-label="Sumar una unidad"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-text-secondary hover:border-accent hover:text-accent transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -149,7 +169,7 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-border py-2.5 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
+                className="flex-1 rounded-lg border border-border py-3 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
               >
                 Cancelar
               </button>
@@ -157,7 +177,7 @@ export function ScanResultDialog({ code, onClose, onAdded }: ScanResultDialogPro
                 type="button"
                 onClick={handleConfirm}
                 disabled={registerMovement.isPending}
-                className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-bg-primary hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="flex-1 rounded-lg bg-accent py-3 text-sm font-semibold text-bg-primary hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {registerMovement.isPending ? 'Agregando…' : 'Agregar al inventario'}
               </button>

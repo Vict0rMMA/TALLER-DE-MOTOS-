@@ -25,7 +25,12 @@ export const getByCustomer = async (req: Request, res: Response, next: NextFunct
 
 export const getHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json(await new GetMotorcycleHistory(motorcycleRepo, serviceRepo).execute(String(req.params.id)));
+    res.json(
+      await new GetMotorcycleHistory(motorcycleRepo, serviceRepo).execute(
+        String(req.params.id),
+        req.workshopId!,
+      ),
+    );
   } catch (e) {
     next(e);
   }
@@ -48,6 +53,7 @@ export const updateMotorcycle = async (req: Request, res: Response, next: NextFu
     res.json(
       await new UpdateMotorcycle(motorcycleRepo).execute({
         id: String(req.params.id),
+        workshopId: req.workshopId!,
         data: req.body,
       }),
     );
