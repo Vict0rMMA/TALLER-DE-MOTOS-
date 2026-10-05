@@ -14,12 +14,18 @@ function fmt(n: number) {
   return '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 }
 
+/** Solo se escribe a clientes con correo que aceptaron notificaciones por email. */
+function canEmail(s: any): boolean {
+  const c = s?.motorcycle?.customer;
+  return !!c?.email && c.optInEmail !== false;
+}
+
 async function getServiceData(serviceId: string) {
   return (prisma as any).service.findUnique({
     where: { id: serviceId },
     include: {
       workshop: { select: { name: true, phone: true, address: true } },
-      motorcycle: { include: { customer: { select: { name: true, phone: true, email: true } } } },
+      motorcycle: { include: { customer: { select: { name: true, phone: true, email: true, optInEmail: true } } } },
       products: { include: { product: { select: { name: true, brand: true } } } },
     },
   });
@@ -29,7 +35,7 @@ async function getServiceData(serviceId: string) {
 export async function sendServiceCreatedEmail(serviceId: string) {
   if (!isEmailConfigured()) return;
   const s = await getServiceData(serviceId);
-  if (!s?.motorcycle?.customer?.email) return;
+  if (!canEmail(s)) return;
 
   const { customer, placa } = s.motorcycle;
   const typeLabel = SERVICE_LABELS[s.type] ?? s.type;
@@ -58,7 +64,7 @@ export async function sendServiceCreatedEmail(serviceId: string) {
 export async function sendServiceInProgressEmail(serviceId: string) {
   if (!isEmailConfigured()) return;
   const s = await getServiceData(serviceId);
-  if (!s?.motorcycle?.customer?.email) return;
+  if (!canEmail(s)) return;
 
   const { customer, placa } = s.motorcycle;
   const typeLabel = SERVICE_LABELS[s.type] ?? s.type;
@@ -84,7 +90,7 @@ export async function sendServiceInProgressEmail(serviceId: string) {
 export async function sendServiceCancelledEmail(serviceId: string) {
   if (!isEmailConfigured()) return;
   const s = await getServiceData(serviceId);
-  if (!s?.motorcycle?.customer?.email) return;
+  if (!canEmail(s)) return;
 
   const { customer, placa } = s.motorcycle;
   const workshopName = s.workshop.name;
@@ -106,7 +112,7 @@ export async function sendServiceCancelledEmail(serviceId: string) {
 export async function sendServiceClosedEmail(serviceId: string, publicAppUrl: string) {
   if (!isEmailConfigured()) return;
   const s = await getServiceData(serviceId);
-  if (!s?.motorcycle?.customer?.email) return;
+  if (!canEmail(s)) return;
 
   const { customer, placa } = s.motorcycle;
   const typeLabel = SERVICE_LABELS[s.type] ?? s.type;

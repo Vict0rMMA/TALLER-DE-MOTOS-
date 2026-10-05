@@ -21,4 +21,8 @@ export class UpdateCustomerDto {
   @IsBoolean()
   @IsOptional()
   optInWhatsapp?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  optInEmail?: boolean;
 }

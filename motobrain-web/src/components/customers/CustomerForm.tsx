@@ -52,6 +52,7 @@ export function CustomerForm({
       phone: '',
       email: '',
       optInWhatsapp: false,
+      optInEmail: false,
       ...defaultValues,
     },
   });
@@ -90,16 +91,28 @@ export function CustomerForm({
         </Field>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-3">
-        <input
-          {...register('optInWhatsapp')}
-          type="checkbox"
-          className="h-4 w-4 rounded accent-[--accent-primary]"
-        />
-        <span className="text-sm text-text-secondary">
-          Acepta notificaciones por WhatsApp
-        </span>
-      </label>
+      <div className="space-y-3">
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            {...register('optInEmail')}
+            type="checkbox"
+            className="h-4 w-4 rounded accent-[--accent-primary]"
+          />
+          <span className="text-sm text-text-secondary">
+            Acepta notificaciones por correo
+          </span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            {...register('optInWhatsapp')}
+            type="checkbox"
+            className="h-4 w-4 rounded accent-[--accent-primary]"
+          />
+          <span className="text-sm text-text-secondary">
+            Acepta notificaciones por WhatsApp
+          </span>
+        </label>
+      </div>
 
       <div className="flex justify-end pt-2">
         <button

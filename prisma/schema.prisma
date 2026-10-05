@@ -90,6 +90,7 @@ model Customer {
   phone         String
   email         String?
   optInWhatsapp Boolean  @default(false)
+  optInEmail    Boolean  @default(true)
   passwordHash  String?
   portalActive  Boolean  @default(false)
   active        Boolean  @default(true)

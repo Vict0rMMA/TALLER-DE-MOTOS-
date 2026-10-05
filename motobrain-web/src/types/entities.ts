@@ -41,6 +41,7 @@ export interface Customer {
   phone: string;
   email?: string;
   optInWhatsapp: boolean;
+  optInEmail: boolean;
   portalActive: boolean;
   createdAt: string;
   motorcycleCount?: number;

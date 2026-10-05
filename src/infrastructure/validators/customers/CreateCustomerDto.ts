@@ -18,4 +18,8 @@ export class CreateCustomerDto {
   @IsBoolean()
   @IsOptional()
   optInWhatsapp?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  optInEmail?: boolean;
 }
