@@ -11,6 +11,16 @@ import {
 import { usePortalAI } from '@/components/portal/PortalAIProvider';
 import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
+import { formatServiceLabel } from '@/lib/utils';
+
+/** "carlos perez" -> "Carlos Perez" — el mecánico a veces queda guardado en minúsculas. */
+function titleCase(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(' ');
+}
 
 interface ServiceProduct { name: string; brand: string | null; quantity: number; unitPrice: number; subtotal: number; }
 interface ServiceDetail {
@@ -108,7 +118,7 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
         <div className="portal-card p-5 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-lg font-bold text-text-primary">{service.type}</h1>
+              <h1 className="text-lg font-bold text-text-primary">{formatServiceLabel(service.type)}</h1>
               <p className="text-sm text-text-tertiary mt-0.5">
                 {service.motorcycle.placa} · {service.motorcycle.brand} {service.motorcycle.model}
               </p>
@@ -165,7 +175,7 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
                 <User className="h-4 w-4 text-text-tertiary shrink-0" />
                 <div>
                   <p className="text-xs text-text-tertiary">Mecánico</p>
-                  <p className="text-sm font-medium text-text-primary">{service.mechanic}</p>
+                  <p className="text-sm font-medium text-text-primary">{titleCase(service.mechanic)}</p>
                 </div>
               </div>
             )}
@@ -245,7 +255,7 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
 
           {portalMe?.workshop?.phone && (
             <a
-              href={`https://wa.me/${portalMe.workshop.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi servicio *${service.type}* - Placa: ${service.motorcycle.placa}`)}`}
+              href={`https://wa.me/${portalMe.workshop.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi servicio *${formatServiceLabel(service.type)}* - Placa: ${service.motorcycle.placa}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 rounded-xl border border-[#25D366]/30 bg-[#25D366]/8 px-4 py-3.5 text-[#25D366] transition hover:bg-[#25D366]/14 active:opacity-80"
@@ -274,7 +284,7 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
             </p>
             <div className="flex flex-wrap gap-2">
               {[
-                `¿Por qué se cambió el ${service.type} en mi ${service.motorcycle.brand}?`,
+                `¿Por qué fue necesario el servicio de ${formatServiceLabel(service.type).toLowerCase()} en mi ${service.motorcycle.brand}?`,
                 '¿Cada cuánto debo hacer este servicio?',
                 '¿Qué debo revisar después del servicio?',
                 service.status === 'in_progress' ? '¿Cuánto tiempo tarda este servicio?' : '¿Qué significa el estado actual?',
