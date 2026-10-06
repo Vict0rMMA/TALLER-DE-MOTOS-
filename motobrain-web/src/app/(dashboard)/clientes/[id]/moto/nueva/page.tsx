@@ -2,11 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { motorcycleSchema, type MotorcycleInput } from '@/validators/motorcycle.schema';
 import { useCreateMotorcycle } from '@/hooks/use-motorcycles';
+
+/** Formatea con puntos de miles mientras se escribe (ej. 160000 -> 160.000),
+ * para que quede claro cuantos ceros se estan poniendo. */
+function formatThousands(digits: string): string {
+  if (!digits) return '';
+  return Number(digits).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+}
 
 const inputCls =
   'w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors';
@@ -28,6 +35,7 @@ export default function NuevaMotocicletaPage({ params }: { params: { id: string 
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<MotorcycleInput>({
@@ -91,7 +99,21 @@ export default function NuevaMotocicletaPage({ params }: { params: { id: string 
               <input {...register('cc')} type="number" min="50" max="2000" className={inputCls} placeholder="125" />
             </Field>
             <Field label="Kilometraje actual *" error={errors.kmCurrent?.message}>
-              <input {...register('kmCurrent')} type="number" min="0" className={inputCls} placeholder="15000" />
+              <Controller
+                control={control}
+                name="kmCurrent"
+                render={({ field }) => (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={field.value ? formatThousands(String(field.value)) : ''}
+                    onChange={(e) => field.onChange(Number(e.target.value.replace(/\D/g, '')) || 0)}
+                    onBlur={field.onBlur}
+                    className={inputCls}
+                    placeholder="15.000"
+                  />
+                )}
+              />
             </Field>
           </div>
           <div className="flex justify-end pt-2">
