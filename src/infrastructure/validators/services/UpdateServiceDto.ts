@@ -13,6 +13,10 @@ export class UpdateServiceDto {
 
   @IsString()
   @IsOptional()
+  mechanicId?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @IsNumber()

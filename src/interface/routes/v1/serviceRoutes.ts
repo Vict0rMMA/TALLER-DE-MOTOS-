@@ -22,6 +22,7 @@ router.get('/:id', ctrl.getService);
 router.post('/', validateDto(CreateServiceDto), ctrl.createService);
 router.put('/:id', validateDto(UpdateServiceDto), ctrl.updateService);
 router.post('/:id/close', validateDto(CloseServiceDto), ctrl.closeService);
+router.delete('/:id', requireRole('owner'), ctrl.deleteService);
 router.post('/:id/photos', photoCtrl.uploadMiddleware, photoCtrl.addPhoto);
 router.delete('/:id/photos', photoCtrl.removePhoto);
 

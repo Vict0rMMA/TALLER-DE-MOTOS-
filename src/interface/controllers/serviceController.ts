@@ -3,6 +3,7 @@ import { PrismaServiceRepository } from '../../infrastructure/repositories/Prism
 import { CreateService } from '../../application/usecases/services/CreateService';
 import { UpdateService } from '../../application/usecases/services/UpdateService';
 import { CloseService } from '../../application/usecases/services/CloseService';
+import { DeleteService } from '../../application/usecases/services/DeleteService';
 import { GetUpcomingMaintenance } from '../../application/usecases/services/GetUpcomingMaintenance';
 import { DomainError } from '../../domain/errors/DomainError';
 import { env } from '../../infrastructure/config/env';
@@ -94,9 +95,14 @@ export const listInvoices = async (req: Request, res: Response, next: NextFuncti
         customerName: r.motorcycle?.customer?.name ?? undefined,
         placa: r.motorcycle?.placa ?? undefined,
         mechanicName: r.mechanic?.name ?? undefined,
+        mechanicId: r.mechanicId ?? undefined,
         total: Number(r.totalCost ?? 0),
         discount: Number(r.discount ?? 0),
+        laborCost: Number(r.laborCost ?? 0),
         paymentMethod: r.paymentMethod ?? undefined,
+        paymentReference: r.paymentReference ?? undefined,
+        warranty: r.warranty ?? undefined,
+        notes: r.notes ?? undefined,
       })),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
       totalRevenue: Number(totalRevenue._sum.totalCost ?? 0),
@@ -182,9 +188,10 @@ export const createService = async (req: Request, res: Response, next: NextFunct
       },
     });
     if (!row) throw new DomainError('Servicio no encontrado', 404);
+    // Se espera antes de responder: en Vercel, una promesa que sigue al
+    // fondo tras mandar la respuesta se puede cortar a mitad de camino.
+    await sendServiceCreatedEmail(result.id).catch(() => {});
     res.status(201).json(mapServiceRow(row));
-    // Email asíncrono — no bloquea la respuesta
-    sendServiceCreatedEmail(result.id).catch(() => {});
   } catch (e) {
     next(e);
   }
@@ -198,11 +205,12 @@ export const updateService = async (req: Request, res: Response, next: NextFunct
       workshopId: req.workshopId!,
       data: req.body,
     });
-    res.json(result);
-    // Emails automáticos según el nuevo estado
+    // Emails automáticos según el nuevo estado (se esperan por la misma
+    // razón: no dejarlos "al fondo" tras responder).
     const newStatus = req.body.status;
-    if (newStatus === 'in_progress') sendServiceInProgressEmail(serviceId).catch(() => {});
-    if (newStatus === 'cancelled') sendServiceCancelledEmail(serviceId).catch(() => {});
+    if (newStatus === 'in_progress') await sendServiceInProgressEmail(serviceId).catch(() => {});
+    if (newStatus === 'cancelled') await sendServiceCancelledEmail(serviceId).catch(() => {});
+    res.json(result);
   } catch (e) {
     next(e);
   }
@@ -217,9 +225,22 @@ export const closeService = async (req: Request, res: Response, next: NextFuncti
       ...req.body,
     });
 
-    sendServiceClosedEmail(serviceId, env.PUBLIC_APP_URL).catch(() => {});
+    await sendServiceClosedEmail(serviceId, env.PUBLIC_APP_URL).catch(() => {});
 
     res.json(result);
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const deleteService = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await new DeleteService(serviceRepo).execute({
+      id: String(req.params.id),
+      workshopId: req.workshopId!,
+      userId: req.userId!,
+    });
+    res.json({ ok: true });
   } catch (e) {
     next(e);
   }

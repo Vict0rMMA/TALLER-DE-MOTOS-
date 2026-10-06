@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Receipt, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { Receipt, Search, X, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
-import { useInvoices } from '@/hooks/use-invoices';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EditInvoiceSheet } from '@/components/invoices/EditInvoiceSheet';
+import { useInvoices, useDeleteInvoice, type Invoice } from '@/hooks/use-invoices';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatCOP } from '@/lib/utils';
 
@@ -42,6 +45,24 @@ export default function FacturasPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
+
+  const deleteInvoice = useDeleteInvoice();
+
+  function handleDelete() {
+    if (!deletingInvoice) return;
+    deleteInvoice.mutate(deletingInvoice.id, {
+      onSuccess: () => {
+        toast.success('Factura eliminada', { description: 'Los repuestos usados volvieron al inventario.' });
+        setDeletingInvoice(null);
+      },
+      onError: (e) => {
+        toast.error('No se pudo eliminar', { description: (e as Error).message });
+        setDeletingInvoice(null);
+      },
+    });
+  }
 
   const { data, isLoading } = useInvoices({ page, limit: 20, q: search || undefined, from: from || undefined, to: to || undefined });
   const invoices = data?.data ?? [];
@@ -157,35 +178,49 @@ export default function FacturasPage() {
         <>
           <div className="space-y-3 md:hidden">
             {invoices.map((inv) => (
-              <Link
-                key={inv.id}
-                href={`/recibo/${inv.id}`}
-                className="block rounded-xl border border-border bg-bg-secondary p-4 active:bg-bg-elevated"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-text-primary leading-snug">{inv.customerName ?? '—'}</p>
-                    <p className="font-mono text-xs text-text-tertiary">{inv.placa ?? '—'}</p>
+              <div key={inv.id} className="rounded-xl border border-border bg-bg-secondary p-4">
+                <Link href={`/recibo/${inv.id}`} className="block active:opacity-80">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-text-primary leading-snug">{inv.customerName ?? '—'}</p>
+                      <p className="font-mono text-xs text-text-tertiary">{inv.placa ?? '—'}</p>
+                    </div>
+                    <InvoiceTag n={inv.invoiceNumber} />
                   </div>
-                  <InvoiceTag n={inv.invoiceNumber} />
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                    <div>
+                      <dt className="text-text-tertiary">Fecha</dt>
+                      <dd className="text-text-secondary">
+                        {new Date(inv.closedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-tertiary">Pago</dt>
+                      <dd><PaymentTag method={inv.paymentMethod} /></dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="text-text-tertiary">Total</dt>
+                      <dd className="font-semibold text-text-primary"><MoneyDisplay value={inv.total} /></dd>
+                    </div>
+                  </dl>
+                </Link>
+                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingInvoice(inv)}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium text-text-secondary hover:border-accent hover:text-accent transition-colors"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeletingInvoice(inv)}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-danger/30 py-2 text-xs font-medium text-danger hover:bg-danger/5 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                  </button>
                 </div>
-                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                  <div>
-                    <dt className="text-text-tertiary">Fecha</dt>
-                    <dd className="text-text-secondary">
-                      {new Date(inv.closedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-text-tertiary">Pago</dt>
-                    <dd><PaymentTag method={inv.paymentMethod} /></dd>
-                  </div>
-                  <div className="col-span-2">
-                    <dt className="text-text-tertiary">Total</dt>
-                    <dd className="font-semibold text-text-primary"><MoneyDisplay value={inv.total} /></dd>
-                  </div>
-                </dl>
-              </Link>
+              </div>
             ))}
           </div>
 
@@ -199,6 +234,7 @@ export default function FacturasPage() {
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Mecánico</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Pago</th>
                   <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">Total</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -219,6 +255,26 @@ export default function FacturasPage() {
                     <td className="px-4 py-3.5 text-text-secondary">{inv.mechanicName ?? '—'}</td>
                     <td className="px-4 py-3.5"><PaymentTag method={inv.paymentMethod} /></td>
                     <td className="px-4 py-3.5 text-right"><MoneyDisplay value={inv.total} /></td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => setEditingInvoice(inv)}
+                          className="rounded-lg p-1.5 text-text-tertiary hover:bg-bg-elevated hover:text-accent transition-colors"
+                          title="Editar factura"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingInvoice(inv)}
+                          className="rounded-lg p-1.5 text-text-tertiary hover:bg-danger/10 hover:text-danger transition-colors"
+                          title="Eliminar factura"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -248,6 +304,17 @@ export default function FacturasPage() {
           </button>
         </div>
       )}
+
+      <EditInvoiceSheet invoice={editingInvoice} onClose={() => setEditingInvoice(null)} />
+
+      <ConfirmDialog
+        open={!!deletingInvoice}
+        title={`¿Eliminar la factura #${deletingInvoice?.invoiceNumber}?`}
+        description="Se borra el registro de este servicio y los repuestos que usó vuelven al inventario. Esto no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onCancel={() => setDeletingInvoice(null)}
+      />
     </div>
   );
 }

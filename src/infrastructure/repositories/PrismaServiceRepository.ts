@@ -80,6 +80,38 @@ export class PrismaServiceRepository implements ServiceRepository {
     return this.toDomain(r);
   }
 
+  async delete(id: string, workshopId: string, userId: string): Promise<void> {
+    await (prisma as any).$transaction(async (tx: any) => {
+      const service = await tx.service.findFirst({
+        where: { id, workshopId },
+        include: { products: true },
+      });
+      if (!service) return;
+
+      // Repone el stock que se descontó al crear el servicio (ver CreateService) y
+      // deja constancia del movimiento — igual que con la venta original.
+      for (const p of service.products) {
+        await tx.product.update({
+          where: { id: p.productId },
+          data: { stock: { increment: p.quantity } },
+        });
+        await tx.stockMovement.create({
+          data: {
+            productId: p.productId,
+            userId,
+            type: 'return',
+            quantity: p.quantity,
+            reason: `Factura eliminada (${service.id})`,
+          },
+        });
+      }
+
+      // Las notificaciones ligadas quedan con serviceId null (onDelete: SetNull);
+      // ServiceProduct se borra en cascada.
+      await tx.service.delete({ where: { id } });
+    });
+  }
+
   async count(workshopId: string, status?: string): Promise<number> {
     return (prisma as any).service.count({ where: { workshopId, ...(status && { status }) } });
   }

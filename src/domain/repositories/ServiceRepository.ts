@@ -12,5 +12,7 @@ export interface ServiceRepository {
   create(data: Omit<Service, 'id' | 'createdAt' | 'updatedAt'>): Promise<Service>;
   update(id: string, workshopId: string, data: Partial<Omit<Service, 'id' | 'workshopId' | 'createdAt' | 'updatedAt'>>): Promise<Service>;
   close(id: string, workshopId: string, closedAt: Date): Promise<Service>;
+  /** Borra el servicio/factura y repone al inventario los repuestos que había consumido. */
+  delete(id: string, workshopId: string, userId: string): Promise<void>;
   count(workshopId: string, status?: string): Promise<number>;
 }
