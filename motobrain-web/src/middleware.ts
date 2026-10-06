@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const STAFF_PUBLIC_PATHS = ['/login', '/register', '/portal-registro'];
+// Solo /login manda de vuelta al dashboard si ya hay sesión. Registrar sigue
+// siendo válido aunque OTRA pestaña del mismo navegador tenga sesión abierta
+// (la cookie se comparte entre pestañas, no es por pestaña) — si no, registrar
+// un cliente nuevo te mandaba al perfil del dueño cuando tenías su ficha abierta.
+const REDIRECT_IF_AUTHED = ['/login'];
 const PORTAL_PREFIX = '/portal';
 
 export function middleware(request: NextRequest) {
@@ -37,7 +42,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (token && isPublic && !request.nextUrl.searchParams.get('tab')) {
+  const redirectIfAuthed = REDIRECT_IF_AUTHED.some((p) => pathname.startsWith(p));
+  if (token && redirectIfAuthed && !request.nextUrl.searchParams.get('tab')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
