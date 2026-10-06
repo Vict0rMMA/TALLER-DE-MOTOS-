@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ColombiaFlag } from '@/components/ui/ColombiaFlag';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Bike, Wrench, Calendar, DollarSign, Plus, ChevronRight,
-  ClipboardList, MessageCircle, Heart, Sparkles, ArrowRight,
+  ClipboardList, MessageCircle, Heart, Sparkles, ArrowRight, Camera, Loader2,
 } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api-client';
 import { usePortalAuthStore } from '@/stores/portal-auth-store';
@@ -61,6 +62,31 @@ function fmtApptWhen(a: PortalAppointment) {
 }
 
 
+/** Comprime a JPEG (max 900px) y devuelve solo el base64, sin el prefijo data:. */
+function compressImageToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onerror = () => reject(new Error('Imagen inválida'));
+      img.onload = () => {
+        const MAX = 900;
+        let { width, height } = img;
+        if (width > MAX) { height = Math.round((height * MAX) / width); width = MAX; }
+        if (height > MAX) { width = Math.round((width * MAX) / height); height = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function whatsappUrl(phone: string) {
   const digits = phone.replace(/\D/g, '');
   return `https://wa.me/${digits.startsWith('57') ? digits : `57${digits}`}`;
@@ -71,8 +97,37 @@ const SERVICE_STEPS = ['open', 'in_progress', 'closed'];
 export default function PortalDashboard() {
   const { customer } = usePortalAuthStore();
   const { openAI } = usePortalAI();
+  const qc = useQueryClient();
   const [addMotoOpen, setAddMotoOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [uploadingMotoId, setUploadingMotoId] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const pendingMotoIdRef = useRef<string | null>(null);
+
+  function triggerPhotoUpload(motoId: string) {
+    pendingMotoIdRef.current = motoId;
+    photoInputRef.current?.click();
+  }
+
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const motoId = pendingMotoIdRef.current;
+    e.target.value = '';
+    if (!file || !motoId) return;
+    setUploadingMotoId(motoId);
+    try {
+      const imageBase64 = await compressImageToBase64(file);
+      await portalApi.patch(`/motorcycles/${motoId}/photo`, { imageBase64, imageMimeType: 'image/jpeg' });
+      await qc.invalidateQueries({ queryKey: ['portal-dashboard'] });
+      toast.success('Foto actualizada');
+    } catch (err) {
+      toast.error('No se pudo subir la foto', {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setUploadingMotoId(null);
+    }
+  }
 
   const { data: dash, isLoading } = useQuery<PortalDashboardData>({
     queryKey: ['portal-dashboard'],
@@ -283,13 +338,25 @@ export default function PortalDashboard() {
                           fill
                           className="object-cover"
                           sizes="208px"
-                          unoptimized
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
                       </>
                     ) : (
                       <MotoBrandPlaceholder brand={m.brand} />
                     )}
+                    <button
+                      type="button"
+                      onClick={() => triggerPhotoUpload(m.id)}
+                      disabled={uploadingMotoId === m.id}
+                      aria-label={m.imageUrl ? 'Cambiar foto' : 'Agregar foto'}
+                      className="absolute bottom-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/80 text-zinc-200 backdrop-blur transition-colors hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60"
+                    >
+                      {uploadingMotoId === m.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Camera className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                   </div>
                   <div className="flex flex-1 flex-col p-3">
                     <p className="font-mono text-sm font-bold tracking-wider text-white">{m.placa}</p>
@@ -364,6 +431,15 @@ export default function PortalDashboard() {
           <ColombiaFlag size={16} className="inline-block" />
         </p>
       </footer>
+
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoSelected}
+      />
 
       <PortalAddMotoSheet open={addMotoOpen} onOpenChange={setAddMotoOpen} />
       <PortalScheduleSheet
