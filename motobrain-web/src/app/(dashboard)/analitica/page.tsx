@@ -44,48 +44,6 @@ async function downloadRevenueXlsx(token: string | null, months = 6): Promise<vo
   URL.revokeObjectURL(url);
 }
 
-function col(v: unknown): string {
-  const s = v === null || v === undefined ? '' : String(v);
-  return `"${s.replace(/"/g, '""')}"`;
-}
-
-function copCol(n: unknown): string {
-  const num = typeof n === 'number' ? n : Number(n ?? 0);
-  return `"$${num.toLocaleString('es-CO', { maximumFractionDigits: 0 })}"`;
-}
-
-function downloadCSV(rows: string[][], filename: string) {
-  const sep = ';';
-  const body = rows.map((r) => r.join(sep)).join('\r\n');
-  const blob = new Blob(['﻿' + body], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function todayLabel() {
-  return new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function exportTopProducts(data: { productName: string; totalSold: number; revenue: number }[]) {
-  if (!data.length) return;
-  const totalUnits = data.reduce((s, r) => s + r.totalSold, 0);
-  const totalRevenue = data.reduce((s, r) => s + r.revenue, 0);
-  const rows: string[][] = [
-    [col('MOTOBRAIN — TOP REPUESTOS MÁS VENDIDOS'), '', '', ''],
-    [col(`Generado el: ${todayLabel()}`), '', '', ''],
-    ['', '', '', ''],
-    [col('#'), col('PRODUCTO'), col('UNIDADES VENDIDAS'), col('INGRESOS (COP)')],
-    ...data.map((r, i) => [col(i + 1), col(r.productName), col(r.totalSold), copCol(r.revenue)]),
-    ['', '', '', ''],
-    [col('TOTAL'), col(''), col(totalUnits), copCol(totalRevenue)],
-  ];
-  downloadCSV(rows, `top-repuestos-motobrain-${new Date().toISOString().slice(0, 10)}`);
-}
-
 export default function AnaliticaPage() {
   const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs();
   const { data: topProducts } = useTopProducts(8);
@@ -166,15 +124,8 @@ export default function AnaliticaPage() {
 
       {topProducts && topProducts.length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border p-4">
+          <div className="border-b border-border p-4">
             <h2 className="text-sm font-semibold text-text-primary">Detalle top repuestos</h2>
-            <button
-              type="button"
-              onClick={() => exportTopProducts(topProducts)}
-              className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-primary transition-colors"
-            >
-              <Download className="h-3.5 w-3.5" /> CSV
-            </button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-bg-elevated">

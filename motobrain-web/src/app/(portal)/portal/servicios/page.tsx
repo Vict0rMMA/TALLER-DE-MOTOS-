@@ -26,6 +26,8 @@ export default function PortalServiciosPage() {
     queryKey: ['portal-dashboard'],
     queryFn: () => portalApi.get<DashData>('/dashboard'),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 45_000,
   });
 
   const services = data?.services ?? [];

@@ -75,6 +75,9 @@ export default function PortalServiceDetailPage({ params }: { params: { id: stri
     queryKey: ['portal-service', params.id],
     queryFn: () => portalApi.get<ServiceDetail>(`/services/${params.id}`),
     enabled: !!token,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 45_000,
   });
 
   if (!isHydrated || !token) return null;
