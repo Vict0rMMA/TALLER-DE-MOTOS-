@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bike } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { useCreateCustomer } from '@/hooks/use-customers';
 import { useCreateMotorcycle } from '@/hooks/use-motorcycles';
+import { clearFormDraft } from '@/hooks/use-form-draft';
 import { motorcycleSchema } from '@/validators/motorcycle.schema';
 import type { CustomerInput } from '@/validators/customer.schema';
+
+const CUSTOMER_DRAFT_KEY = 'draft:cliente-nuevo';
+const MOTO_DRAFT_KEY = 'draft:cliente-nuevo:moto';
 
 /** Formatea con puntos de miles mientras se escribe (ej. 160000 -> 160.000). */
 function formatThousands(digits: string): string {
@@ -48,6 +52,24 @@ export default function NuevoClientePage() {
   const [moto, setMoto] = useState<MotoDraft>(emptyMoto);
   const [motoError, setMotoError] = useState<string | null>(null);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MOTO_DRAFT_KEY);
+      if (raw) setMoto(JSON.parse(raw));
+    } catch {
+      // noop
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MOTO_DRAFT_KEY, JSON.stringify(moto));
+    } catch {
+      // noop
+    }
+  }, [moto]);
+
   const motoStarted = moto.placa.trim() || moto.brand.trim() || moto.model.trim();
 
   async function handleSubmit(data: CustomerInput) {
@@ -73,6 +95,7 @@ export default function NuevoClientePage() {
         await createMoto.mutateAsync(parsed.data);
       }
 
+      clearFormDraft(MOTO_DRAFT_KEY);
       router.push(`/clientes/${customer.id}`);
     } catch {
       // error del cliente se muestra via createCustomer.isError; si falló la
@@ -111,6 +134,7 @@ export default function NuevoClientePage() {
           onSubmit={handleSubmit}
           isLoading={createCustomer.isPending || createMoto.isPending}
           submitLabel="Crear cliente"
+          draftKey={CUSTOMER_DRAFT_KEY}
         >
           <div className="space-y-4 border-t border-border pt-5">
             <div className="flex items-center gap-2.5">

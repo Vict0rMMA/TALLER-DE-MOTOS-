@@ -279,9 +279,9 @@ export function ServiceForm({ onSubmit, isLoading, submitLabel = 'Crear servicio
             <button
               type="button"
               onClick={() => append({ productId: '', quantity: 1, unitPrice: 0 })}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-3.5 py-2 text-sm font-medium text-accent hover:border-accent hover:bg-accent/15 transition-colors"
             >
-              <Plus className="h-3.5 w-3.5" /> Agregar repuesto
+              <Plus className="h-4 w-4" /> Agregar repuesto
             </button>
           </div>
 

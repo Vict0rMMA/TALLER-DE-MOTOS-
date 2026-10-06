@@ -24,6 +24,7 @@ function NuevoProductoForm({
       onSubmit={onSubmit}
       isLoading={isLoading}
       submitLabel="Crear producto"
+      draftKey="draft:producto-nuevo"
     />
   );
 }

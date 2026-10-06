@@ -9,6 +9,7 @@ import { PRODUCT_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { SearchSelect } from '@/components/ui/SearchSelect';
+import { useFormDraft, clearFormDraft } from '@/hooks/use-form-draft';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -28,6 +29,10 @@ interface ProductFormProps {
   onSubmit: (data: ProductInput) => void;
   isLoading?: boolean;
   submitLabel?: string;
+  /** Si se pasa, el formulario se guarda solo en el navegador mientras se
+   * escribe y se restaura si se recarga la página a medias (solo para
+   * crear; en edición no aplica porque los valores vienen del servidor). */
+  draftKey?: string;
 }
 
 function Field({
@@ -55,16 +60,10 @@ export function ProductForm({
   onSubmit,
   isLoading,
   submitLabel = 'Guardar producto',
+  draftKey,
 }: ProductFormProps) {
   const [compatInput, setCompatInput] = useState('');
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<ProductInput>({
+  const form = useForm<ProductInput>({
     resolver: zodResolver(productSchema) as any,
     defaultValues: {
       sku: '',
@@ -80,6 +79,21 @@ export function ProductForm({
       ...defaultValues,
     },
   });
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    formState: { errors },
+  } = form;
+
+  useFormDraft(draftKey ?? '', form);
+
+  function handleFormSubmit(data: ProductInput) {
+    if (draftKey) clearFormDraft(draftKey);
+    onSubmit(data);
+  }
 
   const compatibility = watch('compatibility');
   const cost = watch('cost');
@@ -102,7 +116,7 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <SectionLabel>Identificación</SectionLabel>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="SKU *" error={errors.sku?.message}>
@@ -175,56 +189,55 @@ export function ProductForm({
         {(() => {
           const isUniversal = compatibility.length === 1 && compatibility[0] === 'Todas';
           return (
-            <button
-              type="button"
-              onClick={() => setValue('compatibility', isUniversal ? [] : ['Todas'])}
-              className={cn(
-                'mb-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                isUniversal
-                  ? 'border-accent bg-accent/10 text-accent'
-                  : 'border-border text-text-secondary hover:border-accent hover:text-accent',
-              )}
-            >
-              {isUniversal ? '✓ ' : ''}Sirve para todas las motos
-            </button>
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={isUniversal}
+                onChange={() => setValue('compatibility', isUniversal ? [] : ['Todas'])}
+                className="h-4 w-4 rounded accent-[--accent-primary]"
+              />
+              <span className="text-sm text-text-secondary">Sirve para todas las motos</span>
+            </label>
           );
         })()}
-        <div className="flex gap-2">
-          <input
-            value={compatInput}
-            onChange={(e) => setCompatInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCompat())}
-            disabled={compatibility.length === 1 && compatibility[0] === 'Todas'}
-            className={cn(inputCls, 'flex-1 disabled:opacity-40')}
-            placeholder="Honda CB 125F — Enter para agregar"
-          />
-          <button
-            type="button"
-            onClick={addCompat}
-            disabled={compatibility.length === 1 && compatibility[0] === 'Todas'}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-secondary"
-          >
-            <Plus className="h-3.5 w-3.5" /> Agregar
-          </button>
-        </div>
-        {compatibility.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {compatibility.map((c) => (
-              <span
-                key={c}
-                className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent"
+        {!(compatibility.length === 1 && compatibility[0] === 'Todas') && (
+          <>
+            <div className="mt-3 flex gap-2">
+              <input
+                value={compatInput}
+                onChange={(e) => setCompatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCompat())}
+                className={cn(inputCls, 'flex-1')}
+                placeholder="Honda CB 125F — Enter para agregar"
+              />
+              <button
+                type="button"
+                onClick={addCompat}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent transition-colors"
               >
-                {c}
-                <button
-                  type="button"
-                  onClick={() => removeCompat(c)}
-                  className="ml-0.5 opacity-60 hover:opacity-100"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
+                <Plus className="h-3.5 w-3.5" /> Agregar
+              </button>
+            </div>
+            {compatibility.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {compatibility.map((c) => (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent"
+                  >
+                    {c}
+                    <button
+                      type="button"
+                      onClick={() => removeCompat(c)}
+                      className="ml-0.5 opacity-60 hover:opacity-100"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </Field>
 

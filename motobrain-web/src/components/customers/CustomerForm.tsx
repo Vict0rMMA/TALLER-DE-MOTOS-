@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { customerSchema, type CustomerInput } from '@/validators/customer.schema';
 import { ColombiaPhoneInput } from '@/components/ui/ColombiaPhoneInput';
+import { useFormDraft, clearFormDraft } from '@/hooks/use-form-draft';
 
 interface CustomerFormProps {
   defaultValues?: Partial<CustomerInput>;
@@ -11,6 +12,10 @@ interface CustomerFormProps {
   isLoading?: boolean;
   submitLabel?: string;
   children?: React.ReactNode;
+  /** Si se pasa, el formulario se guarda solo en el navegador mientras se
+   * escribe y se restaura si se recarga la página a medias (solo para
+   * crear; en edición no aplica porque los valores vienen del servidor). */
+  draftKey?: string;
 }
 
 function Field({
@@ -40,13 +45,9 @@ export function CustomerForm({
   isLoading,
   submitLabel = 'Guardar cliente',
   children,
+  draftKey,
 }: CustomerFormProps) {
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<CustomerInput>({
+  const form = useForm<CustomerInput>({
     resolver: zodResolver(customerSchema) as any,
     defaultValues: {
       name: '',
@@ -58,9 +59,22 @@ export function CustomerForm({
       ...defaultValues,
     },
   });
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = form;
+
+  useFormDraft(draftKey ?? '', form);
+
+  function handleFormSubmit(data: CustomerInput) {
+    if (draftKey) clearFormDraft(draftKey);
+    onSubmit(data);
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Nombre completo *" error={errors.name?.message}>
           <input {...register('name')} className={inputCls} placeholder="Carlos Rodríguez" />

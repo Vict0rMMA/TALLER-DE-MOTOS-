@@ -266,9 +266,10 @@ function ConsultationCard({
                 <div className="consultas-price-input">
                   <span className="text-sm text-text-tertiary">$</span>
                   <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    value={price ? Number(price).toLocaleString('es-CO', { maximumFractionDigits: 0 }) : ''}
+                    onChange={(e) => setPrice(e.target.value.replace(/\D/g, ''))}
                     placeholder="Precio exacto (opcional)"
                   />
                   <span className="shrink-0 text-xs text-text-tertiary">COP</span>
