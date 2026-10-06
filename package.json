@@ -11,6 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "clean:data": "ts-node-dev --transpile-only scripts/clean-test-data.ts",
     "prisma:seed": "ts-node-dev --transpile-only prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "check:env": "node scripts/verify-supabase-env.js",
