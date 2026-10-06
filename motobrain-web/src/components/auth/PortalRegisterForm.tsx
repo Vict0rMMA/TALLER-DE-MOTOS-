@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   User, Phone, CreditCard, Mail, Hash, Gauge, Calendar,
   ChevronRight, ChevronLeft, Loader2, Check, Sparkles, Wrench,
-  ArrowRight, Camera, X, Shield, Zap, Gift,
+  ArrowRight, Camera, X, Shield, Zap, Gift, Eye, EyeOff,
 } from 'lucide-react';
 import { portalApi, PortalApiError } from '@/lib/portal-api-client';
 import { usePortalAuthStore, type PortalCustomer } from '@/stores/portal-auth-store';
@@ -72,10 +72,10 @@ interface Step2Data {
 
 // ── Normalizadores ──────────────────────────────────────────────
 function normalizePhone(raw: string): string {
-  // Quita +57 / 57 al inicio, espacios, guiones, paréntesis
-  let n = raw.replace(/[\s\-()+]/g, '');
+  // Quita todo lo que no sea dígito, el +57 si lo escriben, y tope de 10 dígitos
+  let n = raw.replace(/\D/g, '');
   if (n.startsWith('57') && n.length > 10) n = n.slice(2);
-  return n;
+  return n.slice(0, 10);
 }
 
 function normalizeCedula(raw: string): string {
@@ -116,6 +116,7 @@ function PortalRegisterInner() {
 
   const [s1, setS1] = useState<Step1Data>({ name: '', phone: '', cedula: '', email: '' });
   const [s1Errors, setS1Errors] = useState<Partial<Step1Data>>({});
+  const [showCedula, setShowCedula] = useState(false);
 
   const [s2, setS2] = useState<Step2Data>({ placa: '', brand: '', model: '', cc: '', year: '', photoPreview: null });
   const [s2Errors, setS2Errors] = useState<Partial<Record<keyof Step2Data, string>>>({});
@@ -128,8 +129,8 @@ function PortalRegisterInner() {
 
     const phone = normalizePhone(s1.phone);
     if (!phone) errs.phone = 'Ingresa tu número de celular';
-    else if (phone.length < 7) errs.phone = 'Número muy corto';
-    else if (phone.length > 12) errs.phone = 'Número muy largo';
+    else if (phone.length < 10) errs.phone = 'Debe tener 10 dígitos (ej: 3001234567)';
+    else if (phone[0] !== '3') errs.phone = 'Un celular colombiano empieza en 3';
 
     const cedula = normalizeCedula(s1.cedula);
     if (!cedula) errs.cedula = 'Ingresa tu número de cédula';
@@ -278,11 +279,17 @@ function PortalRegisterInner() {
                     type="tel"
                     placeholder="3001234567"
                     inputMode="numeric"
+                    maxLength={10}
                     value={s1.phone}
                     onChange={(e) => { setS1((p) => ({ ...p, phone: normalizePhone(e.target.value) })); setS1Errors((p) => ({ ...p, phone: '' })); }}
                     className="auth-input"
                     autoComplete="tel"
                   />
+                  {!s1Errors.phone && (
+                    <p className="mt-0.5 text-[11px] text-zinc-600">
+                      Los 10 dígitos, sin +57. Debe empezar en 3.
+                    </p>
+                  )}
                   {s1Errors.phone && <p className="auth-error">{s1Errors.phone}</p>}
                 </div>
 
@@ -292,15 +299,27 @@ function PortalRegisterInner() {
                     <CreditCard className="h-3.5 w-3.5 text-zinc-500" />
                     Cédula
                   </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    inputMode="numeric"
-                    value={s1.cedula}
-                    onChange={(e) => { setS1((p) => ({ ...p, cedula: normalizeCedula(e.target.value) })); setS1Errors((p) => ({ ...p, cedula: '' })); }}
-                    className="auth-input"
-                    autoComplete="off"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCedula ? 'text' : 'password'}
+                      placeholder="1234567890"
+                      inputMode="numeric"
+                      value={s1.cedula}
+                      onChange={(e) => { setS1((p) => ({ ...p, cedula: normalizeCedula(e.target.value) })); setS1Errors((p) => ({ ...p, cedula: '' })); }}
+                      className="auth-input"
+                      style={{ paddingRight: '2.5rem' }}
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCedula((v) => !v)}
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-500 hover:text-zinc-300"
+                      aria-label={showCedula ? 'Ocultar cédula' : 'Mostrar cédula'}
+                      tabIndex={-1}
+                    >
+                      {showCedula ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   <p className="mt-0.5 text-[11px] text-zinc-600">Usada para iniciar sesión después</p>
                   {s1Errors.cedula && <p className="auth-error">{s1Errors.cedula}</p>}
                 </div>
