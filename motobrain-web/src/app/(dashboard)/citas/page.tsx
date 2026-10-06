@@ -168,7 +168,7 @@ function AppointmentCard({
                 Confirmar y avisar al cliente
               </button>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-text-tertiary">
-                <Mail className="h-3 w-3" /> Le llega la confirmación por correo y WhatsApp
+                <Mail className="h-3 w-3" /> Le llega la confirmación al correo
               </p>
             </div>
           )}
