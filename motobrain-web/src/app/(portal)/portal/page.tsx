@@ -87,6 +87,13 @@ function compressImageToBase64(file: File): Promise<string> {
   });
 }
 
+function timeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días';
+  if (h < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
 function whatsappUrl(phone: string) {
   const digits = phone.replace(/\D/g, '');
   return `https://wa.me/${digits.startsWith('57') ? digits : `57${digits}`}`;
@@ -163,7 +170,7 @@ export default function PortalDashboard() {
         <div className="pointer-events-none absolute -bottom-4 right-10 h-24 w-24 rounded-full bg-emerald-400/8 blur-xl" />
 
         <h1 className="text-[1.6rem] font-bold leading-tight text-white">
-          Hola, {firstName} 👋
+          {timeGreeting()}, {firstName}
         </h1>
         <p className="mt-1 text-sm text-zinc-400">
           {activeServices.length > 0
