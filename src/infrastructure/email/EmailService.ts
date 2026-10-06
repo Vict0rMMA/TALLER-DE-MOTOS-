@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { letter } from './emailLayout';
 
 function createTransport() {
   const user = process.env.GMAIL_USER?.trim();
@@ -53,6 +54,12 @@ export function isEmailConfigured(): boolean {
   return !!(process.env.GMAIL_USER?.trim() && process.env.GMAIL_APP_PASSWORD?.trim());
 }
 
+/** Primer nombre, con la inicial en mayúscula — la BD guarda nombres en mayúscula sostenida. */
+function firstName(fullName: string): string {
+  const first = fullName.trim().split(/\s+/)[0] ?? '';
+  return first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : '';
+}
+
 export function buildServiceEmailHtml(params: {
   customerName: string;
   placa: string;
@@ -60,67 +67,53 @@ export function buildServiceEmailHtml(params: {
   total: string;
   description?: string;
   workshopName?: string;
+  workshopPhone?: string | null;
+  workshopAddress?: string | null;
 }): string {
-  const { customerName, placa, type, total, description, workshopName = 'MotoBrain Taller' } = params;
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0f0f0f;font-family:Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:32px 0">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:16px;overflow:hidden;border:1px solid #2a2a2a">
-        <!-- Header -->
-        <tr><td style="background:#00c77a;padding:24px 32px;text-align:center">
-          <span style="font-size:22px;font-weight:700;color:#000">🔧 MotoBrain</span>
-          <p style="margin:4px 0 0;color:#003d25;font-size:13px">${workshopName}</p>
-        </td></tr>
-        <!-- Body -->
-        <tr><td style="padding:32px">
-          <p style="color:#aaa;margin:0 0 8px;font-size:13px">Hola,</p>
-          <h1 style="color:#fff;margin:0 0 24px;font-size:20px">Actualización de servicio</h1>
-          <!-- Info card -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#242424;border-radius:12px;padding:20px;margin-bottom:24px">
+  const {
+    customerName,
+    placa,
+    type,
+    total,
+    description,
+    workshopName = 'MotoBrain Taller',
+    workshopPhone,
+    workshopAddress,
+  } = params;
+  const name = firstName(customerName);
+
+  return letter({
+    workshopName,
+    workshopPhone,
+    workshopAddress,
+    content: `
+      <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">${name ? `Hola ${name},` : 'Hola,'}</p>
+      <h1 style="margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">Actualización de tu servicio</h1>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px;background:#141414;border:1px solid #262626;border-radius:10px">
+        <tr><td style="padding:20px 22px">
+          <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">PLACA</p>
+          <p style="margin:0 0 14px;font-size:22px;font-weight:700;color:#00c77a;letter-spacing:1.5px">${placa}</p>
+          <div style="padding-top:14px;border-top:1px solid #262626">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">SERVICIO</p>
+            <p style="margin:0;font-size:14px;font-weight:600;color:#e5e5e5">${type}</p>
+          </div>
+          ${
+            description
+              ? `<div style="padding-top:14px;margin-top:14px;border-top:1px solid #262626">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">DETALLE</p>
+            <p style="margin:0;font-size:13px;line-height:1.5;color:#b0b0b0">${description}</p>
+          </div>`
+              : ''
+          }
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px">
             <tr>
-              <td style="padding:6px 0">
-                <span style="color:#666;font-size:12px;display:block">Cliente</span>
-                <span style="color:#fff;font-size:15px;font-weight:600">${customerName}</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:6px 0;border-top:1px solid #333">
-                <span style="color:#666;font-size:12px;display:block">Placa</span>
-                <span style="color:#00c77a;font-size:18px;font-weight:700;letter-spacing:2px">${placa}</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:6px 0;border-top:1px solid #333">
-                <span style="color:#666;font-size:12px;display:block">Tipo de servicio</span>
-                <span style="color:#fff;font-size:15px">${type}</span>
-              </td>
-            </tr>
-            ${description ? `<tr><td style="padding:6px 0;border-top:1px solid #333">
-                <span style="color:#666;font-size:12px;display:block">Descripción</span>
-                <span style="color:#ccc;font-size:14px">${description}</span>
-              </td></tr>` : ''}
-            <tr>
-              <td style="padding:6px 0;border-top:1px solid #333">
-                <span style="color:#666;font-size:12px;display:block">Total</span>
-                <span style="color:#00c77a;font-size:20px;font-weight:700">$${total}</span>
-              </td>
+              <td style="padding-top:14px;border-top:1px solid #262626;font-size:13px;font-weight:600;color:#8a8a8a">TOTAL</td>
+              <td style="padding-top:14px;border-top:1px solid #262626;text-align:right;font-size:18px;font-weight:700;color:#00c77a">$${total}</td>
             </tr>
           </table>
-          <p style="color:#888;font-size:13px;text-align:center;margin:0">
-            Gracias por confiar en ${workshopName} 🙏
-          </p>
-        </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:16px 32px;border-top:1px solid #2a2a2a;text-align:center">
-          <p style="color:#555;font-size:11px;margin:0">Este correo fue enviado automáticamente por MotoBrain</p>
         </td></tr>
       </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#8a8a8a">Gracias por confiar en ${workshopName}.</p>
+    `,
+  });
 }

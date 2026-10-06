@@ -180,6 +180,9 @@ export const sendServiceNotification = async (req: Request, res: Response, next:
       type: typeLabel,
       total,
       description: service.description ?? undefined,
+      workshopName: shop,
+      workshopPhone: service.workshop?.phone,
+      workshopAddress: service.workshop?.address,
     });
 
     const emailSubject = `MotoBrain — Recibo de servicio · ${motorcycle.placa}`;

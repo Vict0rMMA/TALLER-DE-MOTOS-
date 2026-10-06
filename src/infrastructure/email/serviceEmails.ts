@@ -1,5 +1,5 @@
 import { sendEmail, isEmailConfigured } from './EmailService';
-import { wrap } from './emailLayout';
+import { letter } from './emailLayout';
 import { generateReceiptPdf } from '../pdf/generateReceiptPdf';
 import prisma from '../prisma/client';
 
@@ -12,6 +12,30 @@ const SERVICE_LABELS: Record<string, string> = {
 
 function fmt(n: number) {
   return '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
+}
+
+/** Primer nombre, con la inicial en mayúscula — la BD guarda nombres en mayúscula sostenida. */
+function firstName(fullName: string): string {
+  const first = fullName.trim().split(/\s+/)[0] ?? '';
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+}
+
+/** Caja de datos (placa, servicio, total…) a juego con la del correo de bienvenida. */
+function dataBox(rows: { label: string; value: string; accent?: boolean }[]): string {
+  return `
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;background:#141414;border:1px solid #262626;border-radius:10px">
+      <tr><td style="padding:20px 22px">
+        ${rows
+          .map(
+            (r, i) => `
+          <div style="${i > 0 ? 'margin-top:14px;padding-top:14px;border-top:1px solid #262626' : ''}">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">${r.label}</p>
+            <p style="margin:0;font-size:${r.accent ? '22px' : '14px'};font-weight:${r.accent ? '700' : '500'};color:${r.accent ? '#00c77a' : '#e5e5e5'};${r.accent ? 'letter-spacing:1.5px' : 'line-height:1.5'}">${r.value}</p>
+          </div>`,
+          )
+          .join('')}
+      </td></tr>
+    </table>`;
 }
 
 async function getServiceData(serviceId: string) {
@@ -35,23 +59,23 @@ export async function sendServiceCreatedEmail(serviceId: string) {
   const typeLabel = SERVICE_LABELS[s.type] ?? s.type;
   const workshopName = s.workshop.name;
 
-  const html = wrap(`
-    <p style="color:#aaa;margin:0 0 6px;font-size:13px">Hola ${customer.name},</p>
-    <h2 style="color:#fff;margin:0 0 20px;font-size:18px">Tu moto ingresó al taller ✅</h2>
-    <div style="background:#242424;border-radius:10px;padding:18px;margin-bottom:20px">
-      <p style="margin:0 0 8px"><span style="color:#666;font-size:11px">PLACA</span><br>
-        <span style="color:#00c77a;font-size:22px;font-weight:700;letter-spacing:2px">${placa}</span></p>
-      <p style="margin:8px 0 0;border-top:1px solid #333;padding-top:8px">
-        <span style="color:#666;font-size:11px">SERVICIO</span><br>
-        <span style="color:#fff;font-size:14px">${typeLabel}</span></p>
-      ${s.description ? `<p style="margin:8px 0 0;border-top:1px solid #333;padding-top:8px">
-        <span style="color:#666;font-size:11px">DESCRIPCIÓN</span><br>
-        <span style="color:#ccc;font-size:13px">${s.description}</span></p>` : ''}
-    </div>
-    <p style="color:#888;font-size:13px;margin:0">Te avisaremos cuando comencemos a trabajar en ella y cuando esté lista.</p>
-  `, workshopName, s.workshop.phone);
+  const html = letter({
+    workshopName,
+    workshopPhone: s.workshop.phone,
+    workshopAddress: s.workshop.address,
+    content: `
+      <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">Hola ${firstName(customer.name)},</p>
+      <h1 style="margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">Tu moto ingresó al taller</h1>
+      ${dataBox([
+        { label: 'PLACA', value: placa, accent: true },
+        { label: 'SERVICIO', value: typeLabel },
+        ...(s.description ? [{ label: 'DESCRIPCIÓN', value: s.description }] : []),
+      ])}
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#8a8a8a">Te avisaremos cuando comencemos a trabajar en ella y cuando esté lista.</p>
+    `,
+  });
 
-  await sendEmail(customer.email, `MotoBrain — Tu moto ${placa} ingresó al taller`, html);
+  await sendEmail(customer.email, `${workshopName} — Tu moto ${placa} ingresó al taller`, html);
 }
 
 // 2. Comenzamos a trabajar
@@ -64,20 +88,22 @@ export async function sendServiceInProgressEmail(serviceId: string) {
   const typeLabel = SERVICE_LABELS[s.type] ?? s.type;
   const workshopName = s.workshop.name;
 
-  const html = wrap(`
-    <p style="color:#aaa;margin:0 0 6px;font-size:13px">Hola ${customer.name},</p>
-    <h2 style="color:#fff;margin:0 0 20px;font-size:18px">🔧 Comenzamos a trabajar en tu moto</h2>
-    <div style="background:#242424;border-radius:10px;padding:18px;margin-bottom:20px">
-      <p style="margin:0 0 8px"><span style="color:#666;font-size:11px">PLACA</span><br>
-        <span style="color:#00c77a;font-size:22px;font-weight:700;letter-spacing:2px">${placa}</span></p>
-      <p style="margin:8px 0 0;border-top:1px solid #333;padding-top:8px">
-        <span style="color:#666;font-size:11px">TRABAJO A REALIZAR</span><br>
-        <span style="color:#fff;font-size:14px">${typeLabel}</span></p>
-    </div>
-    <p style="color:#888;font-size:13px;margin:0">Nuestro equipo ya está trabajando en tu moto. Te notificaremos cuando esté lista.</p>
-  `, workshopName, s.workshop.phone);
+  const html = letter({
+    workshopName,
+    workshopPhone: s.workshop.phone,
+    workshopAddress: s.workshop.address,
+    content: `
+      <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">Hola ${firstName(customer.name)},</p>
+      <h1 style="margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">Ya estamos trabajando en tu moto</h1>
+      ${dataBox([
+        { label: 'PLACA', value: placa, accent: true },
+        { label: 'TRABAJO A REALIZAR', value: typeLabel },
+      ])}
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#8a8a8a">Te notificaremos apenas esté lista para recoger.</p>
+    `,
+  });
 
-  await sendEmail(customer.email, `MotoBrain — Trabajando en tu moto ${placa}`, html);
+  await sendEmail(customer.email, `${workshopName} — Trabajando en tu moto ${placa}`, html);
 }
 
 // 3. Servicio cancelado
@@ -89,17 +115,19 @@ export async function sendServiceCancelledEmail(serviceId: string) {
   const { customer, placa } = s.motorcycle;
   const workshopName = s.workshop.name;
 
-  const html = wrap(`
-    <p style="color:#aaa;margin:0 0 6px;font-size:13px">Hola ${customer.name},</p>
-    <h2 style="color:#fff;margin:0 0 20px;font-size:18px">Servicio cancelado</h2>
-    <div style="background:#242424;border-radius:10px;padding:18px;margin-bottom:20px">
-      <p style="margin:0"><span style="color:#666;font-size:11px">PLACA</span><br>
-        <span style="color:#00c77a;font-size:22px;font-weight:700;letter-spacing:2px">${placa}</span></p>
-    </div>
-    <p style="color:#888;font-size:13px;margin:0">El servicio de tu moto ha sido cancelado. Contáctanos si tienes alguna pregunta.</p>
-  `, workshopName, s.workshop.phone);
+  const html = letter({
+    workshopName,
+    workshopPhone: s.workshop.phone,
+    workshopAddress: s.workshop.address,
+    content: `
+      <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">Hola ${firstName(customer.name)},</p>
+      <h1 style="margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">El servicio fue cancelado</h1>
+      ${dataBox([{ label: 'PLACA', value: placa, accent: true }])}
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#8a8a8a">Si tienes alguna pregunta, escríbenos y con gusto te ayudamos.</p>
+    `,
+  });
 
-  await sendEmail(customer.email, `MotoBrain — Servicio cancelado · ${placa}`, html);
+  await sendEmail(customer.email, `${workshopName} — Servicio cancelado · ${placa}`, html);
 }
 
 // 4. Servicio completado con PDF y fotos
@@ -113,63 +141,94 @@ export async function sendServiceClosedEmail(serviceId: string, publicAppUrl: st
   const total = Number(s.totalCost);
   const workshopName = s.workshop.name;
 
-  const productsRows = s.products.map((p: any) => `
+  const productsRows = s.products
+    .map(
+      (p: any) => `
     <tr>
-      <td style="color:#ccc;font-size:13px;padding:6px 0;border-bottom:1px solid #333">${p.product.name}${p.product.brand ? ` (${p.product.brand})` : ''}</td>
-      <td style="color:#ccc;font-size:13px;padding:6px 0;border-bottom:1px solid #333;text-align:center">${p.quantity}</td>
-      <td style="color:#ccc;font-size:13px;padding:6px 0;border-bottom:1px solid #333;text-align:right">${fmt(Number(p.unitPrice) * p.quantity)}</td>
-    </tr>`).join('');
+      <td style="color:#d4d4d4;font-size:13px;padding:8px 0;border-bottom:1px solid #262626">${p.product.name}${p.product.brand ? ` (${p.product.brand})` : ''}</td>
+      <td style="color:#d4d4d4;font-size:13px;padding:8px 0;border-bottom:1px solid #262626;text-align:center">${p.quantity}</td>
+      <td style="color:#d4d4d4;font-size:13px;padding:8px 0;border-bottom:1px solid #262626;text-align:right">${fmt(Number(p.unitPrice) * p.quantity)}</td>
+    </tr>`,
+    )
+    .join('');
 
-  const photosSection = s.photos?.length > 0 ? `
-    <p style="color:#666;font-size:11px;margin:16px 0 8px;font-weight:700">FOTOS DEL SERVICIO</p>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      ${s.photos.map((url: string, i: number) => `
-        <a href="${url}" style="color:#00c77a;font-size:12px">📷 Ver foto ${i + 1}</a>`).join(' · ')}
-    </div>` : '';
+  const photosSection =
+    s.photos?.length > 0
+      ? `
+    <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.4px;color:#737373">FOTOS DEL SERVICIO</p>
+    <p style="margin:0 0 24px;font-size:13px;line-height:1.8">
+      ${s.photos.map((url: string, i: number) => `<a href="${url}" style="color:#00c77a;text-decoration:none;font-weight:600">Ver foto ${i + 1}</a>`).join(' &nbsp;&middot;&nbsp; ')}
+    </p>`
+      : '';
 
   const receiptUrl = `${publicAppUrl}/recibo/${serviceId}`;
 
-  const html = wrap(`
-    <p style="color:#aaa;margin:0 0 6px;font-size:13px">Hola ${customer.name},</p>
-    <h2 style="color:#fff;margin:0 0 4px;font-size:18px">✅ Tu moto está lista</h2>
-    <p style="color:#888;font-size:13px;margin:0 0 20px">Ya puedes pasar a recogerla al taller.</p>
-
-    <div style="background:#242424;border-radius:10px;padding:18px;margin-bottom:20px">
-      <p style="margin:0 0 10px"><span style="color:#666;font-size:11px">PLACA</span><br>
-        <span style="color:#00c77a;font-size:22px;font-weight:700;letter-spacing:2px">${placa}</span></p>
-      <p style="margin:10px 0;border-top:1px solid #333;padding-top:10px">
-        <span style="color:#666;font-size:11px">SERVICIO REALIZADO</span><br>
-        <span style="color:#fff;font-size:14px;font-weight:600">${typeLabel}</span></p>
-      ${s.description ? `<p style="margin:10px 0;border-top:1px solid #333;padding-top:10px">
-        <span style="color:#666;font-size:11px">DESCRIPCIÓN DEL TRABAJO</span><br>
-        <span style="color:#ccc;font-size:13px">${s.description}</span></p>` : ''}
-
-      ${s.products.length > 0 ? `
-      <p style="margin:10px 0 6px;border-top:1px solid #333;padding-top:10px;color:#666;font-size:11px">REPUESTOS UTILIZADOS</p>
-      <table width="100%" cellpadding="0" cellspacing="0">
+  const productsTable =
+    s.products.length > 0
+      ? `
+      <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.4px;color:#737373">REPUESTOS UTILIZADOS</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">
         <tr>
-          <th style="color:#666;font-size:11px;text-align:left;padding-bottom:4px">Producto</th>
-          <th style="color:#666;font-size:11px;text-align:center;padding-bottom:4px">Cant.</th>
-          <th style="color:#666;font-size:11px;text-align:right;padding-bottom:4px">Valor</th>
+          <th style="color:#737373;font-size:11px;text-align:left;padding-bottom:6px;font-weight:500">Producto</th>
+          <th style="color:#737373;font-size:11px;text-align:center;padding-bottom:6px;font-weight:500">Cant.</th>
+          <th style="color:#737373;font-size:11px;text-align:right;padding-bottom:6px;font-weight:500">Valor</th>
         </tr>
         ${productsRows}
-      </table>` : ''}
+      </table>`
+      : '';
 
-      <div style="background:#00c77a;border-radius:8px;padding:12px 16px;margin-top:14px;display:flex;justify-content:space-between">
-        <span style="color:#000;font-weight:700;font-size:14px">TOTAL A PAGAR</span>
-        <span style="color:#000;font-weight:700;font-size:16px">${fmt(total)}</span>
-      </div>
-    </div>
+  const html = letter({
+    workshopName,
+    workshopPhone: s.workshop.phone,
+    workshopAddress: s.workshop.address,
+    content: `
+      <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">Hola ${firstName(customer.name)},</p>
+      <h1 style="margin:0 0 6px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">Tu moto está lista</h1>
+      <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#8a8a8a">Ya puedes pasar a recogerla al taller.</p>
 
-    ${photosSection}
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;background:#141414;border:1px solid #262626;border-radius:10px">
+        <tr><td style="padding:22px 24px">
+          <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">PLACA</p>
+          <p style="margin:0 0 16px;font-size:22px;font-weight:700;color:#00c77a;letter-spacing:1.5px">${placa}</p>
 
-    <p style="margin:16px 0 8px">
-      <a href="${receiptUrl}" style="background:#1a1a1a;border:1px solid #00c77a;color:#00c77a;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
-        📄 Ver recibo completo online
-      </a>
-    </p>
-    <p style="color:#666;font-size:12px;margin:8px 0 0">El recibo en PDF también va adjunto a este correo.</p>
-  `, workshopName, s.workshop.phone);
+          <div style="padding-top:14px;border-top:1px solid #262626;margin-bottom:${s.description ? '14px' : '18px'}">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">SERVICIO REALIZADO</p>
+            <p style="margin:0;font-size:14px;font-weight:600;color:#e5e5e5">${typeLabel}</p>
+          </div>
+
+          ${
+            s.description
+              ? `<div style="padding-top:14px;border-top:1px solid #262626;margin-bottom:18px">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">DESCRIPCIÓN DEL TRABAJO</p>
+            <p style="margin:0;font-size:13px;line-height:1.5;color:#b0b0b0">${s.description}</p>
+          </div>`
+              : ''
+          }
+
+          <div style="padding-top:14px;border-top:1px solid #262626">
+            ${productsTable}
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#00c77a;border-radius:8px">
+              <tr>
+                <td style="padding:13px 16px;font-size:14px;font-weight:700;color:#0a0a0a">TOTAL A PAGAR</td>
+                <td style="padding:13px 16px;font-size:16px;font-weight:700;color:#0a0a0a;text-align:right">${fmt(total)}</td>
+              </tr>
+            </table>
+          </div>
+        </td></tr>
+      </table>
+
+      ${photosSection}
+
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 10px">
+        <tr>
+          <td align="center" style="background:#00c77a;border-radius:8px">
+            <a href="${receiptUrl}" style="display:block;padding:16px 20px;font-size:16px;font-weight:700;color:#0a0a0a;text-decoration:none;text-align:center">Ver recibo completo online</a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0;font-size:12px;color:#737373">El recibo en PDF también va adjunto a este correo.</p>
+    `,
+  });
 
   // Generar PDF
   let attachments: any[] = [];
@@ -192,5 +251,5 @@ export async function sendServiceClosedEmail(serviceId: string, publicAppUrl: st
     attachments = [{ filename: `recibo-${placa}-${new Date().toISOString().slice(0,10)}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }];
   } catch { /* sin adjunto */ }
 
-  await sendEmail(customer.email, `MotoBrain — Tu moto ${placa} está lista ✅`, html, attachments);
+  await sendEmail(customer.email, `${workshopName} — Tu moto ${placa} está lista`, html, attachments);
 }
