@@ -2,12 +2,6 @@ import { sendEmail, isEmailConfigured } from './EmailService';
 import { letter } from './emailLayout';
 import prisma from '../prisma/client';
 
-/** El cliente entra al portal con su celular tal como lo digita: 10 dígitos, sin +57. */
-function displayPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  return digits.length > 10 ? digits.slice(-10) : digits;
-}
-
 /** Primer nombre, con la inicial en mayúscula — la BD guarda nombres en mayúscula sostenida. */
 function firstName(fullName: string): string {
   const first = fullName.trim().split(/\s+/)[0] ?? '';
@@ -24,13 +18,13 @@ function whatsappUrl(phone?: string | null): string | null {
 
 export function buildPortalWelcomeHtml(params: {
   customerName: string;
-  phone: string;
+  placa: string;
   workshopName: string;
   workshopPhone?: string | null;
   workshopAddress?: string | null;
   publicAppUrl: string;
 }): string {
-  const { customerName, phone, workshopName, workshopPhone, workshopAddress, publicAppUrl } =
+  const { customerName, placa, workshopName, workshopPhone, workshopAddress, publicAppUrl } =
     params;
   const loginUrl = `${publicAppUrl}/login`;
   const waUrl = whatsappUrl(workshopPhone);
@@ -81,23 +75,15 @@ export function buildPortalWelcomeHtml(params: {
             </tr>
             <tr>
               <td width="26" valign="top" style="font-size:15px;font-weight:700;color:#00c77a;line-height:1.5">3</td>
-              <td style="font-size:15px;line-height:1.5;color:#d4d4d4">Digita estos dos datos:</td>
+              <td style="font-size:15px;line-height:1.5;color:#d4d4d4">Digita la placa de tu moto:</td>
             </tr>
           </table>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:14px 0 22px;background:#0b0b0b;border:1px solid #262626;border-radius:8px">
             <tr>
-              <td style="padding:16px 18px 14px">
-                <p style="margin:0 0 3px;font-size:12px;color:#737373;letter-spacing:0.3px">CELULAR</p>
-                <p style="margin:0;font-size:23px;color:#00c77a;font-weight:700;letter-spacing:1px">${displayPhone(phone)}</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 18px 16px">
-                <div style="height:1px;background:#262626;margin-bottom:14px"></div>
-                <p style="margin:0 0 3px;font-size:12px;color:#737373;letter-spacing:0.3px">CONTRASEÑA</p>
-                <p style="margin:0;font-size:17px;color:#fafafa;font-weight:600">Tu número de cédula</p>
-                <p style="margin:4px 0 0;font-size:13px;color:#737373">Solo los números, sin puntos ni comas</p>
+              <td style="padding:16px 18px">
+                <p style="margin:0 0 3px;font-size:12px;color:#737373;letter-spacing:0.3px">PLACA</p>
+                <p style="margin:0;font-size:23px;color:#00c77a;font-weight:700;letter-spacing:2px">${placa}</p>
               </td>
             </tr>
           </table>
@@ -132,8 +118,8 @@ export function buildPortalWelcomeHtml(params: {
             Agrégala a la pantalla de inicio y entras de una, como cualquier otra app.
           </p>
           <p style="margin:0;font-size:13px;line-height:1.6;color:#8a8a8a">
-            <strong style="color:#b0b0b0;font-weight:600">Tu cédula es tu clave.</strong>
-            Nunca te la vamos a pedir por teléfono ni por WhatsApp.
+            <strong style="color:#b0b0b0;font-weight:600">¿Tienes más de una moto?</strong>
+            Con la placa de cualquiera de tus motos entras a la misma cuenta.
           </p>
         </td>
       </tr>
@@ -153,12 +139,12 @@ export function buildPortalWelcomeHtml(params: {
 /** Misma carta en texto plano. Va junto al HTML en cada envío. */
 export function buildPortalWelcomeText(params: {
   customerName: string;
-  phone: string;
+  placa: string;
   workshopName: string;
   workshopPhone?: string | null;
   publicAppUrl: string;
 }): string {
-  const { customerName, phone, workshopName, workshopPhone, publicAppUrl } = params;
+  const { customerName, placa, workshopName, workshopPhone, publicAppUrl } = params;
   return [
     `Hola ${firstName(customerName)},`,
     '',
@@ -176,12 +162,11 @@ export function buildPortalWelcomeText(params: {
     'CÓMO ENTRAR',
     `1. Abre ${publicAppUrl}/login`,
     '2. Elige la pestaña "Soy cliente"',
-    '3. Digita estos dos datos:',
-    `     Celular:    ${displayPhone(phone)}`,
-    '     Contraseña: tu número de cédula (solo los números)',
+    '3. Digita la placa de tu moto:',
+    `     Placa: ${placa}`,
     '',
     'Ábrela desde el celular y agrégala a la pantalla de inicio para entrar de una.',
-    'Tu cédula es tu clave: nunca te la vamos a pedir por teléfono ni por WhatsApp.',
+    'Si tienes más de una moto, con la placa de cualquiera entras a la misma cuenta.',
     '',
     'Nos alegra tenerte con nosotros. Cualquier duda nos escribes.',
     `Equipo de ${workshopName}`,
@@ -196,7 +181,7 @@ export const PORTAL_WELCOME_TYPE = 'portal_welcome';
 
 export type WelcomeEmailResult =
   | { ok: true }
-  | { ok: false; reason: 'sin_smtp' | 'sin_email' | 'sin_cedula' | 'portal_inactivo' | 'error'; detail?: string };
+  | { ok: false; reason: 'sin_smtp' | 'sin_email' | 'sin_moto' | 'portal_inactivo' | 'error'; detail?: string };
 
 /**
  * Da la bienvenida al portal: le dice al cliente que ya puede seguir el proceso
@@ -215,6 +200,14 @@ export async function sendPortalWelcomeEmail(
   });
   if (!customer) return { ok: false, reason: 'error', detail: 'Cliente no encontrado' };
 
+  // El login del portal es por placa: sin al menos una moto registrada no hay
+  // con qué entrar, así que no tiene caso mandar el correo todavía.
+  const motorcycle = await (prisma as any).motorcycle.findFirst({
+    where: { customerId: customer.id },
+    orderBy: { createdAt: 'asc' },
+    select: { placa: true },
+  });
+
   const workshopName = customer.workshop?.name ?? 'MotoBrain Taller';
 
   async function record(status: string, message: string, errorMsg?: string) {
@@ -232,15 +225,14 @@ export async function sendPortalWelcomeEmail(
   }
 
   if (!isEmailConfigured()) return { ok: false, reason: 'sin_smtp' };
-  // Sin correo no hay a dónde enviar; sin cédula el portal lo rechazaría al entrar.
   if (!customer.email?.trim()) return { ok: false, reason: 'sin_email' };
-  if (!customer.cedula?.trim()) return { ok: false, reason: 'sin_cedula' };
   if (!customer.portalActive) return { ok: false, reason: 'portal_inactivo' };
+  if (!motorcycle?.placa) return { ok: false, reason: 'sin_moto' };
 
   const subject = `${firstName(customer.name)}, tu cuenta en ${workshopName} ya está lista`;
   const html = buildPortalWelcomeHtml({
     customerName: customer.name,
-    phone: customer.phone,
+    placa: motorcycle.placa,
     workshopName,
     workshopPhone: customer.workshop?.phone,
     workshopAddress: customer.workshop?.address,
@@ -252,7 +244,7 @@ export async function sendPortalWelcomeEmail(
     // distintos en una sola conversacion y pliegue los repetidos con "...".
     const text = buildPortalWelcomeText({
       customerName: customer.name,
-      phone: customer.phone,
+      placa: motorcycle.placa,
       workshopName,
       workshopPhone: customer.workshop?.phone,
       publicAppUrl,

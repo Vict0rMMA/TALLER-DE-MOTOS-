@@ -504,7 +504,7 @@ export const enablePortal = async (req: Request, res: Response, next: NextFuncti
 const WELCOME_EMAIL_ERRORS: Record<string, string> = {
   sin_smtp: 'Falta configurar el correo del taller (GMAIL_USER y GMAIL_APP_PASSWORD).',
   sin_email: 'El cliente no tiene correo registrado.',
-  sin_cedula: 'El cliente no tiene cédula registrada, y esta es la contraseña del portal.',
+  sin_moto: 'El cliente no tiene ninguna moto registrada; el login del portal es por placa. Agrégale una moto y reenvía el correo.',
   portal_inactivo: 'Primero activa el portal del cliente.',
 };
 

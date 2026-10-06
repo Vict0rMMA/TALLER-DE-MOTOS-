@@ -6,6 +6,8 @@ import { CreateMotorcycle } from '../../application/usecases/motorcycles/CreateM
 import { UpdateMotorcycle } from '../../application/usecases/motorcycles/UpdateMotorcycle';
 import { GetMotorcyclesByCustomer } from '../../application/usecases/motorcycles/GetMotorcyclesByCustomer';
 import { GetMotorcycleHistory } from '../../application/usecases/motorcycles/GetMotorcycleHistory';
+import { sendPortalWelcomeEmail } from '../../infrastructure/email/customerEmails';
+import { env } from '../../infrastructure/config/env';
 
 const motorcycleRepo = new PrismaMotorcycleRepository();
 const customerRepo = new PrismaCustomerRepository();
@@ -43,6 +45,14 @@ export const createMotorcycle = async (req: Request, res: Response, next: NextFu
       workshopId: req.workshopId!,
     });
     res.status(201).json(result);
+
+    // El login del portal es por placa: la primera moto de un cliente es lo
+    // que de verdad lo deja entrar, asi que es el momento correcto para
+    // avisarle (si ya tenia otra moto, no se repite el correo).
+    const motos = await motorcycleRepo.findByCustomer(result.customerId);
+    if (motos.length === 1) {
+      sendPortalWelcomeEmail(result.customerId, env.PUBLIC_APP_URL).catch(() => {});
+    }
   } catch (e) {
     next(e);
   }
