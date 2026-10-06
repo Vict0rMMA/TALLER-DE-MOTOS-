@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { Edit, Trash2, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { Product } from '@/types/entities';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
 import { useDeleteProduct } from '@/hooks/use-products';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { cn } from '@/lib/utils';
 
 interface ProductTableProps {
@@ -28,16 +30,20 @@ function stockBarClass(stock: number, stockMin: number) {
 export function ProductTable({ products, isLoading }: ProductTableProps) {
   const router = useRouter();
   const deleteProduct = useDeleteProduct();
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<Product | null>(null);
 
-  function handleDelete(id: string) {
-    if (confirmDelete === id) {
-      deleteProduct.mutate(id);
-      setConfirmDelete(null);
-    } else {
-      setConfirmDelete(id);
-      setTimeout(() => setConfirmDelete(null), 3000);
-    }
+  function confirmDelete() {
+    if (!toDelete) return;
+    deleteProduct.mutate(toDelete.id, {
+      onSuccess: () => {
+        toast.success('Producto eliminado');
+        setToDelete(null);
+      },
+      onError: (e) => {
+        toast.error('No se pudo eliminar', { description: (e as Error).message });
+        setToDelete(null);
+      },
+    });
   }
 
   if (isLoading) {
@@ -90,8 +96,8 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(p.id)}
-                  className={cn('rounded-lg p-2', confirmDelete === p.id ? 'bg-danger text-white' : 'text-text-secondary')}
+                  onClick={() => setToDelete(p)}
+                  className="rounded-lg p-2 text-text-secondary hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -220,14 +226,9 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(p.id)}
-                        className={cn(
-                          'rounded-lg p-1.5 transition-colors',
-                          confirmDelete === p.id
-                            ? 'bg-danger text-white'
-                            : 'text-text-secondary hover:bg-bg-hover hover:text-danger',
-                        )}
-                        title={confirmDelete === p.id ? 'Confirmar' : 'Eliminar'}
+                        onClick={() => setToDelete(p)}
+                        className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-bg-hover hover:text-danger"
+                        title="Eliminar"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -240,6 +241,15 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
         </table>
       </div>
     </div>
+
+    <ConfirmDialog
+      open={!!toDelete}
+      title={`¿Eliminar "${toDelete?.name}"?`}
+      description="Deja de verse en el inventario. El historial de servicios que ya lo usaron no se ve afectado."
+      confirmLabel={deleteProduct.isPending ? 'Eliminando…' : 'Eliminar'}
+      onConfirm={confirmDelete}
+      onCancel={() => setToDelete(null)}
+    />
     </>
   );
 }

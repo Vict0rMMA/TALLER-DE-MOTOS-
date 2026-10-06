@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Edit, Trash2, Bike, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { Customer } from '@/types/entities';
 import { useDeleteCustomer } from '@/hooks/use-customers';
-import { cn } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -15,16 +16,20 @@ interface CustomerTableProps {
 export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
   const router = useRouter();
   const deleteCustomer = useDeleteCustomer();
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<Customer | null>(null);
 
-  function handleDelete(id: string) {
-    if (confirmDelete === id) {
-      deleteCustomer.mutate(id);
-      setConfirmDelete(null);
-    } else {
-      setConfirmDelete(id);
-      setTimeout(() => setConfirmDelete(null), 3000);
-    }
+  function confirmDelete() {
+    if (!toDelete) return;
+    deleteCustomer.mutate(toDelete.id, {
+      onSuccess: () => {
+        toast.success('Cliente eliminado');
+        setToDelete(null);
+      },
+      onError: (e) => {
+        toast.error('No se pudo eliminar', { description: (e as Error).message });
+        setToDelete(null);
+      },
+    });
   }
 
   if (isLoading) {
@@ -70,11 +75,8 @@ export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
               </button>
               <button
                 type="button"
-                onClick={() => handleDelete(c.id)}
-                className={cn(
-                  'rounded-lg p-2',
-                  confirmDelete === c.id ? 'bg-danger text-white' : 'text-text-secondary',
-                )}
+                onClick={() => setToDelete(c)}
+                className="rounded-lg p-2 text-text-secondary hover:text-danger"
                 aria-label="Eliminar"
               >
                 <Trash2 className="h-4 w-4" />
@@ -169,14 +171,9 @@ export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(c.id)}
-                    className={cn(
-                      'rounded p-1.5 transition-colors',
-                      confirmDelete === c.id
-                        ? 'bg-danger text-white'
-                        : 'text-text-secondary hover:bg-bg-primary hover:text-danger',
-                    )}
-                    title={confirmDelete === c.id ? 'Confirmar' : 'Eliminar'}
+                    onClick={() => setToDelete(c)}
+                    className="rounded p-1.5 text-text-secondary transition-colors hover:bg-bg-primary hover:text-danger"
+                    title="Eliminar"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -187,6 +184,15 @@ export function CustomerTable({ customers, isLoading }: CustomerTableProps) {
         </tbody>
       </table>
     </div>
+
+    <ConfirmDialog
+      open={!!toDelete}
+      title={`¿Eliminar a ${toDelete?.name}?`}
+      description="Se borra su ficha, sus motos y su acceso al portal. Esto no se puede deshacer."
+      confirmLabel={deleteCustomer.isPending ? 'Eliminando…' : 'Eliminar'}
+      onConfirm={confirmDelete}
+      onCancel={() => setToDelete(null)}
+    />
     </>
   );
 }
