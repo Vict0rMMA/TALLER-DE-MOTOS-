@@ -54,10 +54,15 @@ export function AddMotorcycleCard({ customerId }: AddMotorcycleCardProps) {
   return (
     <button
       onClick={() => router.push(`/clientes/${customerId}/moto/nueva`)}
-      className="glass-card flex h-full min-h-[96px] w-full flex-col items-center justify-center gap-2 border-dashed text-text-tertiary hover:border-accent hover:text-accent transition-colors"
+      className="glass-card flex h-full min-h-[140px] w-full flex-col items-center justify-center gap-3 border-dashed py-8 text-text-tertiary transition-colors hover:border-accent hover:text-accent"
     >
-      <Plus className="h-6 w-6" />
-      <span className="text-xs font-medium">Agregar moto</span>
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-bg-elevated">
+        <Plus className="h-5 w-5" />
+      </span>
+      <div className="text-center">
+        <p className="text-sm font-medium text-text-secondary">Agregar moto</p>
+        <p className="mt-0.5 text-xs text-text-tertiary/70">Registra la placa y los datos</p>
+      </div>
     </button>
   );
 }

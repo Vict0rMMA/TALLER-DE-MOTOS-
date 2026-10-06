@@ -17,12 +17,10 @@ import type { CustomerInput } from '@/validators/customer.schema';
 function PortalAccessSection({
   customerId,
   portalActive,
-  hasCedula,
   hasEmail,
 }: {
   customerId: string;
   portalActive: boolean;
-  hasCedula: boolean;
   hasEmail: boolean;
 }) {
   const qc = useQueryClient();
@@ -31,7 +29,7 @@ function PortalAccessSection({
   const enable = useMutation({
     mutationFn: () => api.put(`/portal/enable/${customerId}`, {}),
     onSuccess: () => {
-      toast.success('Portal activado', { description: 'El cliente entra con su celular y cédula.' });
+      toast.success('Portal activado', { description: 'El cliente entra con la placa de su moto.' });
       qc.invalidateQueries({ queryKey: ['customers'], refetchType: 'all' });
     },
     onError: (e) => toast.error('Error', { description: (e as Error).message }),
@@ -56,10 +54,8 @@ function PortalAccessSection({
           <h2 className="font-semibold text-text-primary">Portal del cliente</h2>
           <p className="text-xs text-text-tertiary mt-0.5">
             {portalActive
-              ? 'Acceso con celular + cédula en /portal'
-              : hasCedula
-                ? 'Activa el portal para que el cliente entre con su cédula'
-                : 'Registra la cédula del cliente para activar el portal'}
+              ? 'Acceso con la placa de su moto en /portal'
+              : 'Activa el portal para que el cliente entre con la placa de su moto'}
           </p>
         </div>
         <span className={`ml-auto rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${portalActive ? 'border-success/30 bg-success/10 text-success' : 'border-border text-text-tertiary'}`}>
@@ -88,7 +84,7 @@ function PortalAccessSection({
       ) : (
         <button
           onClick={() => enable.mutate()}
-          disabled={enable.isPending || !hasCedula}
+          disabled={enable.isPending}
           className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-bg-primary hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {enable.isPending ? (
@@ -259,13 +255,6 @@ export default function ClienteDetailPage({ params }: { params: { id: string } }
         />
       </div>
 
-      <PortalAccessSection
-        customerId={id}
-        portalActive={customer.portalActive ?? false}
-        hasCedula={!!customer.cedula?.trim()}
-        hasEmail={!!customer.email?.trim()}
-      />
-
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-tertiary">
           Motocicletas ({motorcycles.length})
@@ -277,6 +266,12 @@ export default function ClienteDetailPage({ params }: { params: { id: string } }
           <AddMotorcycleCard customerId={id} />
         </div>
       </div>
+
+      <PortalAccessSection
+        customerId={id}
+        portalActive={customer.portalActive ?? false}
+        hasEmail={!!customer.email?.trim()}
+      />
     </div>
   );
 }

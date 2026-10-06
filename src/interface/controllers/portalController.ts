@@ -484,9 +484,6 @@ export const enablePortal = async (req: Request, res: Response, next: NextFuncti
       where: { id: customerId, workshopId: req.workshopId },
     });
     if (!customer) return next(new DomainError('Cliente no encontrado', 404));
-    if (!customer.cedula?.trim()) {
-      return next(new DomainError('Registra la cédula del cliente antes de activar el portal', 400));
-    }
 
     await prisma.customer.update({
       where: { id: customerId },
@@ -495,7 +492,7 @@ export const enablePortal = async (req: Request, res: Response, next: NextFuncti
 
     sendPortalWelcomeEmail(customerId, env.PUBLIC_APP_URL).catch(() => {});
 
-    res.json({ ok: true, message: 'Portal activado. El cliente entra con su celular y cédula.' });
+    res.json({ ok: true, message: 'Portal activado. El cliente entra con la placa de su moto.' });
   } catch (err) {
     next(err);
   }
