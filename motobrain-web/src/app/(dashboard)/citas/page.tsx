@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, CheckCircle2, ChevronDown, ChevronUp, Send } from 'lucide-react';
+import { Calendar, CalendarCheck, CheckCircle2, ChevronDown, ChevronUp, Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api-client';
@@ -34,6 +34,23 @@ function fmtDate(d: string | null) {
 function toDatetimeLocalValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Mueve solo el día (hoy/mañana), conservando la hora que ya estaba elegida. */
+function shiftDay(current: string, daysFromToday: number): string {
+  const base = current ? new Date(current) : new Date();
+  const target = new Date();
+  target.setDate(target.getDate() + daysFromToday);
+  target.setHours(base.getHours(), base.getMinutes(), 0, 0);
+  return toDatetimeLocalValue(target);
+}
+
+function isSameDay(iso: string, daysFromToday: number) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const target = new Date();
+  target.setDate(target.getDate() + daysFromToday);
+  return d.toDateString() === target.toDateString();
 }
 
 function AppointmentCard({
@@ -102,16 +119,40 @@ function AppointmentCard({
 
           {a.status === 'pending' && (
             <div className="consultas-respond">
-              <p className="consultas-respond-title">Confirmar cita</p>
-              <label className="block space-y-1.5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+                  <CalendarCheck className="h-4 w-4 text-accent" />
+                </div>
+                <p className="consultas-respond-title !mb-0">Confirmar cita</p>
+              </div>
+
+              <div className="space-y-1.5">
                 <span className="text-xs text-text-tertiary">Fecha y hora</span>
+                <div className="flex flex-wrap gap-2">
+                  {[0, 1].map((offset) => (
+                    <button
+                      key={offset}
+                      type="button"
+                      onClick={() => setScheduledAt(shiftDay(scheduledAt, offset))}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                        isSameDay(scheduledAt, offset)
+                          ? 'border-accent/50 bg-accent/15 text-accent'
+                          : 'border-border bg-bg-elevated text-text-tertiary hover:border-border-hover hover:text-text-secondary',
+                      )}
+                    >
+                      {offset === 0 ? 'Hoy' : 'Mañana'}
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="datetime-local"
                   value={scheduledAt}
                   onChange={(e) => setScheduledAt(e.target.value)}
                   className="consultas-textarea !min-h-0 py-2"
                 />
-              </label>
+              </div>
+
               <label className="mt-3 block space-y-1.5">
                 <span className="text-xs text-text-tertiary">Notas (opcional)</span>
                 <textarea
@@ -126,6 +167,9 @@ function AppointmentCard({
                 {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Send className="h-4 w-4" />}
                 Confirmar y avisar al cliente
               </button>
+              <p className="mt-2 flex items-center gap-1.5 text-[11px] text-text-tertiary">
+                <Mail className="h-3 w-3" /> Le llega la confirmación por correo y WhatsApp
+              </p>
             </div>
           )}
         </div>

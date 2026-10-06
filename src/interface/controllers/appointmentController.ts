@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../infrastructure/prisma/client';
 import { getWhatsAppService } from '../../infrastructure/whatsapp/factory';
+import { sendAppointmentConfirmedEmail } from '../../infrastructure/email/customerEmails';
 import { DomainError } from '../../domain/errors/DomainError';
 
 function toPortalDto(row: {
@@ -252,29 +253,32 @@ export const confirmAppointment = async (req: Request, res: Response, next: Next
       },
     });
 
-    (async () => {
-      try {
-        const { customer, motorcycle } = updated;
-        if (customer?.optInWhatsapp && customer.phone) {
-          const wa = getWhatsAppService();
-          const fecha = when.toLocaleString('es-CO', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-          await wa.sendTemplate(customer.phone, 'appointment_confirmed', {
-            '1': customer.name ?? 'Cliente',
-            '2': motorcycle?.placa ?? 'tu moto',
-            '3': fecha,
-            'w': updated.workshop?.name ?? '',
-          });
-        }
-      } catch (waErr) {
-        console.warn('[confirmAppointment] WhatsApp failed:', (waErr as Error).message);
+    // Se espera antes de responder (no queda "al fondo"): en Vercel, una
+    // promesa que sigue corriendo tras mandar la respuesta puede cortarse
+    // a mitad de camino sin terminar de avisarle al cliente.
+    try {
+      const { customer, motorcycle } = updated;
+      if (customer?.optInWhatsapp && customer.phone) {
+        const wa = getWhatsAppService();
+        const fecha = when.toLocaleString('es-CO', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        await wa.sendTemplate(customer.phone, 'appointment_confirmed', {
+          '1': customer.name ?? 'Cliente',
+          '2': motorcycle?.placa ?? 'tu moto',
+          '3': fecha,
+          'w': updated.workshop?.name ?? '',
+        });
       }
-    })();
+    } catch (waErr) {
+      console.warn('[confirmAppointment] WhatsApp failed:', (waErr as Error).message);
+    }
+
+    await sendAppointmentConfirmedEmail(updated.id).catch(() => {});
 
     res.json(toWorkshopDto(updated));
   } catch (e) {

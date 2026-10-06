@@ -258,3 +258,66 @@ export async function sendPortalWelcomeEmail(
     return { ok: false, reason: 'error', detail };
   }
 }
+
+/** Avisa por correo que su cita de taller quedó confirmada, con fecha y hora. */
+export async function sendAppointmentConfirmedEmail(appointmentId: string): Promise<void> {
+  if (!isEmailConfigured()) return;
+
+  const appt = await (prisma as any).workshopAppointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      customer: { select: { name: true, email: true, optInEmail: true } },
+      motorcycle: { select: { placa: true, brand: true, model: true } },
+      workshop: { select: { name: true, phone: true, address: true } },
+    },
+  });
+  if (!appt?.scheduledAt || !appt.customer?.email?.trim() || appt.customer.optInEmail === false) return;
+
+  const workshopName = appt.workshop?.name ?? 'MotoBrain Taller';
+  const fechaRaw = new Date(appt.scheduledAt).toLocaleString('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+  });
+  const fecha = fechaRaw.charAt(0).toUpperCase() + fechaRaw.slice(1);
+  const motoLabel = appt.motorcycle
+    ? `${appt.motorcycle.placa} · ${appt.motorcycle.brand} ${appt.motorcycle.model}`
+    : null;
+
+  const html = letter({
+    workshopName,
+    workshopPhone: appt.workshop?.phone,
+    workshopAddress: appt.workshop?.address,
+    content: `
+      <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#8a8a8a">Hola ${firstName(appt.customer.name)},</p>
+      <h1 style="margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:700;color:#fafafa;letter-spacing:-0.4px">Tu cita quedó confirmada</h1>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px;background:#141414;border:1px solid #262626;border-radius:10px">
+        <tr><td style="padding:20px 22px">
+          <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">FECHA Y HORA</p>
+          <p style="margin:0;font-size:17px;font-weight:700;color:#00c77a">${fecha}</p>
+          ${
+            motoLabel
+              ? `<div style="padding-top:14px;margin-top:14px;border-top:1px solid #262626">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">MOTO</p>
+            <p style="margin:0;font-size:14px;font-weight:600;color:#e5e5e5">${motoLabel}</p>
+          </div>`
+              : ''
+          }
+          ${
+            appt.notes
+              ? `<div style="padding-top:14px;margin-top:14px;border-top:1px solid #262626">
+            <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.4px;color:#737373">NOTAS</p>
+            <p style="margin:0;font-size:13px;line-height:1.5;color:#b0b0b0">${appt.notes}</p>
+          </div>`
+              : ''
+          }
+        </td></tr>
+      </table>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#8a8a8a">Te esperamos. Si necesitas cambiar la fecha, escríbenos.</p>
+    `,
+  });
+
+  try {
+    await sendEmail(appt.customer.email, `${workshopName} — Tu cita quedó confirmada`, html);
+  } catch {
+    // No bloquea la confirmación si falla el correo.
+  }
+}
