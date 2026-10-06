@@ -53,7 +53,7 @@ export function CustomerForm({
       cedula: '',
       phone: '',
       email: '',
-      optInWhatsapp: false,
+      optInWhatsapp: true,
       optInEmail: true,
       ...defaultValues,
     },
@@ -93,17 +93,9 @@ export function CustomerForm({
         </Field>
       </div>
 
+      <input {...register('optInWhatsapp')} type="checkbox" className="hidden" />
+
       <div className="space-y-2.5">
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            {...register('optInWhatsapp')}
-            type="checkbox"
-            className="h-4 w-4 rounded accent-[--accent-primary]"
-          />
-          <span className="text-sm text-text-secondary">
-            Acepta notificaciones por WhatsApp
-          </span>
-        </label>
         <label className="flex cursor-pointer items-center gap-3">
           <input
             {...register('optInEmail')}
