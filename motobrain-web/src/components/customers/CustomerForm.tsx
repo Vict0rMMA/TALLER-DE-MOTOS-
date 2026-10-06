@@ -10,6 +10,7 @@ interface CustomerFormProps {
   onSubmit: (data: CustomerInput) => void;
   isLoading?: boolean;
   submitLabel?: string;
+  children?: React.ReactNode;
 }
 
 function Field({
@@ -38,6 +39,7 @@ export function CustomerForm({
   onSubmit,
   isLoading,
   submitLabel = 'Guardar cliente',
+  children,
 }: CustomerFormProps) {
   const {
     register,
@@ -113,6 +115,8 @@ export function CustomerForm({
           </span>
         </label>
       </div>
+
+      {children}
 
       <div className="flex justify-end pt-2">
         <button

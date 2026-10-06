@@ -44,15 +44,19 @@ export const createMotorcycle = async (req: Request, res: Response, next: NextFu
       ...req.body,
       workshopId: req.workshopId!,
     });
-    res.status(201).json(result);
 
     // El login del portal es por placa: la primera moto de un cliente es lo
     // que de verdad lo deja entrar, asi que es el momento correcto para
-    // avisarle (si ya tenia otra moto, no se repite el correo).
+    // avisarle (si ya tenia otra moto, no se repite el correo). Se espera
+    // el envio (no queda "al fondo" tras responder) porque en Vercel la
+    // funcion puede cortarse justo despues de mandar la respuesta, y el
+    // correo quedaba a mitad de camino sin terminar de salir.
     const motos = await motorcycleRepo.findByCustomer(result.customerId);
     if (motos.length === 1) {
-      sendPortalWelcomeEmail(result.customerId, env.PUBLIC_APP_URL).catch(() => {});
+      await sendPortalWelcomeEmail(result.customerId, env.PUBLIC_APP_URL).catch(() => {});
     }
+
+    res.status(201).json(result);
   } catch (e) {
     next(e);
   }

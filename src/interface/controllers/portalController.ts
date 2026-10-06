@@ -490,7 +490,10 @@ export const enablePortal = async (req: Request, res: Response, next: NextFuncti
       data: { portalActive: true, passwordHash: null },
     });
 
-    sendPortalWelcomeEmail(customerId, env.PUBLIC_APP_URL).catch(() => {});
+    // Se espera el envio (ver nota en motorcycleController.createMotorcycle):
+    // en Vercel, mandar la respuesta puede cortar una promesa que quedo
+    // "al fondo" sin terminar de enviar el correo.
+    await sendPortalWelcomeEmail(customerId, env.PUBLIC_APP_URL).catch(() => {});
 
     res.json({ ok: true, message: 'Portal activado. El cliente entra con la placa de su moto.' });
   } catch (err) {

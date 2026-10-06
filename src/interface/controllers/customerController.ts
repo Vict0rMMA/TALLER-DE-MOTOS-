@@ -51,8 +51,10 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
       ...req.body,
       workshopId: req.workshopId!,
     });
-    // No bloquea la respuesta: si el correo falla, el cliente ya quedó creado igual.
-    sendPortalWelcomeEmail(result.id, env.PUBLIC_APP_URL).catch(() => {});
+    // Normalmente no manda nada aquí (sin moto todavía no hay con qué entrar al
+    // portal), pero se espera por consistencia: una promesa "al fondo" tras
+    // responder puede cortarse a mitad de camino en Vercel.
+    await sendPortalWelcomeEmail(result.id, env.PUBLIC_APP_URL).catch(() => {});
     res.status(201).json(result);
   } catch (e) {
     next(e);
