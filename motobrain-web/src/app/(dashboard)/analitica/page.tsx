@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { toast } from 'sonner';
-import { Wrench, DollarSign, Users, AlertTriangle, Download, Loader2, BarChart3 } from 'lucide-react';
+import { Wrench, DollarSign, Users, AlertTriangle, FileBarChart, BarChart3 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { MoneyDisplay } from '@/components/shared/MoneyDisplay';
@@ -23,75 +22,11 @@ const AnalyticsCharts = dynamic(
   },
 );
 
-async function downloadRevenueXlsx(token: string | null, months = 6): Promise<void> {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
-  const res = await fetch(`${API_BASE}/analytics/revenue/export?months=${months}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `No se pudo generar el Excel (${res.status})`);
-  }
-  const blob = await res.blob();
-  const disposition = res.headers.get('Content-Disposition');
-  const match = disposition?.match(/filename="?([^";]+)"?/);
-  const filename = match?.[1] ?? `motobrain-reporte-${new Date().toISOString().slice(0, 10)}.xlsx`;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function col(v: unknown): string {
-  const s = v === null || v === undefined ? '' : String(v);
-  return `"${s.replace(/"/g, '""')}"`;
-}
-
-function copCol(n: unknown): string {
-  const num = typeof n === 'number' ? n : Number(n ?? 0);
-  return `"$${num.toLocaleString('es-CO', { maximumFractionDigits: 0 })}"`;
-}
-
-function downloadCSV(rows: string[][], filename: string) {
-  const sep = ';';
-  const body = rows.map((r) => r.join(sep)).join('\r\n');
-  const blob = new Blob(['﻿' + body], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function todayLabel() {
-  return new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function exportTopProducts(data: { productName: string; totalSold: number; revenue: number }[]) {
-  if (!data.length) return;
-  const totalUnits = data.reduce((s, r) => s + r.totalSold, 0);
-  const totalRevenue = data.reduce((s, r) => s + r.revenue, 0);
-  const rows: string[][] = [
-    [col('MOTOBRAIN — TOP REPUESTOS MÁS VENDIDOS'), '', '', ''],
-    [col(`Generado el: ${todayLabel()}`), '', '', ''],
-    ['', '', '', ''],
-    [col('#'), col('PRODUCTO'), col('UNIDADES VENDIDAS'), col('INGRESOS (COP)')],
-    ...data.map((r, i) => [col(i + 1), col(r.productName), col(r.totalSold), copCol(r.revenue)]),
-    ['', '', '', ''],
-    [col('TOTAL'), col(''), col(totalUnits), copCol(totalRevenue)],
-  ];
-  downloadCSV(rows, `top-repuestos-motobrain-${new Date().toISOString().slice(0, 10)}`);
-}
-
 export default function AnaliticaPage() {
   const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs();
   const { data: topProducts } = useTopProducts(8);
   const { data: revenueData } = useRevenueByMonth(1);
-  const { token, user } = useAuthStore();
-  const [exporting, setExporting] = useState(false);
+  const { user } = useAuthStore();
 
   if (user && user.role !== 'owner') {
     return (
@@ -105,41 +40,16 @@ export default function AnaliticaPage() {
     );
   }
 
-  async function handleExportXlsx() {
-    setExporting(true);
-    try {
-      await downloadRevenueXlsx(token, 6);
-      toast.success('Excel descargado', {
-        description: '3 hojas: Resumen, Ingresos y Top Repuestos. Abre el archivo en Excel.',
-      });
-    } catch (e) {
-      toast.error('Error al exportar', {
-        description: e instanceof Error ? e.message : 'Revisa que la API esté en marcha.',
-      });
-    } finally {
-      setExporting(false);
-    }
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Analítica"
         description="KPIs y gráficos del taller — últimos 30 días"
         actions={
-          <button
-            type="button"
-            onClick={handleExportXlsx}
-            disabled={exporting}
-            className="btn-outline"
-          >
-            {exporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {exporting ? 'Generando...' : 'Descargar reporte Excel'}
-          </button>
+          <Link href="/reporte-analitica" target="_blank" className="btn-outline">
+            <FileBarChart className="h-4 w-4" />
+            Ver reporte
+          </Link>
         }
       />
 
@@ -166,15 +76,8 @@ export default function AnaliticaPage() {
 
       {topProducts && topProducts.length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border p-4">
+          <div className="border-b border-border p-4">
             <h2 className="text-sm font-semibold text-text-primary">Detalle top repuestos</h2>
-            <button
-              type="button"
-              onClick={() => exportTopProducts(topProducts)}
-              className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-primary transition-colors"
-            >
-              <Download className="h-3.5 w-3.5" /> CSV
-            </button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-bg-elevated">

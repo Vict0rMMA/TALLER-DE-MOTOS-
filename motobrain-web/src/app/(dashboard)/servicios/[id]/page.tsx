@@ -27,6 +27,22 @@ const PAYMENT_OPTIONS = [
 
 const WARRANTY_OPTIONS = ['Sin garantía', '1 mes', '3 meses', '6 meses', '12 meses'];
 
+const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
+  service_completed: 'Moto lista para recoger',
+  service_update: 'Actualización de servicio',
+  payment_ready: 'Aviso de pago',
+  portal_welcome: 'Bienvenida al portal',
+  maintenance_reminder: 'Recordatorio de mantenimiento',
+  low_stock_alert: 'Alerta de stock bajo',
+  diagnosis_ready: 'Diagnóstico listo',
+  consultation_answered: 'Consulta respondida',
+  appointment_confirmed: 'Cita confirmada',
+};
+
+function notificationTypeLabel(type: string): string {
+  return NOTIFICATION_TYPE_LABELS[type] ?? type.replace(/_/g, ' ');
+}
+
 const PAYMENT_SELECT_OPTIONS = PAYMENT_OPTIONS.map((o) => ({ value: o.id, label: o.label }));
 const WARRANTY_SELECT_OPTIONS = WARRANTY_OPTIONS.map((w) => ({ value: w, label: w }));
 
@@ -365,7 +381,7 @@ export default function ServicioDetailPage({ params }: { params: { id: string } 
                       ) : (
                         <Clock className="h-3.5 w-3.5 shrink-0" />
                       )}
-                      <span className="capitalize">{n.type.replace(/_/g, ' ')}</span>
+                      <span>{notificationTypeLabel(n.type)}</span>
                     </div>
                     <span className="text-text-tertiary shrink-0">
                       {new Date(n.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
