@@ -46,8 +46,14 @@ class PortalApiClient {
         endpoint === '/login' ||
         endpoint.startsWith('/auth/otp/');
       if (res.status === 401) {
-        if (token && !isPublicPortalAuth) {
+        // Cualquier 401 fuera del login/OTP significa que la sesión no sirve
+        // (venció o nunca llegó el token) — se manda al cliente de vuelta al
+        // login en vez de dejarlo viendo un error técnico sin salida.
+        if (!isPublicPortalAuth) {
           usePortalAuthStore.getState().logout();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login?tab=cliente';
+          }
           throw new PortalApiError('Sesión expirada', 401);
         }
         throw new PortalApiError(msg, 401);

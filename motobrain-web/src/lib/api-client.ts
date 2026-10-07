@@ -61,9 +61,16 @@ class ApiClient {
         endpoint.startsWith('/auth/login') ||
         endpoint.startsWith('/auth/signup') ||
         endpoint.startsWith('/auth/register');
-      if (token && !isPublicAuth) {
+      // Cualquier 401 fuera de login/registro significa que la sesión ya no
+      // sirve (venció, se borró el token, o nunca llegó) — no tiene caso
+      // dejar al usuario viendo un error técnico con un botón de "Reintentar"
+      // que va a fallar exactamente igual. Se manda derecho al login.
+      if (!isPublicAuth) {
         clearAuthCookie();
         useAuthStore.getState().logout();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
         throw new ApiError('Sesión expirada', 401);
       }
       throw new ApiError(msg, 401);
